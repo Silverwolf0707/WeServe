@@ -4,6 +4,8 @@ use App\Http\Controllers\Admin\HomeController;
 use App\Http\Controllers\Admin\OnlineApplicationController;
 use App\Http\Controllers\Admin\PermissionsController;
 use App\Http\Controllers\Admin\RolesController;
+use App\Http\Controllers\Admin\StatisticsController;
+use App\Http\Controllers\Admin\TimeSeriesController;
 use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\Admin\AuditLogsController;
 use App\Http\Controllers\Admin\PatientRecordsController;
@@ -60,7 +62,8 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     Route::post('process-tracking/{id}/disburse-budget', [ProcessTrackingController::class, 'markBudgetAsDisbursed'])->name('process-tracking.disburseBudget');
 
     //time series
-    Route::get('time-series', [App\Http\Controllers\Admin\TimeSeriesController::class, 'index'])->name('time-series.index');
+    Route::get('time-series', [TimeSeriesController::class, 'index'])->name('time-series.index');
+    Route::get('analytics/age-stats', [StatisticsController::class, 'getAgeStatistics'])->name('analytics.age-stats');
 });
 
 Route::group(['prefix' => 'profile', 'as' => 'profile.', 'middleware' => ['auth']], function () {
