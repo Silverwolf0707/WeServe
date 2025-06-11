@@ -115,6 +115,7 @@ class ProcessTrackingController extends Controller
             'user_id' => Auth::id(),
             'amount' => $request->amount,
             'remarks' => $request->remarks,
+            'budget_status' => 'Not Disbursed',
         ]);
 
         PatientStatusLog::create([
@@ -126,5 +127,29 @@ class ProcessTrackingController extends Controller
 
         return redirect()->route('admin.process-tracking.show', $id)
             ->with('status', 'Budget allocated successfully.');
+    }
+    public function markBudgetAsDisbursed($id)
+    {
+        abort_if(Gate::denies('treasury_disburse'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $allocation = BudgetAllocation::where('patient_id', $id)->firstOrFail();
+
+        if ($allocation->budget_status === 'Disbursed') {
+            return back()->with('error', 'Budget already marked as disbursed.');
+        }
+
+        $allocation->update([
+            'budget_status' => 'Disbursed',
+        ]);
+
+        PatientStatusLog::create([
+            'patient_id' => $id,
+            'user_id' => Auth::id(),
+            'status' => 'Disbursed',
+            'remarks' => 'Budget marked as disbursed by Treasury.',
+        ]);
+
+        return redirect()->route('admin.process-tracking.show', $id)
+            ->with('status', 'Budget status updated to Disbursed.');
     }
 }

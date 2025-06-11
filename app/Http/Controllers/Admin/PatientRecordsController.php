@@ -32,17 +32,17 @@ class PatientRecordsController extends Controller
     public function create()
     {
         abort_if(Gate::denies('patient_record_create'), Response::HTTP_FORBIDDEN, '403 Forbidden');
-    
+
         // Auto-generate control number
         $latestId = PatientRecord::withTrashed()->max('id') + 1;
         $today = now()->format('Ymd');
         $controlNumber = 'CSWD-' . $today . '-' . str_pad($latestId, 4, '0', STR_PAD_LEFT);
-    
+
         $dateProcessed = now();
-        
+
         return view('admin.patientRecords.create', compact('controlNumber', 'dateProcessed'));
     }
-    
+
 
     public function store(StorePatientRecordRequest $request)
     {
@@ -50,40 +50,40 @@ class PatientRecordsController extends Controller
         $patient = PatientRecord::where('patient_name', $request->patient_name)
             ->orderBy('date_processed', 'desc')
             ->first();
-    
+
         // If the patient exists, check the eligibility
         if ($patient) {
             $lastApplicationDate = Carbon::parse($patient->date_processed);
             $nextEligibleDate = $lastApplicationDate->copy()->addMonths(6);
             $currentDate = Carbon::now();
-    
+
             if ($currentDate->lt($nextEligibleDate)) {
                 $diff = $currentDate->diff($nextEligibleDate);
-    
+
                 $remainingMonths = $diff->m;
                 $remainingDays = $diff->d;
-    
+
                 $message = 'The patient is not eligible to apply yet. Please wait for ';
-    
+
                 if ($remainingMonths > 0) {
                     $message .= $remainingMonths . ' ' . Str::plural('month', $remainingMonths);
                 }
-    
+
                 if ($remainingMonths > 0 && $remainingDays > 0) {
                     $message .= ' and ';
                 }
-    
+
                 if ($remainingDays > 0) {
                     $message .= $remainingDays . ' ' . Str::plural('day', $remainingDays);
                 }
-    
+
                 return redirect()->back()->with('error', $message . '.');
             }
         }
-    
+
         // Create the patient record if eligible
         $patientRecord = PatientRecord::create($request->all());
-    
+
         // Create a status log entry
         // PatientStatusLog::create([
         //     'patient_id' => $patientRecord->id,
@@ -91,11 +91,11 @@ class PatientRecordsController extends Controller
         //     'user_id' => Auth::id(),
         //     'created_at' => now(),
         // ]);
-    
+
         return redirect()->route('admin.patient-records.index')->with('status', 'Patient record created and submitted.');
     }
-    
-    
+
+
 
     public function edit(PatientRecord $patientRecord)
     {
@@ -111,14 +111,14 @@ class PatientRecordsController extends Controller
         return redirect()->route('admin.patient-records.index');
     }
 
-public function show(PatientRecord $patientRecord)
-{
-    abort_if(Gate::denies('patient_record_show'), Response::HTTP_FORBIDDEN, '403 Forbidden');
-    
-    $latestStatus = $patientRecord->statusLogs()->orderBy('created_at', 'desc')->first();
-$hasProcessTracking = $patientRecord->statusLogs()->exists();
-    return view('admin.patientRecords.show', compact('patientRecord', 'latestStatus', 'hasProcessTracking'));
-}
+    public function show(PatientRecord $patientRecord)
+    {
+        abort_if(Gate::denies('patient_record_show'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $latestStatus = $patientRecord->statusLogs()->orderBy('created_at', 'desc')->first();
+        $hasProcessTracking = $patientRecord->statusLogs()->exists();
+        return view('admin.patientRecords.show', compact('patientRecord', 'latestStatus', 'hasProcessTracking'));
+    }
 
 
     public function destroy(PatientRecord $patientRecord)
@@ -140,26 +140,25 @@ $hasProcessTracking = $patientRecord->statusLogs()->exists();
 
         return response(null, Response::HTTP_NO_CONTENT);
     }
-    
-public function submit(Request $request, $id)
-{
-    abort_if(Gate::denies('submit_patient_application'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-    $request->validate([
-        'remarks' => 'required|string|max:1000',
-        'status' => 'required|string',
-    ]);
+    public function submit(Request $request, $id)
+    {
+        abort_if(Gate::denies('submit_patient_application'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-    PatientStatusLog::create([
-        'patient_id' => $id,
-        'status' => PatientStatusLog::STATUS_SUBMITTED,  // "Submitted"
-        'user_id' => Auth::id(),
-        'remarks' => $request->remarks,
-        'created_at' => now(),
-    ]);
+        $request->validate([
+            'remarks' => 'required|string|max:1000',
+            'status' => 'required|string',
+        ]);
 
-    return redirect()->route('admin.patient-records.show', $id)
-                     ->with('success', 'Application submitted successfully with remarks.');
-}
+        PatientStatusLog::create([
+            'patient_id' => $id,
+            'status' => PatientStatusLog::STATUS_SUBMITTED,  // "Submitted"
+            'user_id' => Auth::id(),
+            'remarks' => $request->remarks,
+            'created_at' => now(),
+        ]);
 
+        return redirect()->route('admin.patient-records.show', $id)
+            ->with('success', 'Application submitted successfully with remarks.');
+    }
 }

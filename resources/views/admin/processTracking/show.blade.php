@@ -126,9 +126,13 @@
             @endcan
 
 
-            @can('accounting_input_dv')
+            @can('accounting_dv_input')
                 @if ($latestStatus->status === 'Budget Allocated' && !$patient->disbursementVoucher)
-                    <!-- DV Modal -->
+
+                    <button type="button" class="btn btn-info mt-3" data-toggle="modal" data-target="#dvModal">
+                        Enter DV Details
+                    </button>
+
                     <div class="modal fade" id="dvModal" tabindex="-1" role="dialog" aria-labelledby="dvModalLabel"
                         aria-hidden="true">
                         <div class="modal-dialog" role="document">
@@ -162,6 +166,20 @@
                     <div class="alert alert-info mt-4">
                         <strong>DV Code:</strong> {{ $patient->disbursementVoucher->dv_code }} <br>
                         <strong>Date:</strong> {{ \Carbon\Carbon::parse($patient->disbursementVoucher->dv_date)->format('F j, Y') }}
+                    </div>
+                @endif
+            @endcan
+            @can('treasury_disburse')
+                @if ($latestStatus->status === 'DV Submitted' && $patient->budgetAllocation && $patient->budgetAllocation->budget_status !== 'Disbursed')
+                    <div class="mt-4">
+                        <form action="{{ route('admin.process-tracking.disburseBudget', $patient->id) }}" method="POST">
+                            @csrf
+                            <button type="submit" class="btn btn-primary">Mark as Disbursed</button>
+                        </form>
+                    </div>
+                @elseif ($patient->budgetAllocation && $patient->budgetAllocation->budget_status === 'Disbursed')
+                    <div class="alert alert-success mt-4">
+                        <strong>Status:</strong> Disbursed
                     </div>
                 @endif
             @endcan

@@ -11,6 +11,7 @@ class BudgetAllocation extends Model
         'user_id',
         'amount',
         'remarks',
+        'budget_status'
     ];
     public function patient()
     {
