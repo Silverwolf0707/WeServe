@@ -72,36 +72,65 @@
                 </ul>
             </li>
         @endcan
-        @can('application_management_access')
-            <li class="c-sidebar-nav-dropdown {{ request()->is("admin/patient-records*") ? "c-show" : "" }}">
-                <a class="c-sidebar-nav-dropdown-toggle" href="#">
-                    <i class="fa-fw far fa-address-card c-sidebar-nav-icon">
+        {{-- @can('application_management_access')
+        <li class="c-sidebar-nav-dropdown {{ request()->is(" admin/patient-records*") ? "c-show" : "" }}">
+            <a class="c-sidebar-nav-dropdown-toggle" href="#">
+                <i class="fa-fw far fa-address-card c-sidebar-nav-icon">
+
+                </i>
+                {{ trans('cruds.applicationManagement.title') }}
+            </a>
+            <ul class="c-sidebar-nav-dropdown-items">
+                @can('patient_record_access')
+                <li class="c-sidebar-nav-item">
+                    <a href="{{ route(" admin.patient-records.index") }}" class="c-sidebar-nav-link {{ request()->is("
+                        admin/patient-records") || request()->is("admin/patient-records/*") ? "c-active" : "" }}">
+                        <i class="fa-fw fas fa-cogs c-sidebar-nav-icon">
+
+                        </i>
+                        {{ trans('cruds.patientRecord.title') }}
+                    </a>
+                </li>
+                @endcan
+                @can('process_tracking_access')
+                <li class="c-sidebar-nav-item">
+                    <a href="{{ route('admin.process-tracking.index') }}"
+                        class="c-sidebar-nav-link {{ request()->is('admin/process-tracking') || request()->is('admin/process-tracking/*') ? 'c-active' : '' }}">
+                        <i class="fa-fw fas fa-stream c-sidebar-nav-icon"></i>
+                        {{ __('Process Tracking') }}
+                    </a>
+                </li>
+                @endcan
+            </ul>
+        </li>
+        @endcan --}}
+        @can('patient_record_access')
+            <li class="c-sidebar-nav-item">
+                <a href="{{ route("admin.patient-records.index") }}"
+                    class="c-sidebar-nav-link {{ request()->is("admin/patient-records") || request()->is("admin/patient-records/*") ? "c-active" : "" }}">
+                    <i class="fa-fw fas fa-cogs c-sidebar-nav-icon">
 
                     </i>
-                    {{ trans('cruds.applicationManagement.title') }}
+                    {{ trans('cruds.patientRecord.title') }}
                 </a>
-                <ul class="c-sidebar-nav-dropdown-items">
-                    @can('patient_record_access')
-                        <li class="c-sidebar-nav-item">
-                            <a href="{{ route("admin.patient-records.index") }}"
-                                class="c-sidebar-nav-link {{ request()->is("admin/patient-records") || request()->is("admin/patient-records/*") ? "c-active" : "" }}">
-                                <i class="fa-fw fas fa-cogs c-sidebar-nav-icon">
-
-                                </i>
-                                {{ trans('cruds.patientRecord.title') }}
-                            </a>
-                        </li>
-                    @endcan
-                    @can('process_tracking_access')
-                        <li class="c-sidebar-nav-item">
-                            <a href="{{ route('admin.process-tracking.index') }}"
-                                class="c-sidebar-nav-link {{ request()->is('admin/process-tracking') || request()->is('admin/process-tracking/*') ? 'c-active' : '' }}">
-                                <i class="fa-fw fas fa-stream c-sidebar-nav-icon"></i>
-                                {{ __('Process Tracking') }}
-                            </a>
-                        </li>
-                    @endcan
-                </ul>
+            </li>
+        @endcan
+        @can('process_tracking_access')
+            <li class="c-sidebar-nav-item">
+                <a href="{{ route('admin.process-tracking.index') }}"
+                    class="c-sidebar-nav-link {{ request()->is('admin/process-tracking') || request()->is('admin/process-tracking/*') ? 'c-active' : '' }}">
+                    <i class="fa-fw fas fa-stream c-sidebar-nav-icon"></i>
+                    {{ __('Process Tracking') }}
+                </a>
+            </li>
+        @endcan
+        @can('documents_management')
+            <li class="c-sidebar-nav-item">
+                <a href="{{ route('admin.document-management.index') }}"
+                    class="c-sidebar-nav-link {{ request()->is('admin/document-management') || request()->is('admin/document-management/*') ? 'c-active' : '' }}">
+                    <i class="fa-fw fas fa-briefcase c-sidebar-nav-icon"></i>
+                    {{ __('Documents') }}
+                </a>
             </li>
         @endcan
         @can('analytics_access')
