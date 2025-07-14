@@ -8,14 +8,14 @@
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <meta name="csrf-token" content="{{ csrf_token() }}">
 
-  <title>{{ trans('panel.site_title') }}</title>
+  <title>WeServe</title>
+  <link rel="icon" type="image/svg+xml" href="{{ asset('icon.svg') }}">
   <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/flowbite@1.6.3/dist/flowbite.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
-
   <link href="https://use.fontawesome.com/releases/v5.2.0/css/all.css" rel="stylesheet" />
   <link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet" />
-  <link href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css" rel="stylesheet" />
+  <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
   <link href="https://cdn.datatables.net/buttons/1.2.4/css/buttons.dataTables.min.css" rel="stylesheet" />
   <link href="https://cdn.datatables.net/select/1.3.0/css/select.dataTables.min.css" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.5/css/select2.min.css" rel="stylesheet" />
@@ -31,7 +31,7 @@
   @yield('styles')
 </head>
 
-<body class="c-app">
+<body class="c-app c-sidebar-show c-sidebar-lg-show">
   @include('partials.menu')
   <div class="c-wrapper">
     <header class="c-header c-header-fixed px-3">
@@ -47,7 +47,7 @@
       </button>
 
       <ul class="c-header-nav ml-auto">
-        @include('partials.profile') <!-- Include Profile Partial -->
+        @include('partials.profile') 
         @if(count(config('panel.available_languages', [])) > 1)
       <li class="c-header-nav-item dropdown d-md-down-none">
         <a class="c-header-nav-link" data-toggle="dropdown" href="#" role="button" aria-haspopup="true"
@@ -99,8 +99,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.perfect-scrollbar/1.5.0/perfect-scrollbar.min.js"></script>
   <script src="https://unpkg.com/@coreui/coreui@3.2/dist/js/coreui.min.js"></script>
-  <script src="//cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
-  <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
   <script src="//cdn.datatables.net/buttons/1.2.4/js/dataTables.buttons.min.js"></script>
   <script src="//cdn.datatables.net/buttons/1.2.4/js/buttons.flash.min.js"></script>
   <script src="https://cdn.datatables.net/buttons/1.2.4/js/buttons.html5.min.js"></script>
@@ -116,6 +116,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.5/js/select2.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.5.1/min/dropzone.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/flowbite@1.6.3/dist/flowbite.min.js"></script>
+  <script src="https://unpkg.com/@panzoom/panzoom@9.4.0/dist/panzoom.min.js"></script>
+
   <script src="{{ asset('js/main.js') }}"></script>
 
   <script>

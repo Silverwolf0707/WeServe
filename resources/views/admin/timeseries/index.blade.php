@@ -20,8 +20,6 @@
                 <button id="downloadChart" class="btn btn-outline-primary">Download Chart</button>
             </div>
         </div>
-
-
         <div id="loadingSpinner" style="display: none; text-align:center; padding: 40px;">
             <div class="spinner-border" role="status">
                 <span class="visually-hidden">Loading...</span>

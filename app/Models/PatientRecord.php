@@ -126,7 +126,6 @@ class PatientRecord extends Model
     public function budgetAllocation()
     {
         return $this->hasOne(BudgetAllocation::class, 'patient_id', 'id');
-
     }
 
 
@@ -140,5 +139,10 @@ class PatientRecord extends Model
                 });
             }
         });
+    }
+
+    public function documents()
+    {
+        return $this->hasMany(\App\Models\Document::class, 'patient_id');
     }
 }
