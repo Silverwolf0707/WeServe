@@ -30,6 +30,12 @@
   <link href="{{ asset('css/custom.css') }}" rel="stylesheet" />
   @yield('styles')
 </head>
+<script>
+  document.getElementById('toggleSidebar')?.addEventListener('click', function () {
+    document.querySelector('body').classList.toggle('c-sidebar-minimized');
+  });
+</script>
+
 
 <body class="c-app">
   @include('partials.menu')
@@ -240,7 +246,12 @@
           <strong>Role:</strong>
           @foreach(Auth::user()->roles as $role)
         {{ $role->title }} @if(!$loop->last), @endif
-        @endforeach
+        @endforeach<script>
+  document.getElementById('toggleSidebar')?.addEventListener('click', function () {
+    document.querySelector('body').classList.toggle('c-sidebar-minimized');
+  });
+</script>
+
           <br />
 
           <strong>Joined on:</strong> {{ Auth::user()->created_at->format('d M Y') }} <br />
