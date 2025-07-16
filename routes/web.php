@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\DocumentManagementController;
 use App\Http\Controllers\Admin\HomeController;
 use App\Http\Controllers\Admin\OnlineApplicationController;
 use App\Http\Controllers\Admin\PermissionsController;
@@ -60,6 +61,12 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     Route::post('process-tracking/{id}/store-budget', [ProcessTrackingController::class, 'storeBudget'])->name('process-tracking.storeBudget');
     Route::post('process-tracking/{patient}/store-dv', [ProcessTrackingController::class, 'storeDV'])->name('process-tracking.storeDV');
     Route::post('process-tracking/{id}/disburse-budget', [ProcessTrackingController::class, 'markBudgetAsDisbursed'])->name('process-tracking.disburseBudget');
+
+   
+    Route::delete('document-management/mass-destroy', [DocumentManagementController::class, 'massDestroy'])->name('document-management.massDestroy');
+    Route::get('document-management/patient/{id}', [DocumentManagementController::class, 'show'])->name('admin.document-management.show');
+    Route::delete('document-management/{id}', [DocumentManagementController::class, 'destroy'])->name('admin.document-management.destroy');
+    Route::resource('document-management', DocumentManagementController::class)->names('document-management');
 
     //time series
     Route::get('time-series', [TimeSeriesController::class, 'index'])->name('time-series.index');

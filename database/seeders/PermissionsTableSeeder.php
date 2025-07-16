@@ -127,14 +127,15 @@ class PermissionsTableSeeder extends Seeder
                 'title' => 'analytics_access',
             ],
             [
-                'id' =>30,
+                'id' => 30,
                 'title' => 'budget_allocate',
             ],
                         [
                 'id' =>31,
-                'title' => 'accounting_dv_input',
+                'title' => 'accounting_input_dv',
             ]
         ];
+
         Permission::insert($permissions);
     }
 }
