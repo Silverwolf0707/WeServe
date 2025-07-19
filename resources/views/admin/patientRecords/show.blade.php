@@ -23,7 +23,19 @@
                     <tr><th>Control Number:</th><td>{{ $patientRecord->control_number }}</td></tr>
                     <tr><th>Date Processed:</th><td>{{ \Carbon\Carbon::parse($patientRecord->date_processed)->format('F j, Y g:i A') }}</td></tr>
                     <tr><th>Claimant Name:</th><td>{{ $patientRecord->claimant_name }}</td></tr>
-                    <tr><th>Diagnosis:</th><td>{{ $patientRecord->diagnosis }}</td></tr>
+                    <tr>
+                        <th>Diagnosis:</th>
+                        <td>
+                            @if(strlen($patientRecord->diagnosis) > 60)
+                                {{ Str::limit($patientRecord->diagnosis, 60) }}
+                                <button class="btn btn-sm btn-outline-primary ml-2" data-toggle="modal" data-target="#diagnosisModal">
+                                    View
+                                </button>
+                            @else
+                                {{ $patientRecord->diagnosis }}
+                            @endif
+                        </td>
+                    </tr>
                     <tr><th>Case Type:</th><td>{{ $patientRecord->case_type }}</td></tr>
                     <tr><th>Case Category:</th><td>{{ App\Models\PatientRecord::CASE_CATEGORY_SELECT[$patientRecord->case_category] ?? '' }}</td></tr>
                     <tr><th>Case Worker:</th><td>{{ $patientRecord->case_worker }}</td></tr>
@@ -39,8 +51,8 @@
         @can('submit_patient_application')
         <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-             <i class="fas fa-paper-plane mr-2"></i> Submit Application
-       </div>
+                <i class="fas fa-paper-plane mr-2"></i> Submit Application
+            </div>
 
             <div class="card-body">
                 <form action="{{ route('admin.patient-records.submit', $patientRecord->id) }}" method="POST">
@@ -74,4 +86,34 @@
         </div>
     </div>
 </div>
+
+<!-- Diagnosis Modal -->
+<div class="modal fade" id="diagnosisModal" tabindex="-1" role="dialog" aria-labelledby="diagnosisModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content shadow">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="diagnosisModalLabel">Full Diagnosis</h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="
+          white-space: pre-wrap;
+          word-wrap: break-word;
+          overflow-y: auto;
+          max-height: 400px;
+          font-size: 16px;
+          line-height: 1.6;
+          padding-right: 10px;
+        ">
+        {{ $patientRecord->diagnosis }}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 @endsection

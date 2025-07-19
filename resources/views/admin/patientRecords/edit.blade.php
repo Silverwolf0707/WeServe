@@ -39,6 +39,12 @@
                 value="{{ old('case_type', $patientRecord->case_type) }}" required>
             @error('case_type') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
+
+        <div class="mb-3">
+            <label for="claimant_name" class="form-label">Claimant Name <span class="text-danger">*</span></label>
+            <input type="text" name="claimant_name" id="claimant_name" class="form-control {{ $errors->has('claimant_name') ? 'is-invalid' : '' }}" value="{{ old('claimant_name', $patientRecord->claimant_name) }}" required>
+            @error('claimant_name') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        </div>
     </div>
 
     {{-- Right Column: Case Category, Diagnosis --}}
@@ -66,7 +72,6 @@
         </div>
     </div>
 </div>
-
 
             <hr class="my-4">
 

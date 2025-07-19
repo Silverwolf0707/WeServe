@@ -49,7 +49,8 @@
                             <td>{{ $patientRecord->claimant_name ?? '' }}</td>
                             <td>{{ App\Models\PatientRecord::CASE_CATEGORY_SELECT[$patientRecord->case_category] ?? '' }}</td>
                             <td>{{ $patientRecord->patient_name ?? '' }}</td>
-                            <td>{{ $patientRecord->diagnosis ?? '' }}</td>
+                             <td class="text-truncate" style= "max-width: 200px; overflow: hidden; white-space: nowrap">
+                                {{ $patientRecord->diagnosis ?? '' }}</td>
                             <td>{{ $patientRecord->age ?? '' }}</td>
                             <td>{{ $patientRecord->address ?? '' }}</td>
                             <td>{{ $patientRecord->contact_number ?? '' }}</td>

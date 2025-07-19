@@ -1,141 +1,121 @@
 @extends('layouts.admin')
+
 @section('content')
-
-<div class="card">
-    <div class="card-header">
-        {{ trans('global.create') }} {{ trans('cruds.patientRecord.title_singular') }}
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-primary text-white">
+        <h5 class="m-0"><i class="fas fa-plus-circle me-2"></i> Create Patient Record</h5>
     </div>
-    @if(session('error'))
-    <div class="alert alert-danger">
-        {{ session('error') }}
-    </div>
-@endif
-
 
     <div class="card-body">
-        <form method="POST" action="{{ route("admin.patient-records.store") }}" enctype="multipart/form-data">
+        <form method="POST" action="{{ route('admin.patient-records.store') }}" enctype="multipart/form-data">
             @csrf
-            <div class="form-group">
-                <label class="required" for="date_processed">{{ trans('cruds.patientRecord.fields.date_processed') }}</label>
-                <input class="form-control datetime{{ $errors->has('date_processed') ? 'is-invalid' : '' }}" type="text" name="date_processed" id="date_processed" value="{{ old('date_processed', $dateProcessed) }}" readonly required>
-                
+
+           {{-- Case Details --}}
+<h6 class="text-primary mb-3">Case Details</h6>
+<div class="row">
+    <div class="col-md-6">
+        <div class="mb-3">
+            <label for="date_processed" class="form-label">Date Processed <span class="text-danger">*</span></label>
+            <input type="text" name="date_processed" id="date_processed"
+                class="form-control datetime {{ $errors->has('date_processed') ? 'is-invalid' : '' }}"
+                value="{{ old('date_processed', $dateProcessed) }}" required>
+            @error('date_processed') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        </div>
+
+        <div class="mb-3">
+            <label for="control_number" class="form-label">Control Number <span class="text-danger">*</span></label>
+            <input type="text" name="control_number" id="control_number"
+                class="form-control {{ $errors->has('control_number') ? 'is-invalid' : '' }}"
+                value="{{ old('control_number', $controlNumber) }}" readonly required>
+            @error('control_number') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        </div>
+
+        <div class="mb-3">
+            <label for="case_type" class="form-label">Case Type <span class="text-danger">*</span></label>
+            <input type="text" name="case_type" id="case_type"
+                class="form-control {{ $errors->has('case_type') ? 'is-invalid' : '' }}"
+                value="{{ old('case_type', '') }}" placeholder="Enter case type" required>
+            @error('case_type') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        </div>
+
+        <div class="mb-3">
+            <label for="claimant_name" class="form-label">Claimant Name <span class="text-danger">*</span></label>
+            <input type="text" name="claimant_name" id="claimant_name"
+                class="form-control {{ $errors->has('claimant_name') ? 'is-invalid' : '' }}"
+                value="{{ old('claimant_name') }}" placeholder="Enter claimant name" required>
+            @error('claimant_name') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="mb-3">
+            <label for="case_category" class="form-label">Case Category <span class="text-danger">*</span></label>
+            <select name="case_category" id="case_category"
+                class="form-control {{ $errors->has('case_category') ? 'is-invalid' : '' }}" required>
+                <option value disabled {{ old('case_category', null) === null ? 'selected' : '' }}>Please select</option>
+                @foreach(App\Models\PatientRecord::CASE_CATEGORY_SELECT as $key => $label)
+                    <option value="{{ $key }}" {{ old('case_category') === (string) $key ? 'selected' : '' }}>
+                        {{ $label }}</option>
+                @endforeach
+            </select>
+            @error('case_category') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        </div>
+
+        <div class="mb-3">
+            <label for="diagnosis" class="form-label">Diagnosis <span class="text-danger">*</span></label>
+            <textarea name="diagnosis" id="diagnosis"
+                class="form-control {{ $errors->has('diagnosis') ? 'is-invalid' : '' }}" rows="2"
+                style="resize: none;" placeholder="Enter diagnosis..." required>{{ old('diagnosis') }}</textarea>
+            @error('diagnosis') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        </div>
+    </div>
+</div>
+
+            <hr class="my-4">
+
+            {{-- Patient Information --}}
+            <h6 class="text-primary mb-3">Patient Information</h6>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="patient_name" class="form-label">Patient Name <span class="text-danger">*</span></label>
+                    <input type="text" name="patient_name" id="patient_name" class="form-control {{ $errors->has('patient_name') ? 'is-invalid' : '' }}" value="{{ old('patient_name') }}" required>
+                    @error('patient_name') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                </div>
+
+                <div class="col-md-3 mb-3">
+                    <label for="age" class="form-label">Age <span class="text-danger">*</span></label>
+                    <input type="number" name="age" id="age" class="form-control {{ $errors->has('age') ? 'is-invalid' : '' }}" value="{{ old('age') }}" step="1" required>
+                    @error('age') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                </div>
+
+                <div class="col-md-3 mb-3">
+                    <label for="contact_number" class="form-label">Contact Number <span class="text-danger">*</span></label>
+                    <input type="text" name="contact_number" id="contact_number" class="form-control {{ $errors->has('contact_number') ? 'is-invalid' : '' }}" value="{{ old('contact_number') }}" required>
+                    @error('contact_number') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                </div>
+
+                <div class="col-md-8 mb-3">
+                    <label for="address" class="form-label">Address <span class="text-danger">*</span></label>
+                    <input type="text" name="address" id="address" class="form-control {{ $errors->has('address') ? 'is-invalid' : '' }}" value="{{ old('address') }}" required>
+                    @error('address') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label for="case_worker" class="form-label">Case Worker <span class="text-danger">*</span></label>
+                    <input type="text" name="case_worker" id="case_worker" class="form-control {{ $errors->has('case_worker') ? 'is-invalid' : '' }}" value="{{ old('case_worker', auth()->user()->name) }}" readonly>
+                    @error('case_worker') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                </div>
             </div>
-            <div class="form-group">
-                <label class="required" for="case_type">{{ trans('cruds.patientRecord.fields.case_type') }}</label>
-                <input class="form-control {{ $errors->has('case_type') ? 'is-invalid' : '' }}" type="text" name="case_type" id="case_type" value="{{ old('case_type', '') }}" required>
-                @if($errors->has('case_type'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('case_type') }}
-                    </div>
-                @endif
-                
-            </div>
-            <div class="form-group">
-                <label class="required" for="control_number">{{ trans('cruds.patientRecord.fields.control_number') }}</label>
-                <input class="form-control {{ $errors->has('control_number') ? 'is-invalid' : '' }}" type="text" name="control_number" id="control_number" value="{{ old('control_number', $controlNumber) }}" readonly required>
-                @if($errors->has('control_number'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('control_number') }}
-                    </div>
-                @endif
-                
-            </div>
-            
-            <div class="form-group">
-                <label class="required" for="claimant_name">{{ trans('cruds.patientRecord.fields.claimant_name') }}</label>
-                <input class="form-control {{ $errors->has('claimant_name') ? 'is-invalid' : '' }}" type="text" name="claimant_name" id="claimant_name" value="{{ old('claimant_name', '') }}" required>
-                @if($errors->has('claimant_name'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('claimant_name') }}
-                    </div>
-                @endif
-                
-            </div>
-            <div class="form-group">
-                <label class="required">{{ trans('cruds.patientRecord.fields.case_category') }}</label>
-                <select class="form-control {{ $errors->has('case_category') ? 'is-invalid' : '' }}" name="case_category" id="case_category" required>
-                    <option value disabled {{ old('case_category', null) === null ? 'selected' : '' }}>{{ trans('global.pleaseSelect') }}</option>
-                    @foreach(App\Models\PatientRecord::CASE_CATEGORY_SELECT as $key => $label)
-                        <option value="{{ $key }}" {{ old('case_category', '-Case Category-') === (string) $key ? 'selected' : '' }}>{{ $label }}</option>
-                    @endforeach
-                </select>
-                @if($errors->has('case_category'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('case_category') }}
-                    </div>
-                @endif
-                
-            </div>
-            <div class="form-group">
-                <label class="required" for="patient_name">{{ trans('cruds.patientRecord.fields.patient_name') }}</label>
-                <input class="form-control {{ $errors->has('patient_name') ? 'is-invalid' : '' }}" type="text" name="patient_name" id="patient_name" value="{{ old('patient_name', '') }}" required>
-                @if($errors->has('patient_name'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('patient_name') }}
-                    </div>
-                @endif
-                
-            </div>
-            <div class="form-group">
-                <label class="required" for="diagnosis">{{ trans('cruds.patientRecord.fields.diagnosis') }}</label>
-                <textarea class="form-control {{ $errors->has('diagnosis') ? 'is-invalid' : '' }}" name="diagnosis" id="diagnosis" required>{{ old('diagnosis') }}</textarea>
-                @if($errors->has('diagnosis'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('diagnosis') }}
-                    </div>
-                @endif
-                
-            </div>
-            <div class="form-group">
-                <label class="required" for="age">{{ trans('cruds.patientRecord.fields.age') }}</label>
-                <input class="form-control {{ $errors->has('age') ? 'is-invalid' : '' }}" type="number" name="age" id="age" value="{{ old('age', '') }}" step="1" required>
-                @if($errors->has('age'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('age') }}
-                    </div>
-                @endif
-                
-            </div>
-            <div class="form-group">
-                <label class="required" for="address">{{ trans('cruds.patientRecord.fields.address') }}</label>
-                <input class="form-control {{ $errors->has('address') ? 'is-invalid' : '' }}" type="text" name="address" id="address" value="{{ old('address', '') }}" required>
-                @if($errors->has('address'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('address') }}
-                    </div>
-                @endif
-                
-            </div>
-            <div class="form-group">
-                <label class="required" for="contact_number">{{ trans('cruds.patientRecord.fields.contact_number') }}</label>
-                <input class="form-control {{ $errors->has('contact_number') ? 'is-invalid' : '' }}" type="text" name="contact_number" id="contact_number" value="{{ old('contact_number', '') }}" required>
-                @if($errors->has('contact_number'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('contact_number') }}
-                    </div>
-                @endif
-                
-            </div>
-            <div class="form-group">
-                <label class="required" for="case_worker">{{ trans('cruds.patientRecord.fields.case_worker') }}</label>
-                <input class="form-control {{ $errors->has('case_worker') ? 'is-invalid' : '' }}" type="text" name="case_worker" id="case_worker" value="{{ old('case_worker', auth()->user()->name) }}" readonly required>
-                @if($errors->has('case_worker'))
-                    <div class="invalid-feedback">
-                        {{ $errors->first('case_worker') }}
-                    </div>
-                @endif
-                
-            </div>
-            <div class="form-group">
-                <button class="btn btn-danger" type="submit">
-                    {{ trans('global.save') }}
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save me-1"></i> Save
                 </button>
+                <a href="{{ route('admin.patient-records.index') }}" class="btn btn-secondary ms-2">
+                    <i class="fas fa-arrow-left me-1"></i> Back
+                </a>
             </div>
         </form>
     </div>
 </div>
-
-
-
-
 @endsection

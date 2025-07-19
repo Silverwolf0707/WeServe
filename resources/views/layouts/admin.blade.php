@@ -128,108 +128,123 @@
 
   <script>
     $(function () {
-      let copyButtonTrans = '{{ trans('global.datatables.copy') }}'
-      let csvButtonTrans = '{{ trans('global.datatables.csv') }}'
-      let excelButtonTrans = '{{ trans('global.datatables.excel') }}'
-      let pdfButtonTrans = '{{ trans('global.datatables.pdf') }}'
-      let printButtonTrans = '{{ trans('global.datatables.print') }}'
-      let colvisButtonTrans = '{{ trans('global.datatables.colvis') }}'
-      let selectAllButtonTrans = '{{ trans('global.select_all') }}'
-      let selectNoneButtonTrans = '{{ trans('global.deselect_all') }}'
+  let copyButtonTrans = '{{ trans('global.datatables.copy') }}'
+  let csvButtonTrans = '{{ trans('global.datatables.csv') }}'
+  let excelButtonTrans = '{{ trans('global.datatables.excel') }}'
+  let pdfButtonTrans = '{{ trans('global.datatables.pdf') }}'
+  let printButtonTrans = '{{ trans('global.datatables.print') }}'
+  let colvisButtonTrans = '{{ trans('global.datatables.colvis') }}'
+  let selectAllButtonTrans = '{{ trans('global.select_all') }}'
+  let selectNoneButtonTrans = '{{ trans('global.deselect_all') }}'
 
-      let languages = {
-        'en': 'https://cdn.datatables.net/plug-ins/1.10.19/i18n/English.json'
-      };
+  let languages = {
+    'en': 'https://cdn.datatables.net/plug-ins/1.10.19/i18n/English.json'
+  };
 
-      $.extend(true, $.fn.dataTable.Buttons.defaults.dom.button, { className: 'btn' })
-      $.extend(true, $.fn.dataTable.defaults, {
-  language: {
-    url: languages['{{ app()->getLocale() }}']
-  },
-  columnDefs: [{
-    orderable: false,
-    className: 'select-checkbox',
-    targets: 0
-  },
-  {
-    orderable: false,
-    searchable: false,
-    targets: -1
-  }],
-  select: {
-    style: 'multi+shift',
-    selector: 'td:first-child'
-  },
-  order: [],
-  scrollX: true,
-  pageLength: 100,
-  dom: 'lBfrtip<"actions">',
-  buttons: [{
-    extend: 'selectAll',
-    className: 'btn-primary',
-    text: selectAllButtonTrans,
-    exportOptions: {
-      columns: ':visible:not(:first-child):not(:last-child)' // Exclude first (checkbox) and last (action) columns
+  $.extend(true, $.fn.dataTable.Buttons.defaults.dom.button, { className: 'btn' });
+
+  $.extend(true, $.fn.dataTable.defaults, {
+    language: {
+      url: languages['{{ app()->getLocale() }}']
     },
-    action: function (e, dt) {
-      e.preventDefault()
-      dt.rows().deselect();
-      dt.rows({ search: 'applied' }).select();
-    }
-  },
-  {
-    extend: 'selectNone',
-    className: 'btn-primary',
-    text: selectNoneButtonTrans,
-    exportOptions: {
-      columns: ':visible:not(:first-child):not(:last-child)' // Exclude first (checkbox) and last (action) columns
-    }
-  },
-  {
-    extend: 'copy',
-    className: 'btn-default',
-    text: copyButtonTrans,
-    exportOptions: {
-      columns: ':visible:not(:first-child):not(:last-child)' // Exclude first (checkbox) and last (action) columns
-    }
-  },
-  {
-    extend: 'csv',
-    className: 'btn-default',
-    text: csvButtonTrans,
-    exportOptions: {
-      columns: ':visible:not(:first-child):not(:last-child)' // Exclude first (checkbox) and last (action) columns
-    }
-  },
-  {
-    extend: 'excel',
-    className: 'btn-default',
-    text: excelButtonTrans,
-    exportOptions: {
-      columns: ':visible:not(:first-child):not(:last-child)' // Exclude first (checkbox) and last (action) columns
-    }
-  },
-  {
-    extend: 'print',
-    className: 'btn-default',
-    text: printButtonTrans,
-    exportOptions: {
-      columns: ':visible:not(:first-child):not(:last-child)' // Exclude first (checkbox) and last (action) columns
-    }
-  },
-  {
-    extend: 'colvis',
-    className: 'btn-default',
-    text: colvisButtonTrans,
-    exportOptions: {
-      columns: ':visible'
-    }
-  }]
+    columnDefs: [
+      {
+        orderable: false,
+        className: 'select-checkbox',
+        targets: 0
+      },
+      {
+        orderable: false,
+        searchable: false,
+        targets: -1
+      }
+    ],
+    select: {
+      style: 'multi+shift',
+      selector: 'td:first-child'
+    },
+    order: [],
+    scrollX: true,
+    pageLength: 100,
+    dom: '<"row justify-content-between align-items-center mb-2"' +
+           '<"col-md-4"l>' +
+           '<"col-md-8 text-right"fB>' +
+         '>rtip',
+    buttons: [
+      {
+        extend: 'selectAll',
+        className: 'btn btn-primary',
+        text: '<i class="fas fa-check-square mr-1"></i> ' + selectAllButtonTrans,
+        exportOptions: {
+          columns: ':visible:not(:first-child):not(:last-child)'
+        },
+        action: function (e, dt) {
+          e.preventDefault();
+          dt.rows().deselect();
+          dt.rows({ search: 'applied' }).select();
+        }
+      },
+      {
+        extend: 'selectNone',
+        className: 'btn btn-primary',
+        text: '<i class="fas fa-square mr-1"></i> ' + selectNoneButtonTrans,
+        exportOptions: {
+          columns: ':visible:not(:first-child):not(:last-child)'
+        }
+      },
+      {
+        extend: 'collection',
+        text: '<i class="fas fa-ellipsis-h"></i> More',
+        className: 'btn btn-secondary ml-2',
+        buttons: [
+          {
+            extend: 'copy',
+            className: 'dropdown-item',
+            text: '<i class="fas fa-copy mr-2"></i> ' + copyButtonTrans,
+            exportOptions: {
+              columns: ':visible:not(:first-child):not(:last-child)'
+            }
+          },
+          {
+            extend: 'csv',
+            className: 'dropdown-item',
+            text: '<i class="fas fa-file-csv mr-2"></i> ' + csvButtonTrans,
+            exportOptions: {
+              columns: ':visible:not(:first-child):not(:last-child)'
+            }
+          },
+          {
+            extend: 'excel',
+            className: 'dropdown-item',
+            text: '<i class="fas fa-file-excel mr-2"></i> ' + excelButtonTrans,
+            exportOptions: {
+              columns: ':visible:not(:first-child):not(:last-child)'
+            }
+          },
+          {
+            extend: 'print',
+            className: 'dropdown-item',
+            text: '<i class="fas fa-print mr-2"></i> ' + printButtonTrans,
+            exportOptions: {
+              columns: ':visible:not(:first-child):not(:last-child)'
+            }
+          },
+          {
+            extend: 'colvis',
+            className: 'dropdown-item',
+            text: '<i class="fas fa-columns mr-2"></i> ' + colvisButtonTrans,
+            exportOptions: {
+              columns: ':visible'
+            }
+          }
+        ]
+      }
+    ]
+  });
+
+  $.fn.dataTable.ext.classes.sPageButton = '';
 });
 
-
-      $.fn.dataTable.ext.classes.sPageButton = '';
-    });
   </script>
   @yield('scripts')
   <!-- User Profile Modal -->

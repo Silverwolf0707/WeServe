@@ -43,6 +43,42 @@
 </div>
 
 @endsection
+@section('styles')
+<style>
+    /* Custom styles specific to Time Series page */
+    #dateRangePicker,
+    #caseCategorySelector {
+        min-height: 38px;
+    }
+
+    #timeSeriesChart {
+        background-color: #fff;
+        border: 1px solid #dee2e6;
+        padding: 10px;
+        border-radius: 0.5rem;
+    }
+
+    #summaryReport h6 {
+        font-weight: 600;
+    }
+
+    #summaryReport ul li {
+        font-size: 0.875rem;
+    }
+
+    .card-header h5 {
+        font-weight: bold;
+        color: #0d6efd;
+    }
+
+    .select2-container--default .select2-selection--single {
+        height: 38px;
+        border: 1px solid #0d6efd;
+        border-radius: 0.375rem;
+        padding: 5px 12px;
+    }
+</style>
+@endsection
 
 @section('scripts')
 @parent
