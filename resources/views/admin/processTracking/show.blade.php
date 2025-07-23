@@ -9,6 +9,7 @@
         <div class="card-body">
             <div class="row mb-4">
                 <div class="col-md-6">
+                    <h6 class="text-primary">Application Info</h6>
                     <table class="table table-sm table-borderless">
                         <tr>
                             <th>Control Number:</th>
@@ -22,13 +23,31 @@
                             <th>Claimant Name:</th>
                             <td>{{ $patient->claimant_name }}</td>
                         </tr>
+                    </table>
+                </div>
+
+                <div class="col-md-6">
+                    <h6 class="text-primary">Process Status</h6>
+                    <table class="table table-sm table-borderless">
                         <tr>
                             <th>Case Worker:</th>
                             <td>{{ $patient->case_worker }}</td>
                         </tr>
                         <tr>
-                            <th>Status:</th>
-                            <td>{{ $latestStatus->status }}</td>
+                            <th>Current Status:</th>
+                            <td>
+                                <span class="badge badge-info">{{ $latestStatus->status }}</span>
+                            </td>
+                        </tr>
+                        @if (!empty($latestStatus->remarks))
+                            <tr>
+                                <th>Remarks:</th>
+                                <td>{{ $latestStatus->remarks }}</td>
+                            </tr>
+                        @endif
+                        <tr>
+                            <th>Updated At:</th>
+                            <td>{{ $latestStatus->updated_at->format('F j, Y g:i A') }}</td>
                         </tr>
                     </table>
                 </div>
@@ -37,6 +56,15 @@
             {{-- ✅ VISUAL PROCESS TRACKER --}}
             @php
                 $steps = ['Submitted', 'Approved', 'Budget Allocated', 'DV Submitted', 'Disbursed'];
+
+                $stepLabels = [
+                    'Submitted' => 'CSWD Office',
+                    'Approved' => 'Mayor\'s Office',
+                    'Budget Allocated' => 'Budget Office',
+                    'DV Submitted' => 'Accounting Office',
+                    'Disbursed' => 'Treasury Office',
+                ];
+
                 $currentStatus = $latestStatus->status;
                 $currentIndex = array_search($currentStatus, $steps);
             @endphp
@@ -50,7 +78,7 @@
                     padding: 1.5rem;
                     background: #fff;
                     border-radius: 10px;
-                    box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+
                 }
 
                 .step {
@@ -101,8 +129,8 @@
                 @foreach ($steps as $index => $step)
                     <div
                         class="step 
-        {{ $latestStatus->status !== 'Rejected' && $index < $currentIndex ? 'completed' : '' }} 
-        {{ $latestStatus->status !== 'Rejected' && $index === $currentIndex ? 'active' : '' }}">
+                                            {{ $latestStatus->status !== 'Rejected' && $index < $currentIndex ? 'completed' : '' }} 
+                                            {{ $latestStatus->status !== 'Rejected' && $index === $currentIndex ? 'active' : '' }}">
                         <div class="circle">
                             @if ($latestStatus->status !== 'Rejected' && $index <= $currentIndex)
                                 <i class="fas fa-check"></i>
@@ -110,152 +138,201 @@
                                 {{ $index + 1 }}
                             @endif
                         </div>
-                        <div class="label">{{ $step }}</div>
+                        <div class="label">{{ $stepLabels[$step] ?? $step }}</div>
                     </div>
                 @endforeach
             </div>
             {{-- ✅ END PROCESS TRACKER --}}
 
-           {{-- PROCESS SUMMARY --}}
-@if ($patient->statusLogs->count())
-    <style>
-       
-        .status-submitted,
-        .status-approved,
-        .status-budget-allocated,
-        .status-dv-submitted,
-        .status-disbursed {
-            background-color: #b2dfb2;
-            color: #0b3e0b;
-        }
+            {{-- PROCESS SUMMARY --}}
+            @if ($patient->statusLogs->count())
+                <style>
+                    .status-submitted,
+                    .status-approved,
+                    .status-budget-allocated,
+                    .status-dv-submitted,
+                    .status-disbursed {
+                        background-color: #b2dfb2;
+                        color: #0b3e0b;
+                    }
 
-        .status-rejected {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
+                    .status-rejected {
+                        background-color: #f8d7da;
+                        color: #721c24;
+                    }
 
-        .list-group-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+                    .list-group-item {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    }
 
-        .list-group-item i {
-            cursor: pointer;
-        }
-    </style>
+                    .list-group-item i {
+                        cursor: pointer;
+                    }
+                </style>
 
-    <div class="mb-4">
-        <h6 class="text-primary">📋 Process Summary</h6>
-        <ul class="list-group">
-            @foreach ($patient->statusLogs as $log)
-                @php
-                    $statusKey = strtolower(str_replace(' ', '-', $log->status));
-                    $statusClass = 'status-' . $statusKey;
-                @endphp
-                <li class="list-group-item {{ $statusClass }}">
-                    <div>
-                        <strong>{{ ucfirst($log->status) }}:</strong>
-                        {{ $log->user->name ?? 'System' }} -
-                        {{ \Carbon\Carbon::parse($log->created_at)->format('F j, Y g:i A') }}<br>
-                        <em>Remarks:</em> {{ $log->remarks ?? '-' }}
+                <div class="mb-4">
+                    <h6 class="text-primary">📋 Process Summary</h6>
+                    <ul class="list-group">
+                        @foreach ($patient->statusLogs as $log)
+                            @php
+                                $statusKey = strtolower(str_replace(' ', '-', $log->status));
+                                $statusClass = 'status-' . $statusKey;
+                            @endphp
+                            <li class="list-group-item {{ $statusClass }}">
+                                <div>
+                                    <strong>{{ ucfirst($log->status) }}:</strong>
+                                    {{ $log->user->name ?? 'System' }} -
+                                    {{ \Carbon\Carbon::parse($log->created_at)->format('F j, Y g:i A') }}<br>
+                                    <em>Remarks:</em> {{ $log->remarks ?? '-' }}
+                                </div>
+                                <div>
+                                    <a href="#" data-toggle="modal" data-target="#processModal" title="View Action">
+                                        <i class="fas fa-eye text-primary"></i>
+                                    </a>
+                                </div>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            <!-- Process Summary MODAL -->
+            <div class="modal fade" id="processModal" tabindex="-1" aria-labelledby="processModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title" id="processModalLabel">📤 Process Action</h5>
+                            <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+
+                        <form enctype="multipart/form-data">
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <label for="subject">📌 Subject</label>
+                                    <input type="text" class="form-control" id="subject" placeholder="Enter subject"
+                                        required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="action">📁 Action</label>
+                                    <select class="form-control" id="action" required>
+                                        <option value="Forward">Forward</option>
+                                        <option value="Return">Return</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="department">🏢 Department</label>
+                                    <select class="form-control" id="department" required>
+                                        <option value="CSWD">CSWD</option>
+                                        <option value="Mayor's Office">Mayor's Office</option>
+                                        <option value="Budget Office">Budget Office</option>
+                                        <option value="Accounting">Accounting</option>
+                                        <option value="Treasury">Treasury</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="remarks">📝 Remarks</label>
+                                    <textarea class="form-control" id="remarks" rows="3"
+                                        placeholder="Add any remarks here..."></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="document">📎 Upload Document</label>
+                                    <input type="file" class="form-control-file" id="document"
+                                        accept=".pdf,.doc,.docx,.jpg,.png,.jpeg">
+                                    <small class="text-muted">Accepted formats: PDF, DOCX, JPG, PNG</small>
+                                </div>
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="submit" class="btn btn-success">Submit</button>
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            </div>
+                        </form>
                     </div>
-                    <div>
-                        <a href="#" data-toggle="modal" data-target="#processModal"
-                           data-department="{{ strtolower(Auth::user()->department) }}"
-                           title="View Action">
-                            <i class="fas fa-eye text-primary"></i>
-                        </a>
-                    </div>
-                </li>
-            @endforeach
-        </ul>
-    </div>
-@endif
+                </div>
+            </div>
+            <!-- Rollback Modal -->
+            <div class="modal fade" id="rollbackModal" tabindex="-1" aria-labelledby="rollbackModalLabel"
+                aria-hidden="true">
+                <div class="modal-dialog">
+                    <form action="{{ route('admin.process-tracking.rollback', $patient->id) }}" method="POST">
+                        @csrf
+                        <div class="modal-content">
+                            <div class="modal-header bg-danger text-white">
+                                <h5 class="modal-title" id="rollbackModalLabel">Rollback Process</h5>
+                                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
 
-<!-- MODAL -->
-<div class="modal fade" id="processModal" tabindex="-1" aria-labelledby="processModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="processModalLabel">📤 Process Action</h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <label for="rollback_to">Rollback to</label>
+                                    <select class="form-control" name="rollback_to" id="rollback_to" required>
+                                        @php
+                                            $previousStatuses = $patient->statusLogs
+                                                ->pluck('status')
+                                                ->unique()
+                                                ->filter(function ($status) use ($latestStatus) {
+                                                    return $status !== $latestStatus->status;
+                                                });
+                                        @endphp
+
+                                        @foreach ($previousStatuses as $status)
+                                            <option value="{{ $status }}">{{ $status }}</option>
+                                        @endforeach
+
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="rollback_remarks">Remarks</label>
+                                    <textarea name="rollback_remarks" class="form-control" id="rollback_remarks" rows="3"
+                                        required></textarea>
+                                </div>
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="submit" class="btn btn-danger">Rollback</button>
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
 
-            <form enctype="multipart/form-data">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="subject">📌 Subject</label>
-                        <input type="text" class="form-control" id="subject" placeholder="Enter subject" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="action">📁 Action</label>
-                        <select class="form-control" id="action" required>
-                            <option value="Forward">Forward</option>
-                            <option value="Return">Return</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="department">🏢 Department</label>
-                        <select class="form-control" id="department" required>
-                            <option value="CSWD">CSWD</option>
-                            <option value="Mayor's Office">Mayor's Office</option>
-                            <option value="Budget Office">Budget Office</option>
-                            <option value="Accounting">Accounting</option>
-                            <option value="Treasury">Treasury</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="remarks">📝 Remarks</label>
-                        <textarea class="form-control" id="remarks" rows="3" placeholder="Add any remarks here..."></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="document">📎 Upload Document</label>
-                        <input type="file" class="form-control-file" id="document" accept=".pdf,.doc,.docx,.jpg,.png,.jpeg">
-                        <small class="text-muted">Accepted formats: PDF, DOCX, JPG, PNG</small>
-                    </div>
-                </div>
-
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-success">Submit</button>
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
 
+            @push('scripts')
+                <script>
+                    const departments = {
+                        'accounting': ['CSWD', 'Mayor\'s Office', 'Budget Office', 'Treasury'],
+                        'cswd': ['Accounting', 'Mayor\'s Office'],
+                        'mayor\'s office': ['Accounting', 'CSWD', 'Budget Office'],
+                        'budget office': ['CSWD', 'Accounting'],
+                        'treasury': ['CSWD', 'Mayor\'s Office']
+                    };
 
-@push('scripts')
-<script>
-    const departments = {
-        'accounting': ['CSWD', 'Mayor\'s Office', 'Budget Office', 'Treasury'],
-        'cswd': ['Accounting', 'Mayor\'s Office'],
-        'mayor\'s office': ['Accounting', 'CSWD', 'Budget Office'],
-        'budget office': ['CSWD', 'Accounting'],
-        'treasury': ['CSWD', 'Mayor\'s Office']
-    };
+                    $('#processModal').on('show.bs.modal', function (event) {
+                        const button = $(event.relatedTarget);
+                        const userDept = button.data('department');
+                        const options = departments[userDept] || [];
+                        const deptSelect = $('#department');
 
-    $('#processModal').on('show.bs.modal', function (event) {
-        const button = $(event.relatedTarget);
-        const userDept = button.data('department');
-        const options = departments[userDept] || [];
-        const deptSelect = $('#department');
-
-        deptSelect.empty();
-        options.forEach(dept => {
-            deptSelect.append(`<option value="${dept}">${dept}</option>`);
-        });
-    });
-</script>
-@endpush
+                        deptSelect.empty();
+                        options.forEach(dept => {
+                            deptSelect.append(`<option value="${dept}">${dept}</option>`);
+                        });
+                    });
+                </script>
+            @endpush
 
             @php $isFinalized = in_array(optional($latestStatus)->status, ['Approved', 'Rejected']); @endphp
 
@@ -292,12 +369,15 @@
                             <button type="button" class="btn btn-warning" data-toggle="modal" data-target="#budgetModal">
                                 Allocate Budget
                             </button>
+                            <button class="btn btn-outline-danger" data-toggle="modal" data-target="#rollbackModal">
+                                <i class="fas fa-undo-alt me-1"></i> Rollback Process
+                            </button>
 
-                            <div class="modal fade" id="budgetModal" tabindex="-1" role="dialog"
-                                aria-labelledby="budgetModalLabel" aria-hidden="true">
+
+                            <div class="modal fade" id="budgetModal" tabindex="-1" role="dialog" aria-labelledby="budgetModalLabel"
+                                aria-hidden="true">
                                 <div class="modal-dialog" role="document">
-                                    <form action="{{ route('admin.process-tracking.storeBudget', $patient->id) }}"
-                                        method="POST">
+                                    <form action="{{ route('admin.process-tracking.storeBudget', $patient->id) }}" method="POST">
                                         @csrf
                                         <div class="modal-content">
                                             <div class="modal-header bg-primary text-white">
@@ -310,8 +390,8 @@
                                             <div class="modal-body">
                                                 <div class="form-group">
                                                     <label for="amount">Amount (₱)</label>
-                                                    <input type="number" step="0.01" name="amount" id="amount"
-                                                        class="form-control" required>
+                                                    <input type="number" step="0.01" name="amount" id="amount" class="form-control"
+                                                        required>
                                                 </div>
                                                 <div class="form-group">
                                                     <label for="remarks">Remarks</label>
@@ -320,8 +400,7 @@
                                             </div>
                                             <div class="modal-footer">
                                                 <button type="submit" class="btn btn-success">Allocate</button>
-                                                <button type="button" class="btn btn-secondary"
-                                                    data-dismiss="modal">Cancel</button>
+                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                                             </div>
                                         </div>
                                     </form>
@@ -351,8 +430,7 @@
                             <div class="modal fade" id="dvModal" tabindex="-1" role="dialog" aria-labelledby="dvModalLabel"
                                 aria-hidden="true">
                                 <div class="modal-dialog" role="document">
-                                    <form action="{{ route('admin.process-tracking.storeDV', $patient->id) }}"
-                                        method="POST">
+                                    <form action="{{ route('admin.process-tracking.storeDV', $patient->id) }}" method="POST">
                                         @csrf
                                         <div class="modal-content">
                                             <div class="modal-header bg-primary text-white">
@@ -365,19 +443,16 @@
                                             <div class="modal-body">
                                                 <div class="form-group">
                                                     <label for="dv_code">DV Code</label>
-                                                    <input type="text" name="dv_code" id="dv_code" class="form-control"
-                                                        required>
+                                                    <input type="text" name="dv_code" id="dv_code" class="form-control" required>
                                                 </div>
                                                 <div class="form-group">
                                                     <label for="dv_date">DV Date</label>
-                                                    <input type="date" name="dv_date" id="dv_date" class="form-control"
-                                                        required>
+                                                    <input type="date" name="dv_date" id="dv_date" class="form-control" required>
                                                 </div>
                                             </div>
                                             <div class="modal-footer">
                                                 <button type="submit" class="btn btn-success">Submit DV</button>
-                                                <button type="button" class="btn btn-secondary"
-                                                    data-dismiss="modal">Cancel</button>
+                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                                             </div>
                                         </div>
                                     </form>
@@ -396,11 +471,11 @@
 
             @can('treasury_disburse')
                 @if (
-                    $latestStatus->status === 'DV Submitted' &&
+                        $latestStatus->status === 'DV Submitted' &&
                         $patient->budgetAllocation &&
-                        $patient->budgetAllocation->budget_status !== 'Disbursed')
-                    <form action="{{ route('admin.process-tracking.disburseBudget', $patient->id) }}" method="POST"
-                        class="mt-4">
+                        $patient->budgetAllocation->budget_status !== 'Disbursed'
+                    )
+                    <form action="{{ route('admin.process-tracking.disburseBudget', $patient->id) }}" method="POST" class="mt-4">
                         @csrf
                         <button type="submit" class="btn btn-primary">Mark as Disbursed</button>
                     </form>

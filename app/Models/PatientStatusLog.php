@@ -14,6 +14,10 @@ class PatientStatusLog extends Model
     const STATUS_SUBMITTED = 'Submitted';
     const STATUS_APPROVED = 'Approved';
     const STATUS_REJECTED = 'Rejected';
+    const STATUS_BUDGET_ALLOCATED = 'Budget Allocated';
+    const STATUS_DV_SUBMITTED = 'DV Submitted';
+    const STATUS_DISBURSED = 'Disbursed';
+
 
     protected $fillable = [
         'patient_id',
@@ -34,4 +38,3 @@ class PatientStatusLog extends Model
         return $this->belongsTo(User::class);
     }
 }
-

@@ -38,27 +38,25 @@
 
                                 @if ($currentStatus === 'Submitted')
                                     <span class="badge d-inline-flex align-items-center" style="background-color: #007BFF; padding: 6px 12px; border-radius: 50px; color: white;">
-                                        <i class="fas fa-paper-plane me-2"></i> Submitted
+                                        <i class="fas fa-paper-plane me-2" style="margin-right: 5px"></i> Submitted
                                     </span>
                                 @elseif ($currentStatus === 'Approved')
                                     <span class="badge d-inline-flex align-items-center" style="background-color: #2e7d32; padding: 6px 12px; border-radius: 50px; color: white;">
-                                        <i class="fas fa-thumbs-up me-2"></i> Approved
+                                        <i class="fas fa-thumbs-up me-2" style="margin-right: 5px"></i> Approved
                                     </span>
                                 @elseif ($currentStatus === 'Rejected')
                                     <span class="badge d-inline-flex align-items-center" style="background-color: #c62828; padding: 6px 12px; border-radius: 50px; color: white;">
                                         <i class="fas fa-ban me-2"></i> Rejected
                                     </span>
-                                @elseif ($currentStatus === 'For Review')
+                                @elseif ($currentStatus === 'Budget Allocated')
                                     <span class="badge d-inline-flex align-items-center" style="background-color: #ffc107; padding: 6px 12px; border-radius: 50px; color: black;">
-                                        <i class="fas fa-search me-2"></i> For Review
-                                    </span>
-                                @elseif ($currentStatus === 'In Progress')
+                                        <i class="fas fa-money" style="margin-right: 5px"></i> Budget Allocated
+                                @elseif ($currentStatus === 'DV Submitted')
                                     <span class="badge d-inline-flex align-items-center" style="background-color: #17a2b8; padding: 6px 12px; border-radius: 50px; color: white;">
-                                        <i class="fas fa-spinner me-2"></i> In Progress
-                                    </span>
-                                @elseif ($currentStatus === 'Completed')
+                                        <i class="fas fa-file" style="margin-right: 5px"></i> DV Submitted
+                                @elseif ($currentStatus === 'Disbursed')
                                     <span class="badge d-inline-flex align-items-center" style="background-color: #6f42c1; padding: 6px 12px; border-radius: 50px; color: white;">
-                                        <i class="fas fa-check-double me-2"></i> Completed
+                                        <i class="fas fa-paper-plane" style="margin-right: 5px"></i> Disbursed
                                     </span>
                                 @else
                                     <span class="badge bg-secondary d-inline-flex align-items-center" style="padding: 6px 12px; border-radius: 50px;">

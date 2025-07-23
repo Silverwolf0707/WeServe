@@ -77,7 +77,12 @@ class PatientRecordsController extends Controller
                     $message .= $remainingDays . ' ' . Str::plural('day', $remainingDays);
                 }
 
-                return redirect()->back()->with('error', $message . '.');
+                return redirect()->back()->with('toast', [
+                    'type' => 'danger',
+                    'title' => 'Eligibility Check',
+                    'message' => $message . '.',
+                    'time' => now()->diffForHumans(), 
+                ]);
             }
         }
 

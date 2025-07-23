@@ -88,7 +88,7 @@ class ProcessTrackingController extends Controller
         PatientStatusLog::create([
             'patient_id' => $patient->id,
             'user_id' => Auth::id(),
-            'status' => 'DV Submitted',
+            'status' => PatientStatusLog::STATUS_DV_SUBMITTED,
             'remarks' => 'DV recorded: ' . $request->dv_code,
         ]);
 
@@ -121,7 +121,7 @@ class ProcessTrackingController extends Controller
         PatientStatusLog::create([
             'patient_id' => $patient->id,
             'user_id' => Auth::id(),
-            'status' => 'Budget Allocated',
+            'status' => PatientStatusLog::STATUS_BUDGET_ALLOCATED,
             'remarks' => 'Budget allocated: ₱' . number_format($request->amount, 2),
         ]);
 
@@ -145,11 +145,35 @@ class ProcessTrackingController extends Controller
         PatientStatusLog::create([
             'patient_id' => $id,
             'user_id' => Auth::id(),
-            'status' => 'Disbursed',
+            'status' => PatientStatusLog::STATUS_DISBURSED,
             'remarks' => 'Budget marked as disbursed by Treasury.',
         ]);
 
         return redirect()->route('admin.process-tracking.show', $id)
             ->with('status', 'Budget status updated to Disbursed.');
     }
+   public function rollback(Request $request, PatientRecord $patient)
+{
+    $request->validate([
+        'rollback_to' => 'required|string',
+        'rollback_remarks' => 'required|string',
+    ]);
+
+    $validStatuses = $patient->statusLogs->pluck('status')->unique();
+
+    if (!$validStatuses->contains($request->rollback_to)) {
+        return back()->with('error', 'Invalid rollback target.');
+    }
+
+    // Proceed with rollback
+    $patient->statusLogs()->create([
+        'status' => $request->rollback_to,
+        'remarks' => '[ROLLED BACK] ' . $request->rollback_remarks,
+        'user_id' => auth()->id(),
+    ]);
+
+    return redirect()->back()->with('success', 'Process rolled back to ' . $request->rollback_to);
+}
+
+
 }

@@ -27,6 +27,7 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.5.1/min/dropzone.min.css" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/jquery.perfect-scrollbar/1.5.0/css/perfect-scrollbar.min.css"
     rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="{{ asset('css/custom.css') }}" rel="stylesheet" />
   @yield('styles')
 </head>
@@ -35,6 +36,31 @@
     document.querySelector('body').classList.toggle('c-sidebar-minimized');
   });
 </script>
+@if(session('toast'))
+  @php
+    $toast = session('toast');
+    $bgClass = match ($toast['type']) {
+    'success' => 'bg-success text-white',
+    'danger' => 'bg-danger text-white',
+    'warning' => 'bg-warning text-dark',
+    'info' => 'bg-info text-dark',
+    default => 'bg-secondary text-white',
+    };
+  @endphp
+
+  <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1055">
+    <div id="liveToast" class="toast {{ $bgClass }} hide" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="toast-header bg-white text-dark"> <!-- Keep toast-header separate from bgClass -->
+      <strong class="me-auto">{{ $toast['title'] ?? 'Notice' }}</strong>
+      <small>{{ $toast['time'] ?? '' }}</small>
+      <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+    <div class="toast-body">
+      {{ $toast['message'] }}
+    </div>
+    </div>
+  </div>
+@endif
 
 
 <body class="c-app c-sidebar-show c-sidebar-lg-show">
@@ -53,21 +79,21 @@
       </button>
 
       <ul class="c-header-nav ml-auto">
-        @include('partials.profile') 
+        @include('partials.profile')
         @if(count(config('panel.available_languages', [])) > 1)
-      <li class="c-header-nav-item dropdown d-md-down-none">
-        <a class="c-header-nav-link" data-toggle="dropdown" href="#" role="button" aria-haspopup="true"
-        aria-expanded="false">
-        {{ strtoupper(app()->getLocale()) }}
-        </a>
-        <div class="dropdown-menu dropdown-menu-right">
-        @foreach(config('panel.available_languages') as $langLocale => $langName)
-      <a class="dropdown-item"
-        href="{{ url()->current() }}?change_language={{ $langLocale }}">{{ strtoupper($langLocale) }}
-        ({{ $langName }})</a>
-    @endforeach
-        </div>
-      </li>
+        <li class="c-header-nav-item dropdown d-md-down-none">
+          <a class="c-header-nav-link" data-toggle="dropdown" href="#" role="button" aria-haspopup="true"
+          aria-expanded="false">
+          {{ strtoupper(app()->getLocale()) }}
+          </a>
+          <div class="dropdown-menu dropdown-menu-right">
+          @foreach(config('panel.available_languages') as $langLocale => $langName)
+        <a class="dropdown-item"
+          href="{{ url()->current() }}?change_language={{ $langLocale }}">{{ strtoupper($langLocale) }}
+          ({{ $langName }})</a>
+        @endforeach
+          </div>
+        </li>
     @endif
       </ul>
     </header>
@@ -118,132 +144,133 @@
   <script src="https://cdn.datatables.net/select/1.3.0/js/dataTables.select.min.js"></script>
   <script src="https://cdn.ckeditor.com/ckeditor5/16.0.0/classic/ckeditor.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.2/moment.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.5/js/select2.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.5.1/min/dropzone.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/flowbite@1.6.3/dist/flowbite.min.js"></script>
   <script src="https://unpkg.com/@panzoom/panzoom@9.4.0/dist/panzoom.min.js"></script>
-
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="{{ asset('js/main.js') }}"></script>
 
   <script>
     $(function () {
-  let copyButtonTrans = '{{ trans('global.datatables.copy') }}'
-  let csvButtonTrans = '{{ trans('global.datatables.csv') }}'
-  let excelButtonTrans = '{{ trans('global.datatables.excel') }}'
-  let pdfButtonTrans = '{{ trans('global.datatables.pdf') }}'
-  let printButtonTrans = '{{ trans('global.datatables.print') }}'
-  let colvisButtonTrans = '{{ trans('global.datatables.colvis') }}'
-  let selectAllButtonTrans = '{{ trans('global.select_all') }}'
-  let selectNoneButtonTrans = '{{ trans('global.deselect_all') }}'
+      let copyButtonTrans = '{{ trans('global.datatables.copy') }}'
+      let csvButtonTrans = '{{ trans('global.datatables.csv') }}'
+      let excelButtonTrans = '{{ trans('global.datatables.excel') }}'
+      let pdfButtonTrans = '{{ trans('global.datatables.pdf') }}'
+      let printButtonTrans = '{{ trans('global.datatables.print') }}'
+      let colvisButtonTrans = '{{ trans('global.datatables.colvis') }}'
+      let selectAllButtonTrans = '{{ trans('global.select_all') }}'
+      let selectNoneButtonTrans = '{{ trans('global.deselect_all') }}'
 
-  let languages = {
-    'en': 'https://cdn.datatables.net/plug-ins/1.10.19/i18n/English.json'
-  };
+      let languages = {
+        'en': 'https://cdn.datatables.net/plug-ins/1.10.19/i18n/English.json'
+      };
 
-  $.extend(true, $.fn.dataTable.Buttons.defaults.dom.button, { className: 'btn' });
+      $.extend(true, $.fn.dataTable.Buttons.defaults.dom.button, { className: 'btn' });
 
-  $.extend(true, $.fn.dataTable.defaults, {
-    language: {
-      url: languages['{{ app()->getLocale() }}']
-    },
-    columnDefs: [
-      {
-        orderable: false,
-        className: 'select-checkbox',
-        targets: 0
-      },
-      {
-        orderable: false,
-        searchable: false,
-        targets: -1
-      }
-    ],
-    select: {
-      style: 'multi+shift',
-      selector: 'td:first-child'
-    },
-    order: [],
-    scrollX: true,
-    pageLength: 100,
-    dom: '<"row justify-content-between align-items-center mb-2"' +
-           '<"col-md-4"l>' +
-           '<"col-md-8 text-right"fB>' +
-         '>rtip',
-    buttons: [
-      {
-        extend: 'selectAll',
-        className: 'btn btn-primary',
-        text: '<i class="fas fa-check-square mr-1"></i> ' + selectAllButtonTrans,
-        exportOptions: {
-          columns: ':visible:not(:first-child):not(:last-child)'
+      $.extend(true, $.fn.dataTable.defaults, {
+        language: {
+          url: languages['{{ app()->getLocale() }}']
         },
-        action: function (e, dt) {
-          e.preventDefault();
-          dt.rows().deselect();
-          dt.rows({ search: 'applied' }).select();
-        }
-      },
-      {
-        extend: 'selectNone',
-        className: 'btn btn-primary',
-        text: '<i class="fas fa-square mr-1"></i> ' + selectNoneButtonTrans,
-        exportOptions: {
-          columns: ':visible:not(:first-child):not(:last-child)'
-        }
-      },
-      {
-        extend: 'collection',
-        text: '<i class="fas fa-ellipsis-h"></i> More',
-        className: 'btn btn-secondary ml-2',
+        columnDefs: [
+          {
+            orderable: false,
+            className: 'select-checkbox',
+            targets: 0
+          },
+          {
+            orderable: false,
+            searchable: false,
+            targets: -1
+          }
+        ],
+        select: {
+          style: 'multi+shift',
+          selector: 'td:first-child'
+        },
+        order: [],
+        scrollX: true,
+        pageLength: 100,
+        dom: '<"row justify-content-between align-items-center mb-2"' +
+          '<"col-md-4"l>' +
+          '<"col-md-8 text-right"fB>' +
+          '>rtip',
         buttons: [
           {
-            extend: 'copy',
-            className: 'dropdown-item',
-            text: '<i class="fas fa-copy mr-2"></i> ' + copyButtonTrans,
+            extend: 'selectAll',
+            className: 'btn btn-primary',
+            text: '<i class="fas fa-check-square mr-1"></i> ' + selectAllButtonTrans,
+            exportOptions: {
+              columns: ':visible:not(:first-child):not(:last-child)'
+            },
+            action: function (e, dt) {
+              e.preventDefault();
+              dt.rows().deselect();
+              dt.rows({ search: 'applied' }).select();
+            }
+          },
+          {
+            extend: 'selectNone',
+            className: 'btn btn-primary',
+            text: '<i class="fas fa-square mr-1"></i> ' + selectNoneButtonTrans,
             exportOptions: {
               columns: ':visible:not(:first-child):not(:last-child)'
             }
           },
           {
-            extend: 'csv',
-            className: 'dropdown-item',
-            text: '<i class="fas fa-file-csv mr-2"></i> ' + csvButtonTrans,
-            exportOptions: {
-              columns: ':visible:not(:first-child):not(:last-child)'
-            }
-          },
-          {
-            extend: 'excel',
-            className: 'dropdown-item',
-            text: '<i class="fas fa-file-excel mr-2"></i> ' + excelButtonTrans,
-            exportOptions: {
-              columns: ':visible:not(:first-child):not(:last-child)'
-            }
-          },
-          {
-            extend: 'print',
-            className: 'dropdown-item',
-            text: '<i class="fas fa-print mr-2"></i> ' + printButtonTrans,
-            exportOptions: {
-              columns: ':visible:not(:first-child):not(:last-child)'
-            }
-          },
-          {
-            extend: 'colvis',
-            className: 'dropdown-item',
-            text: '<i class="fas fa-columns mr-2"></i> ' + colvisButtonTrans,
-            exportOptions: {
-              columns: ':visible'
-            }
+            extend: 'collection',
+            text: '<i class="fas fa-ellipsis-h"></i> More',
+            className: 'btn btn-secondary ml-2',
+            buttons: [
+              {
+                extend: 'copy',
+                className: 'dropdown-item',
+                text: '<i class="fas fa-copy mr-2"></i> ' + copyButtonTrans,
+                exportOptions: {
+                  columns: ':visible:not(:first-child):not(:last-child)'
+                }
+              },
+              {
+                extend: 'csv',
+                className: 'dropdown-item',
+                text: '<i class="fas fa-file-csv mr-2"></i> ' + csvButtonTrans,
+                exportOptions: {
+                  columns: ':visible:not(:first-child):not(:last-child)'
+                }
+              },
+              {
+                extend: 'excel',
+                className: 'dropdown-item',
+                text: '<i class="fas fa-file-excel mr-2"></i> ' + excelButtonTrans,
+                exportOptions: {
+                  columns: ':visible:not(:first-child):not(:last-child)'
+                }
+              },
+              {
+                extend: 'print',
+                className: 'dropdown-item',
+                text: '<i class="fas fa-print mr-2"></i> ' + printButtonTrans,
+                exportOptions: {
+                  columns: ':visible:not(:first-child):not(:last-child)'
+                }
+              },
+              {
+                extend: 'colvis',
+                className: 'dropdown-item',
+                text: '<i class="fas fa-columns mr-2"></i> ' + colvisButtonTrans,
+                exportOptions: {
+                  columns: ':visible'
+                }
+              }
+            ]
           }
         ]
-      }
-    ]
-  });
+      });
 
-  $.fn.dataTable.ext.classes.sPageButton = '';
-});
+      $.fn.dataTable.ext.classes.sPageButton = '';
+    });
 
   </script>
   @yield('scripts')
@@ -263,11 +290,12 @@
           <strong>Role:</strong>
           @foreach(Auth::user()->roles as $role)
         {{ $role->title }} @if(!$loop->last), @endif
-        @endforeach<script>
-  document.getElementById('toggleSidebar')?.addEventListener('click', function () {
-    document.querySelector('body').classList.toggle('c-sidebar-minimized');
-  });
-</script>
+      @endforeach
+          <script>
+            document.getElementById('toggleSidebar')?.addEventListener('click', function () {
+              document.querySelector('body').classList.toggle('c-sidebar-minimized');
+            });
+          </script>
 
           <br />
 
