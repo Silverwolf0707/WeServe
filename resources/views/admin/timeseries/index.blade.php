@@ -1,54 +1,17 @@
 @extends('layouts.admin')
 
 @section('content')
-<div class="card">
-    <div class="card-header">
-        <h5 class="mb-1">{{ __('Time Series Analytics') }}</h5>
-        <small class="text-muted">Visualize trends, seasonality, and variations in patient application categories over
-            time.</small>
-    </div>
+      @include('admin.timeseries.stl_decomposition')
+      @include('admin.timeseries.statistics')
+@endsection      
 
-    <div class="card-body">
-        <div class="row mb-3 align-items-center">
-            <div class="col-md-4">
-                <input type="text" id="dateRangePicker" class="form-control" placeholder="Select Date Range" readonly>
-            </div>
-            <div class="col-md-4">
-                <select id="caseCategorySelector" class="form-control"></select>
-            </div>
-            <div class="col-md-4 text-end">
-                <button id="downloadChart" class="btn btn-outline-primary">Download Chart</button>
-            </div>
-        </div>
-        <div id="loadingSpinner" style="display: none; text-align:center; padding: 40px;">
-            <div class="spinner-border" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-        </div>
-
-        <canvas id="timeSeriesChart" height="100" style="display:none;"></canvas>
-
-        @include('admin.timeseries.report')
-    </div>
-    <div class="card-header">
-        <h5 class="mb-1">{{ __('Statistical Analysis') }}</h5>
-        <small class="text-muted">Visualize mean, media, mode, variance, standard deviation of applicant age</small>
-        <div class="card-body">
-            <div class="row mb-3 align-items-center">
-                @include('admin.timeseries.age_statistics')
-            </div>
-        </div>
-
-    </div>
-</div>
-
-@endsection
 @section('styles')
 <style>
     /* Custom styles specific to Time Series page */
     #dateRangePicker,
     #caseCategorySelector {
-        min-height: 38px;
+        min-height: 42px;
+        margin-left: 10px;
     }
 
     #timeSeriesChart {
@@ -72,10 +35,11 @@
     }
 
     .select2-container--default .select2-selection--single {
-        height: 38px;
-        border: 1px solid #0d6efd;
-        border-radius: 0.375rem;
-        padding: 5px 12px;
+    height: 42px !important;
+    border: 1px solid #0d6efd;
+    border-radius: 0.375rem;
+    padding: 6px 12px;
+    line-height: 28px;
     }
 </style>
 @endsection
