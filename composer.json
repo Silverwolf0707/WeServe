@@ -17,6 +17,7 @@
         "laravel/ui": "^4.6",
         "laraveldaily/laravel-charts": "^0.2.3",
         "nuovo/spreadsheet-reader": "^0.5.11",
+        "pusher/pusher-php-server": "^7.2",
         "yajra/laravel-datatables-oracle": "^12.0"
     },
     "require-dev": {

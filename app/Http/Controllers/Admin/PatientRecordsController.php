@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -81,7 +82,7 @@ class PatientRecordsController extends Controller
                     'type' => 'danger',
                     'title' => 'Eligibility Check',
                     'message' => $message . '.',
-                    'time' => now()->diffForHumans(), 
+                    'time' => now()->diffForHumans(),
                 ]);
             }
         }
@@ -97,7 +98,12 @@ class PatientRecordsController extends Controller
         //     'created_at' => now(),
         // ]);
 
-        return redirect()->route('admin.patient-records.index')->with('status', 'Patient record created and submitted.');
+        return redirect()->route('admin.patient-records.index')->with('toast', [
+            'type' => 'success',
+            'title' => 'Patient Created',
+            'message' => 'The patient record has been successfully created.',
+            'time' => now()->diffForHumans(),
+        ]);
     }
 
 
@@ -113,8 +119,14 @@ class PatientRecordsController extends Controller
     {
         $patientRecord->update($request->all());
 
-        return redirect()->route('admin.patient-records.index');
+        return redirect()->route('admin.patient-records.index')->with('toast', [
+            'type' => 'success',
+            'title' => 'Patient Updated',
+            'message' => 'The patient record has been successfully updated.<br><strong>Control No:</strong> ' . $patientRecord->control_number,
+            'time' => now()->diffForHumans(),
+        ]);
     }
+
 
     public function show(PatientRecord $patientRecord)
     {
@@ -132,7 +144,12 @@ class PatientRecordsController extends Controller
 
         $patientRecord->delete();
 
-        return back();
+        return redirect()->route('admin.patient-records.index')->with('toast', [
+            'type' => 'warning',
+            'title' => 'Patient Deleted',
+            'message' => 'The patient record has been deleted.<br><strong>Control No:</strong> ' . $patientRecord->control_number,
+            'time' => now()->diffForHumans(),
+        ]);
     }
 
     public function massDestroy(MassDestroyPatientRecordRequest $request)
@@ -166,4 +183,60 @@ class PatientRecordsController extends Controller
         return redirect()->route('admin.patient-records.show', $id)
             ->with('success', 'Application submitted successfully with remarks.');
     }
+public function massSubmit(Request $request)
+{
+    $ids = $request->input('ids');
+    $remarks = $request->input('remarks');
+    $submitted = [];
+    $skipped = [];
+
+    DB::beginTransaction();
+
+    try {
+        foreach ($ids as $id) {
+            $patient = PatientRecord::find($id);
+            if (!$patient) continue;
+
+            $latestStatus = $patient->statusLogs()->latest()->first();
+
+            if (!$latestStatus || $latestStatus->status === PatientStatusLog::STATUS_REJECTED) {
+                $patient->statusLogs()->create([
+                    'status' => PatientStatusLog::STATUS_SUBMITTED,
+                    'user_id' => Auth::id(),
+                    'remarks' => $remarks,
+                    'created_at' => now(),
+                ]);
+                $submitted[] = $patient->control_number;
+            } else {
+                $skipped[] = $patient->control_number;
+            }
+        }
+
+        DB::commit();
+
+        return response()->json([
+            'toast' => [
+                'type' => 'success',
+                'title' => 'Patient Record Mass Submitted',
+                'message' => implode('', [
+                    count($submitted) ? '✅ <strong>Submitted:</strong> ' . implode(', ', $submitted) . '<br>' : '',
+                    count($skipped) ? '⚠️ <strong>Skipped:</strong> ' . implode(', ', $skipped) . '<br>' : '',
+                ]),
+                'time' => now()->diffForHumans(),
+            ]
+        ]);
+    } catch (\Exception $e) {
+        DB::rollBack();
+
+        return response()->json([
+            'toast' => [
+                'type' => 'danger',
+                'title' => 'Error Submitting Records',
+                'message' => 'An error occurred: ' . $e->getMessage(),
+                'time' => now()->diffForHumans(),
+            ]
+        ], 500);
+    }
+}
+
 }

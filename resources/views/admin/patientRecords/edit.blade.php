@@ -121,3 +121,32 @@
     </div>
 </div>
 @endsection
+@section('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var toastEl = document.getElementById('liveToast');
+        var timerEl = document.getElementById('toast-timer');
+
+        if (toastEl) {
+            // Show toast with 5s delay
+            var toast = new bootstrap.Toast(toastEl, {
+                autohide: true,
+                delay: 5000
+            });
+            toast.show();
+
+            // Countdown timer for display
+            let remaining = 5;
+            const interval = setInterval(() => {
+                remaining--;
+                if (timerEl) {
+                    timerEl.textContent = `Closing in ${remaining}s`;
+                }
+                if (remaining <= 0) {
+                    clearInterval(interval);
+                }
+            }, 1000);
+        }
+    });
+</script>
+@endsection

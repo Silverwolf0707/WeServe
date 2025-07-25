@@ -48,18 +48,19 @@
     };
   @endphp
 
-  <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1055">
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1055">
     <div id="liveToast" class="toast {{ $bgClass }} hide" role="alert" aria-live="assertive" aria-atomic="true">
-    <div class="toast-header bg-white text-dark"> <!-- Keep toast-header separate from bgClass -->
-      <strong class="me-auto">{{ $toast['title'] ?? 'Notice' }}</strong>
-      <small>{{ $toast['time'] ?? '' }}</small>
-      <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        <div class="toast-header bg-white text-dark">
+            <strong class="me-auto">{{ $toast['title'] ?? 'Notice' }}</strong>
+            <small id="toast-timer">Closing in 5s</small>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            {!! session('toast')['message'] !!}
+        </div>
     </div>
-    <div class="toast-body">
-      {{ $toast['message'] }}
-    </div>
-    </div>
-  </div>
+</div>
+
 @endif
 
 
