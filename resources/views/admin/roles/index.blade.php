@@ -1,18 +1,20 @@
 @extends('layouts.admin')
 @section('content')
-@can('role_create')
-    <div style="margin-bottom: 10px;" class="row">
-        <div class="col-lg-12">
-            <a class="btn btn-success mr-2" href="{{ route('admin.roles.create') }}">
-                <i class="fas fa-plus mr-1"></i> {{ trans('global.add') }} {{ trans('cruds.role.title_singular') }}
-            </a>
-        </div>
-    </div>
-@endcan
 
-<div class="card">
-    <div class="card-header">
-        {{ trans('cruds.role.title_singular') }} {{ trans('global.list') }}
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-0">
+                <i class="fas fa-users-cog me-2"></i> {{ trans('cruds.role.title') }}
+            </h5>
+            <small class="text-white-50">{{ trans('cruds.role.title_singular') }} list and actions</small>
+        </div>
+
+        @can('role_create')
+            <a class="btn btn-success" href="{{ route('admin.roles.create') }}">
+                <i class="fas fa-plus me-1"></i> {{ trans('global.add') }} {{ trans('cruds.role.title_singular') }}
+            </a>
+        @endcan
     </div>
 
     <div class="card-body">
@@ -23,42 +25,32 @@
                         <th width="10"></th>
                         <th>{{ trans('cruds.role.fields.id') }}</th>
                         <th>{{ trans('cruds.role.fields.title') }}</th>
-                        <th>{{ trans('cruds.role.fields.permissions') }}</th>
                         <th class="text-center">{{ trans('global.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($roles as $key => $role)
+                    @foreach($roles as $role)
                         <tr data-entry-id="{{ $role->id }}">
                             <td></td>
                             <td>{{ $role->id }}</td>
                             <td>{{ $role->title }}</td>
                             <td>
-                                @foreach($role->permissions as $item)
-                                    <span class="badge badge-info">{{ $item->title }}</span>
-                                @endforeach
-                            </td>
-                            <td>
                                 <div class="d-flex align-items-center justify-content-center">
                                     @can('role_show')
-                                        <a href="{{ route('admin.roles.show', $role->id) }}" class="mr-2" title="View">
-                                            <i class="fas fa-eye text-primary"></i>
+                                        <a href="{{ route('admin.roles.show', $role->id) }}" class="mr-3" title="View">
+                                            <i class="fas fa-eye"></i>
                                         </a>
                                     @endcan
                                     @can('role_edit')
-                                        <a href="{{ route('admin.roles.edit', $role->id) }}" class="mr-2" title="Edit">
-                                            <i class="fas fa-edit text-info"></i>
+                                        <a href="{{ route('admin.roles.edit', $role->id) }}" class="mr-3" title="Edit">
+                                            <i class="fas fa-edit"></i>
                                         </a>
                                     @endcan
                                     @can('role_delete')
-                                        <form action="{{ route('admin.roles.destroy', $role->id) }}"
-                                              method="POST"
-                                              onsubmit="return confirm('{{ trans('global.areYouSure') }}');"
-                                              class="m-0 p-0"
-                                              style="display: inline;">
+                                        <form action="{{ route('admin.roles.destroy', $role->id) }}" method="POST" onsubmit="return confirm('{{ trans('global.areYouSure') }}');" class="m-0 p-0" style="display: inline;">
                                             @method('DELETE')
                                             @csrf
-                                            <button type="submit" class="btn p-0 border-0 bg-transparent mr-2" title="Delete">
+                                            <button type="submit" class="btn p-0 border-0 bg-transparent mr-3" title="Delete">
                                                 <i class="fas fa-trash-alt text-danger"></i>
                                             </button>
                                         </form>
@@ -72,6 +64,7 @@
         </div>
     </div>
 </div>
+
 @endsection
 
 @section('scripts')
@@ -97,7 +90,7 @@
 
                 if (confirm('{{ trans('global.areYouSure') }}')) {
                     $.ajax({
-                        headers: {'x-csrf-token': _token},
+                        headers: { 'x-csrf-token': _token },
                         method: 'POST',
                         url: config.url,
                         data: { ids: ids, _method: 'DELETE' }
@@ -112,7 +105,7 @@
             orderCellsTop: true,
             order: [[1, 'desc']],
             pageLength: 100,
-            dom: 'lBfrtip', // entries + buttons + filtering + pagination
+            dom: 'lBfrtip',
         });
 
         let table = $('.datatable-Role:not(.ajaxTable)').DataTable({ buttons: dtButtons });

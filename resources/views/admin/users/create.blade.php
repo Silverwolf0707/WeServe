@@ -57,8 +57,9 @@
                 <div class="form-group">
                     <label class="required" for="roles">{{ trans('cruds.user.fields.roles') }}</label>
                     <div class="mb-2">
-                        <span class="btn btn-sm btn-outline-primary select-all">{{ trans('global.select_all') }}</span>
-                        <span class="btn btn-sm btn-outline-danger deselect-all">{{ trans('global.deselect_all') }}</span>
+                        <button type="button" class="btn btn-info select-all">{{ trans('global.select_all') }}</button>
+<button type="button" class="btn btn-danger deselect-all">{{ trans('global.deselect_all') }}</button>
+
                     </div>
                     <select name="roles[]" id="roles" class="form-control select2 {{ $errors->has('roles') ? 'is-invalid' : '' }}" multiple required>
                         <option disabled>{{ __('Select roles') }}</option>

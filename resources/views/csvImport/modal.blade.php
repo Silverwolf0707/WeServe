@@ -1,41 +1,58 @@
-<div class="modal fade" id="csvImportModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h4 class="modal-title" id="myModalLabel">@lang('global.app_csvImport')</h4>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+<div class="modal fade" id="csvImportModal" tabindex="-1" role="dialog" aria-labelledby="csvImportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="csvImportModalLabel">
+                    <i class="fas fa-file-csv me-2"></i> {{ trans('global.app_csvImport') }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+
             <div class="modal-body">
-                <div class='row'>
-                    <div class='col-md-12'>
+                <form method="POST" action="{{ route($route, ['model' => $model]) }}" enctype="multipart/form-data">
+                    @csrf
 
-                        <form class="form-horizontal" method="POST" action="{{ route($route, ['model' => $model]) }}" enctype="multipart/form-data">
-                            {{ csrf_field() }}
+                    <!-- File Upload -->
+                    <div class="mb-3">
+                        <label for="csv_file" class="form-label">
+                            {{ trans('global.app_csv_file_to_import') }}
+                        </label>
 
-                            <div class="form-group{{ $errors->has('csv_file') ? ' has-error' : '' }}">
-                                <label for="csv_file" class="col-md-4 control-label">@lang('global.app_csv_file_to_import')</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <label for="csv_file" class="btn btn-dark mb-0">
+                                <i class="fas fa-upload me-1"></i> Choose CSV
+                            </label>
+                            <span id="file-chosen" class="text-muted">No file chosen</span>
+                        </div>
 
-                                <div class="col-md-6">
-                                    <input id="csv_file" type="file" class="form-control-file" name="csv_file" required>
+                        <input 
+                            type="file" 
+                            id="csv_file" 
+                            name="csv_file" 
+                            class="d-none @error('csv_file') is-invalid @enderror" 
+                            accept=".csv" 
+                            required 
+                            onchange="document.getElementById('file-chosen').textContent = this.files[0]?.name || 'No file chosen';"
+                        >
 
-                                    @if($errors->has('csv_file'))
-                                        <span class="help-block">
-                                            <strong>{{ $errors->first('csv_file') }}</strong>
-                                        </span>
-                                    @endif
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <div class="col-md-8 col-md-offset-4">
-                                    <button type="submit" class="btn btn-primary">
-                                        @lang('global.app_parse_csv')
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
+                        @error('csv_file')
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                        @enderror
                     </div>
-                </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between">
+            
+                         <a class="btn btn-secondary" href="{{ route('admin.patient-records.index') }}">
+                            <i class="fas fa-arrow-left me-1"></i> Back to List
+                        </a>
+
+                        <!-- Submit -->
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-file-import me-1"></i> {{ trans('global.app_parse_csv') }}
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

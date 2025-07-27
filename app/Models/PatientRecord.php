@@ -27,6 +27,14 @@ class PatientRecord extends Model
         'Educational Assistance' => 'Educational Assistance',
         'Medical Assistance'     => 'Medical Assistance',
     ];
+    public const CASE_TYPE_SELECT = [
+        'Senior Citizen'           => 'Senior Citizen',
+        'Person with Disability'   => 'Person with Disability',
+        'Solo Parent'              => 'Solo Parent',
+        'Child / Minor'            => 'Child / Minor',
+        'Student'                  => 'Student',
+        'Adult'                  => 'Adult',
+    ];
 
     protected $fillable = [
         'date_processed',

@@ -1,25 +1,31 @@
 @extends('layouts.admin')
 
 @section('content')
-    @can('patient_record_create')
-        <div style="margin-bottom: 10px;" class="row">
-            <div class="col-lg-12">
-                <a class="btn btn-success me-2" href="{{ route('admin.patient-records.create') }}">
-                    <i class="fas fa-user-plus me-1"></i> {{ trans('global.add') }}
-                    {{ trans('cruds.patientRecord.title_singular') }}
-                </a>
-                <button class="btn btn-warning" data-toggle="modal" data-target="#csvImportModal">
-                    <i class="fas fa-file-csv me-1"></i> {{ trans('global.app_csvImport') }}
-                </button>
-                @include('csvImport.modal', ['model' => 'PatientRecord', 'route' => 'admin.patient-records.parseCsvImport'])
-            </div>
-        </div>
-    @endcan
 
-    <div class="card">
-        <div class="card-header">
-            {{ trans('cruds.patientRecord.title_singular') }} {{ trans('global.list') }}
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-0">
+                    <i class="fas fa-users me-2"></i> {{ trans('cruds.patientRecord.title') }}
+                </h5>
+            </div>
+
+            @can('patient_record_create')
+                <div class="d-flex gap-2">
+                    <a class="btn btn-success" href="{{ route('admin.patient-records.create') }}">
+                        <i class="fas fa-plus me-1"></i> {{ trans('global.add') }}
+                        {{ trans('cruds.patientRecord.title_singular') }}
+                    </a>
+                    <button class="btn btn-warning btn-sm" data-toggle="modal" data-target="#csvImportModal">
+                        <i class="fas fa-file-csv me-1"></i> {{ trans('global.app_csvImport') }}
+                    </button>
+                </div>
+            @endcan
         </div>
+
+        @can('patient_record_create')
+            @include('csvImport.modal', ['model' => 'PatientRecord', 'route' => 'admin.patient-records.parseCsvImport'])
+        @endcan
 
         <div class="card-body">
             <div class="table-responsive">
@@ -42,7 +48,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($patientRecords as $patientRecord)
+                        @foreach($patientRecords as $key => $patientRecord)
                             <tr data-entry-id="{{ $patientRecord->id }}">
                                 <td></td>
                                 <td>{{ \Carbon\Carbon::parse($patientRecord->date_processed)->format('F j, Y g:i A') }}</td>
@@ -52,7 +58,9 @@
                                 <td>{{ App\Models\PatientRecord::CASE_CATEGORY_SELECT[$patientRecord->case_category] ?? '' }}
                                 </td>
                                 <td>{{ $patientRecord->patient_name ?? '' }}</td>
-                                <td class="text-truncate" style="max-width: 200px;">{{ $patientRecord->diagnosis ?? '' }}</td>
+                                <td class="text-truncate" style="max-width: 200px; overflow: hidden; white-space: nowrap">
+                                    {{ $patientRecord->diagnosis ?? '' }}
+                                </td>
                                 <td>{{ $patientRecord->age ?? '' }}</td>
                                 <td>{{ $patientRecord->address ?? '' }}</td>
                                 <td>{{ $patientRecord->contact_number ?? '' }}</td>
@@ -60,21 +68,26 @@
                                 <td>
                                     <div class="d-flex align-items-center">
                                         @can('patient_record_show')
-                                            <a href="{{ route('admin.patient-records.show', $patientRecord->id) }}" class="mr-3"><i
-                                                    class="fas fa-eye"></i></a>
+                                            <a href="{{ route('admin.patient-records.show', $patientRecord->id) }}" class="mr-3"
+                                                title="View">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
                                         @endcan
                                         @can('patient_record_edit')
-                                            <a href="{{ route('admin.patient-records.edit', $patientRecord->id) }}" class="mr-3"><i
-                                                    class="fas fa-edit"></i></a>
+                                            <a href="{{ route('admin.patient-records.edit', $patientRecord->id) }}" class="mr-3"
+                                                title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
                                         @endcan
                                         @can('patient_record_delete')
                                             <form action="{{ route('admin.patient-records.destroy', $patientRecord->id) }}"
-                                                method="POST" onsubmit="return confirm('{{ trans('global.areYouSure') }}');"
-                                                class="d-inline">
+                                                method="POST" class="m-0 p-0 delete-form" style="display: inline;">
                                                 @method('DELETE')
                                                 @csrf
-                                                <button type="submit" class="btn p-0 border-0 bg-transparent mr-3"><i
-                                                        class="fas fa-trash-alt text-danger"></i></button>
+                                                <button type="submit" class="btn p-0 border-0 bg-transparent mr-3 delete-button"
+                                                    title="Delete">
+                                                    <i class="fas fa-trash-alt text-danger"></i>
+                                                </button>
                                             </form>
                                         @endcan
                                     </div>
@@ -116,13 +129,15 @@
 
 @section('scripts')
     @parent
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         $(function () {
             let dtButtons = $.extend(true, [], $.fn.dataTable.defaults.buttons)
 
             @can('patient_record_delete')
-                dtButtons.push({
-                    text: '{{ trans('global.datatables.delete') }}',
+                let deleteButtonTrans = '{{ trans('global.datatables.delete') }}'
+                let deleteButton = {
+                    text: deleteButtonTrans,
                     url: "{{ route('admin.patient-records.massDestroy') }}",
                     className: 'btn-danger',
                     action: function (e, dt, node, config) {
@@ -135,17 +150,58 @@
                             return
                         }
 
-                        if (confirm('{{ trans('global.areYouSure') }}')) {
-                            $.ajax({
-                                headers: { 'x-csrf-token': _token },
-                                method: 'POST',
-                                url: config.url,
-                                data: { ids: ids, _method: 'DELETE' }
-                            }).done(function () { location.reload() })
-                        }
+                        Swal.fire({
+                            title: 'Are you sure?',
+                            text: "You are about to delete selected records. This action cannot be undone.",
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Yes, delete them!',
+                            cancelButtonText: 'Cancel',
+                            customClass: {
+                                confirmButton: 'btn btn-danger',
+                                cancelButton: 'btn btn-secondary'
+                            },
+                            buttonsStyling: false
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                $.ajax({
+                                    headers: { 'x-csrf-token': _token },
+                                    method: 'POST',
+                                    url: config.url,
+                                    data: { ids: ids, _method: 'DELETE' }
+                                }).done(function () { location.reload() })
+                            }
+                        });
                     }
-                })
+                }
+                dtButtons.push(deleteButton)
+                $('.datatable-PatientRecord').on('click', '.delete-button', function (e) {
+                    e.preventDefault();
+                    const form = $(this).closest('form');
+                    const row = $(this).closest('tr');
+                    const controlNumber = row.find('td').eq(3).text().trim();
+
+                    Swal.fire({
+                        title: 'Are you sure?',
+                        text: `You are about to delete the record of "${controlNumber}". This action cannot be undone.`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Yes, delete it!',
+                        cancelButtonText: 'Cancel',
+                        customClass: {
+                            confirmButton: 'btn btn-danger',
+                            cancelButton: 'btn btn-secondary'
+                        },
+                        buttonsStyling: false
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            form.submit();
+                        }
+                    });
+                });
+
             @endcan
+
 
                 @can('submit_patient_application')
                     let selectedIds = [];

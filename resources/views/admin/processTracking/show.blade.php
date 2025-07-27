@@ -129,8 +129,8 @@
                 @foreach ($steps as $index => $step)
                     <div
                         class="step 
-                                            {{ $latestStatus->status !== 'Rejected' && $index < $currentIndex ? 'completed' : '' }} 
-                                            {{ $latestStatus->status !== 'Rejected' && $index === $currentIndex ? 'active' : '' }}">
+                                                                    {{ $latestStatus->status !== 'Rejected' && $index < $currentIndex ? 'completed' : '' }} 
+                                                                    {{ $latestStatus->status !== 'Rejected' && $index === $currentIndex ? 'active' : '' }}">
                         <div class="circle">
                             @if ($latestStatus->status !== 'Rejected' && $index <= $currentIndex)
                                 <i class="fas fa-check"></i>
@@ -198,66 +198,7 @@
                 </div>
             @endif
 
-            <!-- Process Summary MODAL -->
-            <div class="modal fade" id="processModal" tabindex="-1" aria-labelledby="processModalLabel" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header bg-primary text-white">
-                            <h5 class="modal-title" id="processModalLabel">📤 Process Action</h5>
-                            <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
 
-                        <form enctype="multipart/form-data">
-                            <div class="modal-body">
-                                <div class="form-group">
-                                    <label for="subject">📌 Subject</label>
-                                    <input type="text" class="form-control" id="subject" placeholder="Enter subject"
-                                        required>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="action">📁 Action</label>
-                                    <select class="form-control" id="action" required>
-                                        <option value="Forward">Forward</option>
-                                        <option value="Return">Return</option>
-                                    </select>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="department">🏢 Department</label>
-                                    <select class="form-control" id="department" required>
-                                        <option value="CSWD">CSWD</option>
-                                        <option value="Mayor's Office">Mayor's Office</option>
-                                        <option value="Budget Office">Budget Office</option>
-                                        <option value="Accounting">Accounting</option>
-                                        <option value="Treasury">Treasury</option>
-                                    </select>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="remarks">📝 Remarks</label>
-                                    <textarea class="form-control" id="remarks" rows="3"
-                                        placeholder="Add any remarks here..."></textarea>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="document">📎 Upload Document</label>
-                                    <input type="file" class="form-control-file" id="document"
-                                        accept=".pdf,.doc,.docx,.jpg,.png,.jpeg">
-                                    <small class="text-muted">Accepted formats: PDF, DOCX, JPG, PNG</small>
-                                </div>
-                            </div>
-
-                            <div class="modal-footer">
-                                <button type="submit" class="btn btn-success">Submit</button>
-                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
             <!-- Rollback Modal -->
             <div class="modal fade" id="rollbackModal" tabindex="-1" aria-labelledby="rollbackModalLabel"
                 aria-hidden="true">
@@ -308,32 +249,6 @@
                 </div>
             </div>
 
-
-
-            @push('scripts')
-                <script>
-                    const departments = {
-                        'accounting': ['CSWD', 'Mayor\'s Office', 'Budget Office', 'Treasury'],
-                        'cswd': ['Accounting', 'Mayor\'s Office'],
-                        'mayor\'s office': ['Accounting', 'CSWD', 'Budget Office'],
-                        'budget office': ['CSWD', 'Accounting'],
-                        'treasury': ['CSWD', 'Mayor\'s Office']
-                    };
-
-                    $('#processModal').on('show.bs.modal', function (event) {
-                        const button = $(event.relatedTarget);
-                        const userDept = button.data('department');
-                        const options = departments[userDept] || [];
-                        const deptSelect = $('#department');
-
-                        deptSelect.empty();
-                        options.forEach(dept => {
-                            deptSelect.append(`<option value="${dept}">${dept}</option>`);
-                        });
-                    });
-                </script>
-            @endpush
-
             @php $isFinalized = in_array(optional($latestStatus)->status, ['Approved', 'Rejected']); @endphp
 
             @can('approve_patient')
@@ -361,111 +276,132 @@
 
             @can('budget_allocate')
                 @if ($latestStatus->status === 'Approved' && !$patient->budgetAllocation)
-                    <div class="card mb-4">
-                        <div class="card-header bg-primary text-white">
-                            <i class="fas fa-wallet me-2"></i> Budget Allocation
+                    <div class="card shadow-sm border-0 mb-4" style="background-color: #f8f9fa;">
+                        <div class="card-header bg-primary text-white d-flex align-items-center">
+                            <i class="fas fa-wallet"></i>
+                            <h5 class="mb-0" style="margin-left: 10px;">Budget Allocation</h5>
                         </div>
-                        <div class="card-body">
-                            <button type="button" class="btn btn-warning" data-toggle="modal" data-target="#budgetModal">
-                                Allocate Budget
+
+                        <div class="card-body text-center">
+                            <button type="button" class="btn btn-warning btn-lg px-4 text-white" data-toggle="modal"
+                                data-target="#budgetModal">
+                                <i class="fas fa-plus-circle me-2"></i> Allocate Budget
                             </button>
-                            <button class="btn btn-outline-danger" data-toggle="modal" data-target="#rollbackModal">
+                             <button type="button" class="btn btn-danger btn-lg px-4 text-white" data-toggle="modal" data-target="#rollbackModal">
                                 <i class="fas fa-undo-alt me-1"></i> Rollback Process
                             </button>
-
-
-                            <div class="modal fade" id="budgetModal" tabindex="-1" role="dialog" aria-labelledby="budgetModalLabel"
-                                aria-hidden="true">
-                                <div class="modal-dialog" role="document">
-                                    <form action="{{ route('admin.process-tracking.storeBudget', $patient->id) }}" method="POST">
-                                        @csrf
-                                        <div class="modal-content">
-                                            <div class="modal-header bg-primary text-white">
-                                                <h5 class="modal-title" id="budgetModalLabel">Allocate Budget</h5>
-                                                <button type="button" class="close text-white" data-dismiss="modal"
-                                                    aria-label="Close">
-                                                    <span aria-hidden="true">&times;</span>
-                                                </button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <div class="form-group">
-                                                    <label for="amount">Amount (₱)</label>
-                                                    <input type="number" step="0.01" name="amount" id="amount" class="form-control"
-                                                        required>
-                                                </div>
-                                                <div class="form-group">
-                                                    <label for="remarks">Remarks</label>
-                                                    <textarea name="remarks" id="remarks" class="form-control" rows="3"></textarea>
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="submit" class="btn btn-success">Allocate</button>
-                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
                         </div>
                     </div>
-                @elseif($patient->budgetAllocation)
-                    <div class="alert alert-info mt-4">
-                        <strong>Allocated Budget:</strong> ₱{{ number_format($patient->budgetAllocation->amount, 2) }}<br>
-                        <strong>Remarks:</strong> {{ $patient->budgetAllocation->remarks }}
+
+                    <!-- Budget Modal -->
+                    <div class="modal fade" id="budgetModal" tabindex="-1" role="dialog" aria-labelledby="budgetModalLabel"
+                        aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered" role="document">
+                            <form action="{{ route('admin.process-tracking.storeBudget', $patient->id) }}" method="POST">
+                                @csrf
+                                <div class="modal-content border-0 shadow-lg rounded-4" style="overflow: hidden;">
+                                    <div class="modal-header bg-primary text-white">
+                                        <h5 class="modal-title" id="budgetModalLabel">
+                                            <i class="fas fa-wallet me-2"></i> Allocate Budget
+                                        </h5>
+                                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true" style="font-size: 1.5rem;">&times;</span>
+                                        </button>
+                                    </div>
+
+                                    <div class="modal-body p-4">
+                                        <div class="form-group mb-4">
+                                            <label for="amount" class="form-label">Amount (₱)</label>
+                                            <input type="number" step="0.01" name="amount" id="amount"
+                                                class="form-control form-control-lg rounded-3 shadow-sm" required>
+
+                                            <div class="d-flex flex-wrap gap-2 mt-3">
+                                                @foreach([1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000] as $suggested)
+                                                    <button type="button"
+                                                        class="btn btn-outline-primary btn-sm suggested-amount rounded-pill px-3"
+                                                        data-value="{{ $suggested }}">₱{{ number_format($suggested) }}</button>
+                                                @endforeach
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="remarks" class="form-label">Remarks</label>
+                                            <textarea name="remarks" id="remarks" class="form-control rounded-3 shadow-sm" rows="4"
+                                                placeholder="Enter any remarks here..."></textarea>
+                                        </div>
+                                    </div>
+
+                                    <div class="modal-footer d-flex flex-column gap-2 p-4 pt-0">
+                                        <button type="submit" class="btn btn-success w-100 rounded-pill py-2">
+                                            <i class="fas fa-check-circle me-1"></i> Confirm Allocation
+                                        </button>
+                                        <button type="button" class="btn btn-secondary w-100 rounded-pill py-2"
+                                            data-dismiss="modal">Cancel</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
                     </div>
+
                 @endif
             @endcan
 
             @can('accounting_dv_input')
                 @if ($latestStatus->status === 'Budget Allocated' && !$patient->disbursementVoucher)
-                    <div class="card mb-4">
-                        <div class="card-header bg-primary text-white">
-                            <i class="fas fa-file-invoice me-2"></i> Disbursement Voucher
+                    <div class="card shadow-sm border-0 mb-4" style="background-color: #f8f9fa;">
+                        <div class="card-header bg-primary text-white d-flex align-items-center">
+                            <i class="fas fa-file-invoice"></i>
+                            <h5 class="mb-0" style="margin-left: 10px;">Disbursement Voucher</h5>
                         </div>
-                        <div class="card-body">
-                            <button type="button" class="btn btn-info" data-toggle="modal" data-target="#dvModal">
-                                Enter DV Details
-                            </button>
 
-                            <div class="modal fade" id="dvModal" tabindex="-1" role="dialog" aria-labelledby="dvModalLabel"
-                                aria-hidden="true">
-                                <div class="modal-dialog" role="document">
-                                    <form action="{{ route('admin.process-tracking.storeDV', $patient->id) }}" method="POST">
-                                        @csrf
-                                        <div class="modal-content">
-                                            <div class="modal-header bg-primary text-white">
-                                                <h5 class="modal-title" id="dvModalLabel">Enter Disbursement Voucher</h5>
-                                                <button type="button" class="close text-white" data-dismiss="modal"
-                                                    aria-label="Close">
-                                                    <span aria-hidden="true">&times;</span>
-                                                </button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <div class="form-group">
-                                                    <label for="dv_code">DV Code</label>
-                                                    <input type="text" name="dv_code" id="dv_code" class="form-control" required>
-                                                </div>
-                                                <div class="form-group">
-                                                    <label for="dv_date">DV Date</label>
-                                                    <input type="date" name="dv_date" id="dv_date" class="form-control" required>
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="submit" class="btn btn-success">Submit DV</button>
-                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
+                        <div class="card-body text-center">
+                            <button type="button" class="btn btn-info btn-lg px-4 text-white" data-toggle="modal"
+                                data-target="#dvModal">
+                                <i class="fas fa-file-alt me-2"></i> Enter DV Details
+                            </button>
                         </div>
                     </div>
-                @elseif ($patient->disbursementVoucher)
-                    <div class="alert alert-info mt-4">
-                        <strong>DV Code:</strong> {{ $patient->disbursementVoucher->dv_code }}<br>
-                        <strong>Date:</strong>
-                        {{ \Carbon\Carbon::parse($patient->disbursementVoucher->dv_date)->format('F j, Y') }}
+
+                    <!-- DV Modal -->
+                    <div class="modal fade" id="dvModal" tabindex="-1" role="dialog" aria-labelledby="dvModalLabel"
+                        aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <form action="{{ route('admin.process-tracking.storeDV', $patient->id) }}" method="POST">
+                                @csrf
+                                <div class="modal-content border-0">
+                                    <div class="modal-header bg-primary text-white">
+                                        <h5 class="modal-title" id="dvModalLabel"><i class="fas fa-file-invoice me-2"></i> Enter
+                                            Disbursement Voucher</h5>
+                                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+
+                                    <div class="modal-body">
+                                        <div class="form-group mb-3">
+                                            <label for="dv_code">DV Code</label>
+                                            <input type="text" name="dv_code" id="dv_code" class="form-control form-control-lg"
+                                                required>
+                                        </div>
+                                        <div class="form-group mb-3">
+                                            <label for="dv_date">DV Date</label>
+                                            <input type="date" name="dv_date" id="dv_date" class="form-control form-control-lg"
+                                                required>
+                                        </div>
+                                    </div>
+
+                                    <div class="modal-footer">
+                                        <button type="submit" class="btn btn-success w-100">
+                                            <i class="fas fa-check-circle me-1"></i> Submit DV
+                                        </button>
+                                        <button type="button" class="btn btn-secondary w-100 mt-2"
+                                            data-dismiss="modal">Cancel</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
                     </div>
+
                 @endif
             @endcan
 
@@ -494,3 +430,24 @@
         </div>
     </div>
 @endsection
+@push('scripts')
+<script>
+ 
+    document.addEventListener('DOMContentLoaded', function () {
+        const amountInput = document.getElementById('amount');
+        const buttons = document.querySelectorAll('.suggested-amount');
+
+        buttons.forEach(btn => {
+            btn.addEventListener('click', function () {
+                const value = this.dataset.value;
+                amountInput.value = value;
+                amountInput.focus();
+                amountInput.classList.add('bg-success', 'text-white');
+                setTimeout(() => {
+                    amountInput.classList.remove('bg-success', 'text-white');
+                }, 500);
+            });
+        });
+    });
+</script>
+@endpush

@@ -1,18 +1,20 @@
 @extends('layouts.admin')
 @section('content')
-@can('permission_create')
-    <div style="margin-bottom: 10px;" class="row">
-        <div class="col-lg-12">
-            <a class="btn btn-success mr-2" href="{{ route('admin.permissions.create') }}">
-                <i class="fas fa-plus mr-1"></i> {{ trans('global.add') }} {{ trans('cruds.permission.title_singular') }}
-            </a>
-        </div>
-    </div>
-@endcan
 
-<div class="card">
-    <div class="card-header">
-        {{ trans('cruds.permission.title_singular') }} {{ trans('global.list') }}
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-0">
+                <i class="fas fa-lock me-2"></i> {{ trans('cruds.permission.title') }}
+            </h5>
+           
+        </div>
+
+        @can('permission_create')
+           <a class="btn btn-success" href="{{ route('admin.permissions.create') }}">
+                <i class="fas fa-plus me-1"></i> {{ trans('global.add') }} {{ trans('cruds.permission.title_singular') }}
+            </a>
+        @endcan
     </div>
 
     <div class="card-body">
@@ -66,6 +68,7 @@
         </div>
     </div>
 </div>
+
 @endsection
 
 @section('scripts')
@@ -106,7 +109,7 @@
             orderCellsTop: true,
             order: [[1, 'desc']],
             pageLength: 100,
-            dom: 'lBfrtip', // show entries + buttons + search bar + pagination
+            dom: 'lBfrtip',
         });
 
         let table = $('.datatable-Permission:not(.ajaxTable)').DataTable({ buttons: dtButtons });

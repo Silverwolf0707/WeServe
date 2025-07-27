@@ -35,9 +35,15 @@
                         {{-- Case Type --}}
                         <div class="mb-3">
                             <label for="case_type" class="form-label">Case Type <span class="text-danger">*</span></label>
-                            <input type="text" name="case_type" id="case_type"
-                                class="form-control {{ $errors->has('case_type') ? 'is-invalid' : '' }}"
-                                value="{{ old('case_type', '') }}" placeholder="Enter case type" required>
+                            <select name="case_type" id="case_type"
+                                class="form-control {{ $errors->has('case_type') ? 'is-invalid' : '' }}" required>
+                                <option value disabled {{ old('case_type', null) === null ? 'selected' : '' }}>Please select</option>
+                                @foreach(App\Models\PatientRecord::CASE_TYPE_SELECT as $key => $label)
+                                    <option value="{{ $key }}" {{ old('case_type') === (string) $key ? 'selected' : '' }}>
+                                        {{ $label }}
+                                    </option>
+                                @endforeach
+                            </select>
                             @error('case_type') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
 

@@ -4,15 +4,19 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 
 class TimeSeriesController extends Controller
 {
     public function index()
     {
+        if (!Gate::allows('CSWD-ANALYTICS')) {
+            abort(403);
+        }
         $this->exportToCsvFile();
         $this->runPythonStl();
-        return view('admin.timeSeries.index');
+        return view('admin.timeseries.cswd.index');
     }
 
     public function exportToCsvFile()

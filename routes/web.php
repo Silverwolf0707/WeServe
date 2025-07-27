@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\HomeController;
 use App\Http\Controllers\Admin\OnlineApplicationController;
 use App\Http\Controllers\Admin\PermissionsController;
 use App\Http\Controllers\Admin\RolesController;
+use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\StatisticsController;
 use App\Http\Controllers\Admin\TimeSeriesController;
 use App\Http\Controllers\Admin\UsersController;
@@ -53,7 +54,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     Route::post('patient-records/process-csv-import', [PatientRecordsController::class, 'processCsvImport'])->name('patient-records.processCsvImport');
     Route::post('patient-records/{id}/submit', [PatientRecordsController::class, 'submit'])->name('patient-records.submit');
     Route::resource('patient-records', PatientRecordsController::class);
-Route::post('patient-records/mass-submit', [PatientRecordsController::class, 'massSubmit'])->name('patient-records.massSubmit');
+    Route::post('patient-records/mass-submit', [PatientRecordsController::class, 'massSubmit'])->name('patient-records.massSubmit');
 
 
     //process tracking
@@ -65,7 +66,7 @@ Route::post('patient-records/mass-submit', [PatientRecordsController::class, 'ma
     Route::post('process-tracking/{patient}/rollback', [ProcessTrackingController::class, 'rollback'])->name('process-tracking.rollback');
 
 
-   
+
     Route::delete('document-management/mass-destroy', [DocumentManagementController::class, 'massDestroy'])->name('document-management.massDestroy');
     Route::get('document-management/patient/{id}', [DocumentManagementController::class, 'show'])->name('admin.document-management.show');
     Route::delete('document-management/{id}', [DocumentManagementController::class, 'destroy'])->name('admin.document-management.destroy');
@@ -75,6 +76,11 @@ Route::post('patient-records/mass-submit', [PatientRecordsController::class, 'ma
     Route::get('time-series', [TimeSeriesController::class, 'index'])->name('time-series.index');
     Route::get('analytics/age-stats', [StatisticsController::class, 'getAgeStatistics'])->name('analytics.age-stats');
 });
+
+Route::group(['prefix' => 'settings', 'as' => 'settings.', 'middleware' => ['auth']], function () {
+    Route::get('/', [SettingsController::class, 'index'])->name('index');
+});
+
 
 Route::group(['prefix' => 'profile', 'as' => 'profile.', 'middleware' => ['auth']], function () {
     // Change password

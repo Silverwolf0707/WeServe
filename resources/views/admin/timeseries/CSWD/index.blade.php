@@ -1,8 +1,10 @@
 @extends('layouts.admin')
+@can('CSWD-ANALYTICS')
+    
 
 @section('content')
-      @include('admin.timeseries.stl_decomposition')
-      @include('admin.timeseries.statistics')
+      @include('admin.timeseries.cswd.stl_decomposition')
+      @include('admin.timeseries.cswd.statistics')
 @endsection      
 
 @section('styles')
@@ -500,13 +502,9 @@
 
         }
 
-        // now safe to bind
-        yearSelector.addEventListener('change', () => {
-            fetchAgeStats(yearSelector.value);
-        });
-
         // initial load
         fetchAgeStats(yearSelector.value);
     });
 </script>
 @endsection
+@endcan

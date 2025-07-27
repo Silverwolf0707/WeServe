@@ -1,18 +1,19 @@
 @extends('layouts.admin')
 @section('content')
-@can('user_create')
-    <div style="margin-bottom: 10px;" class="row">
-        <div class="col-lg-12">
-            <a class="btn btn-success mr-2" href="{{ route('admin.users.create') }}">
-                <i class="fas fa-user-plus mr-1"></i> {{ trans('global.add') }} {{ trans('cruds.user.title_singular') }}
-            </a>
-        </div>
-    </div>
-@endcan
 
-<div class="card">
-    <div class="card-header">
-        {{ trans('cruds.user.title_singular') }} {{ trans('global.list') }}
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-0">
+                <i class="fas fa-users me-2"></i> {{ trans('cruds.user.title') }}
+            </h5>
+        </div>
+
+        @can('user_create')
+            <a class="btn btn-success" href="{{ route('admin.users.create') }}">
+                <i class="fas fa-user-plus me-1"></i> {{ trans('global.add') }} {{ trans('cruds.user.title_singular') }}
+            </a>
+        @endcan
     </div>
 
     <div class="card-body">
@@ -114,7 +115,7 @@
             orderCellsTop: true,
             order: [[1, 'desc']],
             pageLength: 100,
-            dom: 'lBfrtip', // show entries + buttons + filter + pagination
+            dom: 'lBfrtip',
         });
 
         let table = $('.datatable-User:not(.ajaxTable)').DataTable({ buttons: dtButtons });
