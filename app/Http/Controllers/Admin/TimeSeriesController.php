@@ -17,7 +17,7 @@ class TimeSeriesController extends Controller
         $this->exportToCsvFile();
         $this->runPythonStl();
         return view('admin.timeseries.cswd.index');
-    }
+    }   
 
     public function exportToCsvFile()
     {

@@ -3,25 +3,28 @@
 @section('content')
 
     <div class="card shadow-sm border-0">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <div>
-                <h5 class="mb-0">
-                    <i class="fas fa-users me-2"></i> {{ trans('cruds.patientRecord.title') }}
-                </h5>
-            </div>
-
-            @can('patient_record_create')
-                <div class="d-flex gap-2">
-                    <a class="btn btn-success" href="{{ route('admin.patient-records.create') }}">
-                        <i class="fas fa-plus me-1"></i> {{ trans('global.add') }}
-                        {{ trans('cruds.patientRecord.title_singular') }}
-                    </a>
-                    <button class="btn btn-warning btn-sm" data-toggle="modal" data-target="#csvImportModal">
-                        <i class="fas fa-file-csv me-1"></i> {{ trans('global.app_csvImport') }}
-                    </button>
+        <div class="card-header bg-primary text-white">
+            <div class="row w-100 align-items-center">
+                <div class="col-md-6">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users me-2"></i> {{ trans('cruds.patientRecord.title') }}
+                    </h5>
                 </div>
-            @endcan
+                <div class="col-md-6 text-end">
+                    @can('patient_record_create')
+                        <a class="btn btn-success me-2" href="{{ route('admin.patient-records.create') }}">
+                            <i class="fas fa-plus me-1"></i> {{ trans('global.add') }}
+                            {{ trans('cruds.patientRecord.title_singular') }}
+                        </a>
+                        <button class="btn btn-warning me-2" data-bs-toggle="modal" data-bs-target="#csvImportModal">
+
+                            <i class="fas fa-file-csv me-1"></i> {{ trans('global.app_csvImport') }}
+                        </button>
+                    @endcan
+                </div>
+            </div>
         </div>
+
 
         @can('patient_record_create')
             @include('csvImport.modal', ['model' => 'PatientRecord', 'route' => 'admin.patient-records.parseCsvImport'])

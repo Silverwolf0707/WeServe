@@ -55,7 +55,7 @@ class StorePatientRecordRequest extends FormRequest
             ],
             'contact_number' => [
                 'string',
-                'max:11',
+                'max:14',
                 'required',
             ],
             'case_worker' => [

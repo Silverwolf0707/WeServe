@@ -2,14 +2,17 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\OtpCode;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\PatientRecord;
 use App\Models\BudgetAllocation;
 use App\Models\PatientStatusLog;
 use App\Models\DisbursementVoucher;
+use App\Services\VonageService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Hash;
 use Symfony\Component\HttpFoundation\Response;
 
 class ProcessTrackingController extends Controller
@@ -152,28 +155,121 @@ class ProcessTrackingController extends Controller
         return redirect()->route('admin.process-tracking.show', $id)
             ->with('status', 'Budget status updated to Disbursed.');
     }
-   public function rollback(Request $request, PatientRecord $patient)
-{
-    $request->validate([
-        'rollback_to' => 'required|string',
-        'rollback_remarks' => 'required|string',
-    ]);
+    public function rollback(Request $request, PatientRecord $patient)
+    {
+        $request->validate([
+            'rollback_to' => 'required|string',
+            'rollback_remarks' => 'required|string',
+        ]);
 
-    $validStatuses = $patient->statusLogs->pluck('status')->unique();
+        $validStatuses = $patient->statusLogs->pluck('status')->unique();
 
-    if (!$validStatuses->contains($request->rollback_to)) {
-        return back()->with('error', 'Invalid rollback target.');
+        if (!$validStatuses->contains($request->rollback_to)) {
+            return back()->with('error', 'Invalid rollback target.');
+        }
+
+        // Proceed with rollback
+        $patient->statusLogs()->create([
+            'status' => $request->rollback_to,
+            'remarks' => '[ROLLED BACK] ' . $request->rollback_remarks,
+            'user_id' => AUTH::id(),
+        ]);
+
+        return redirect()->back()->with('success', 'Process rolled back to ' . $request->rollback_to);
     }
+    public function sendOtpForDisbursement($id)
+    {
+        abort_if(Gate::denies('treasury_disburse'), 403);
 
-    // Proceed with rollback
-    $patient->statusLogs()->create([
-        'status' => $request->rollback_to,
-        'remarks' => '[ROLLED BACK] ' . $request->rollback_remarks,
-        'user_id' => auth()->id(),
-    ]);
+        $patient = PatientRecord::findOrFail($id);
 
-    return redirect()->back()->with('success', 'Process rolled back to ' . $request->rollback_to);
-}
+        if (!$patient->contact_number) {
+            return back()->with('error', 'No contact number found for this claimant.');
+        }
 
+        // Format phone number to E.164
+        $phone = $patient->contact_number;
+        if (!str_starts_with($phone, '+')) {
+            if (str_starts_with($phone, '09')) {
+                $phone = '+63' . substr($phone, 1);
+            }
+        }
 
+        $otp = random_int(100000, 999999);
+
+        OtpCode::create([
+            'user_id' => Auth::id(),
+            'patient_id' => $patient->id,
+            'otp_code' => Hash::make($otp),
+            'sent_at' => now(),
+        ]);
+
+        $patient->budgetAllocation()->update([
+            'budget_status' => 'Confirmation of Disbursement',
+        ]);
+
+        PatientStatusLog::create([
+            'patient_id' => $patient->id,
+            'user_id' => Auth::id(),
+            'status' => 'Ready for Disbursement',
+            'remarks' => 'OTP sent to claimant.',
+        ]);
+
+        $message = "San Pedro City of Laguna\n" .
+            "Claimant: {$patient->claimant_name}\n" .
+            "Date: " . now()->format('F j, Y') . "\n" .
+            "Location: City Hall, Treasury Office\n" .
+            "OTP Code: $otp\n" .
+            "Please show this OTP to confirm disbursement.";
+
+        try {
+            app(VonageService::class)->sendSms($phone, $message);
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to send OTP SMS: ' . $e->getMessage());
+        }
+
+        return back()->with('status', 'OTP sent and disbursement process started.');
+    }
+    public function verifyOtp(Request $request, $id)
+    {
+        abort_if(Gate::denies('treasury_disburse'), 403);
+
+        $request->validate([
+            'otp_code' => 'required|numeric',
+        ]);
+
+        $patient = PatientRecord::findOrFail($id);
+
+        $latestOtp = $patient->otpCodes()->latest()->first();
+
+        if (!$latestOtp || $latestOtp->is_verified) {
+            return back()->with('error', 'No valid OTP to verify.');
+        }
+
+        if (!Hash::check($request->otp_code, $latestOtp->otp_code)) {
+            return back()->with('error', 'Incorrect OTP code.');
+        }
+
+        // Mark OTP as verified
+        $latestOtp->update([
+            'is_verified' => true,
+            'verified_at' => now(),
+        ]);
+
+        // Update budget status
+        $patient->budgetAllocation()->update([
+            'budget_status' => 'Disbursed',
+        ]);
+
+        // Log status
+        PatientStatusLog::create([
+            'patient_id' => $patient->id,
+            'user_id' => Auth::id(),
+            'status' => PatientStatusLog::STATUS_DISBURSED,
+            'remarks' => 'OTP verified. Marked as disbursed.',
+        ]);
+
+        return redirect()->route('admin.process-tracking.show', $patient->id)
+            ->with('status', 'OTP verified and disbursement completed.');
+    }
 }

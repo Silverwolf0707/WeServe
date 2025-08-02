@@ -42,9 +42,9 @@
                                 <img src="{{ asset('storage/' . $doc->file_path) }}" 
                                      alt="{{ $doc->file_name }}" 
                                      class="card-img-top preview-image"
-                                     data-toggle="modal" 
-                                     data-target="#imagePreviewModal"
-                                     data-image="{{ asset('storage/' . $doc->file_path) }}"
+                                     data-bs-toggle="modal" 
+                                     data-bs-target="#imagePreviewModal"
+                                     data-bs-image="{{ asset('storage/' . $doc->file_path) }}"
                                      style="height: 150px; object-fit: cover; cursor: pointer;">
 
                                 <div class="card-body p-2">
@@ -70,7 +70,7 @@
         {{-- Upload & Back Buttons --}}
         <div class="d-flex gap-2">
             @can('documents_management')
-                <button class="btn btn-success me-2" data-toggle="modal" data-target="#uploadDocumentModal">
+                <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#uploadDocumentModal">
                     <i class="fas fa-upload me-1"></i> Upload Document
                 </button>
             @endcan
@@ -92,7 +92,7 @@
                 <h5 class="modal-title" id="uploadDocumentModalLabel">
                     <i class="fas fa-upload mr-2"></i> Upload Document
                 </h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                <button type="button" class="close text-white" data-bs-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span> 
                 </button>
             </div>
@@ -119,7 +119,7 @@
                 <button type="submit" class="btn btn-success">
                     <i class="fas fa-check-circle mr-1"></i> Upload
                 </button>
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="fas fa-times-circle mr-1"></i> Cancel
                 </button>
             </div>

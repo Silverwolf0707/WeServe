@@ -68,6 +68,11 @@ class PatientRecord extends Model
     {
         $this->attributes['date_processed'] = $value ? Carbon::createFromFormat(config('panel.date_format') . ' ' . config('panel.time_format'), $value)->format('Y-m-d H:i:s') : null;
     }
+    public function otpCodes()
+    {
+        return $this->hasMany(OtpCode::class, 'patient_id');
+    }
+
     public function getBarangayAttribute()
     {
         $barangays = [
@@ -153,4 +158,5 @@ class PatientRecord extends Model
     {
         return $this->hasMany(\App\Models\Document::class, 'patient_id');
     }
+    
 }
