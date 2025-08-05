@@ -11,13 +11,18 @@ class PatientStatusLog extends Model
 
     public $timestamps = true;
 
+    const STATUS_DRAFT = 'Draft';
     const STATUS_SUBMITTED = 'Submitted';
     const STATUS_APPROVED = 'Approved';
     const STATUS_REJECTED = 'Rejected';
     const STATUS_BUDGET_ALLOCATED = 'Budget Allocated';
     const STATUS_DV_SUBMITTED = 'DV Submitted';
     const STATUS_DISBURSED = 'Disbursed';
-
+    const STATUS_READY_FOR_DISBURSEMENT = 'Ready for Disbursement';
+    const STATUS_ROLLED_BACK_TO_DRAFT = 'Draft[ROLLED BACK]';
+    const STATUS_ROLLED_BACK_TO_SUBMITTED = 'Submitted[ROLLED BACK]';
+    const STATUS_ROLLED_BACK_TO_APPROVED = 'Approved[ROLLED BACK]';
+    const STATUS_ROLLED_BACK_TO_BUDGET_ALLOCATED = 'Budget Allocated[ROLLED BACK]';
 
     protected $fillable = [
         'patient_id',
@@ -36,5 +41,10 @@ class PatientStatusLog extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function getBaseStatusAttribute(): string
+    {
+        return str_replace('[ROLLED BACK]', '', $this->status);
     }
 }

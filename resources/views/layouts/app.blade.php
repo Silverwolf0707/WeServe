@@ -28,6 +28,8 @@
   <link href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" rel="stylesheet">
   <link href="https://cdn.datatables.net/select/1.7.0/css/select.dataTables.min.css" rel="stylesheet">
 <link href="{{ asset('css/adminltev3.css') }}" rel="stylesheet" />
+@vite(['resources/js/app.js', 'resources/css/app.css'])
+
     @yield('styles')
 </head>
 

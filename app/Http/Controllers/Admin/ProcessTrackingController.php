@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Events\PatientStatusChanged;
 use App\Models\OtpCode;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
@@ -52,16 +53,28 @@ class ProcessTrackingController extends Controller
         ]);
 
         $patient = PatientRecord::findOrFail($id);
-        $status = $request->action === 'approve' ? PatientStatusLog::STATUS_APPROVED : PatientStatusLog::STATUS_REJECTED;
+
+        $status = $request->action === 'approve'
+            ? PatientStatusLog::STATUS_APPROVED
+            : PatientStatusLog::STATUS_REJECTED;
 
         PatientStatusLog::create([
             'patient_id' => $patient->id,
             'status' => $status,
             'user_id' => Auth::id(),
             'remarks' => $request->remarks,
+            'created_at' => now(),
         ]);
 
-        return redirect()->route('admin.process-tracking.show', $id)
+        // Refresh patient record if you want to include relationships like latest status
+        $patient->load('latestStatusLog');
+
+        // Broadcast the event
+        $action = $request->action === 'approve' ? 'approved' : 'rejected';
+        broadcast(new PatientStatusChanged($patient, $action))->toOthers();
+
+        return redirect()
+            ->route('admin.process-tracking.show', $id)
             ->with('status', 'Patient has been ' . strtolower($status) . '.');
     }
 
@@ -93,11 +106,48 @@ class ProcessTrackingController extends Controller
             'user_id' => Auth::id(),
             'status' => PatientStatusLog::STATUS_DV_SUBMITTED,
             'remarks' => 'DV recorded: ' . $request->dv_code,
+            'created_at' => now(),
         ]);
+
+        $patient->load('latestStatusLog'); // Optional: load if your frontend expects it
+
+        broadcast(new PatientStatusChanged($patient, 'dv_submitted'))->toOthers();
 
         return redirect()->route('admin.process-tracking.show', $id)
             ->with('status', 'Disbursement Voucher added successfully.');
     }
+
+    public function updateDV(Request $request, $id)
+    {
+        $patient = PatientRecord::findOrFail($id);
+
+        $validated = $request->validate([
+            'dv_code' => 'required|string|max:255',
+            'dv_date' => 'required|date',
+        ]);
+
+        $dv = $patient->disbursementVoucher;
+        if ($dv) {
+            $dv->update($validated);
+        }
+
+        // Log status
+        PatientStatusLog::create([
+            'patient_id' => $patient->id,
+            'user_id' => Auth::id(),
+            'status' => PatientStatusLog::STATUS_DV_SUBMITTED,
+            'remarks' => 'DV updated: ' . $validated['dv_code'],
+            'created_at' => now(),
+        ]);
+
+        $patient->load('latestStatusLog');
+        broadcast(new PatientStatusChanged($patient, 'dv_submitted'))->toOthers();
+
+        return back()->with('success', 'DV updated and status progressed.');
+    }
+
+
+
     public function storeBudget(Request $request, $id)
     {
         abort_if(Gate::denies('budget_allocate'), Response::HTTP_FORBIDDEN, '403 Forbidden');
@@ -126,11 +176,47 @@ class ProcessTrackingController extends Controller
             'user_id' => Auth::id(),
             'status' => PatientStatusLog::STATUS_BUDGET_ALLOCATED,
             'remarks' => 'Budget allocated: ₱' . number_format($request->amount, 2),
+            'created_at' => now(),
         ]);
+
+        $patient->load('latestStatusLog');
+
+        broadcast(new PatientStatusChanged($patient, 'budget_allocated'))->toOthers();
 
         return redirect()->route('admin.process-tracking.show', $id)
             ->with('status', 'Budget allocated successfully.');
     }
+    public function updateBudget(Request $request, $id)
+    {
+        $patient = PatientRecord::findOrFail($id);
+
+        $validated = $request->validate([
+            'amount' => 'required|numeric|min:0',
+            'remarks' => 'nullable|string|max:1000',
+        ]);
+
+        $budget = $patient->budgetAllocation;
+        if ($budget) {
+            $budget->update($validated);
+        }
+
+        // Log status
+        PatientStatusLog::create([
+            'patient_id' => $patient->id,
+            'status' => PatientStatusLog::STATUS_BUDGET_ALLOCATED,
+            'user_id' => Auth::id(),
+            'remarks' => 'Budget updated: ₱' . number_format($validated['amount'], 2),
+            'created_at' => now(),
+        ]);
+
+        $patient->load('latestStatusLog');
+        broadcast(new PatientStatusChanged($patient, 'budget_allocated'))->toOthers();
+
+        return back()->with('success', 'Budget updated and status progressed.');
+    }
+
+
+
     public function markBudgetAsDisbursed($id)
     {
         abort_if(Gate::denies('treasury_disburse'), Response::HTTP_FORBIDDEN, '403 Forbidden');
@@ -150,7 +236,12 @@ class ProcessTrackingController extends Controller
             'user_id' => Auth::id(),
             'status' => PatientStatusLog::STATUS_DISBURSED,
             'remarks' => 'Budget marked as disbursed by Treasury.',
+            'created_at' => now(),
         ]);
+
+        $patient = PatientRecord::with('latestStatusLog')->findOrFail($id);
+
+        broadcast(new PatientStatusChanged($patient, 'disbursed'))->toOthers();
 
         return redirect()->route('admin.process-tracking.show', $id)
             ->with('status', 'Budget status updated to Disbursed.');
@@ -162,21 +253,35 @@ class ProcessTrackingController extends Controller
             'rollback_remarks' => 'required|string',
         ]);
 
-        $validStatuses = $patient->statusLogs->pluck('status')->unique();
+        $validStatuses = $patient->statusLogs->pluck('status')->map(function ($status) {
+            return str_replace('[ROLLED BACK]', '', $status);
+        })->unique();
 
-        if (!$validStatuses->contains($request->rollback_to)) {
+        $rollbackTo = $request->rollback_to;
+
+        if (!$validStatuses->contains($rollbackTo)) {
             return back()->with('error', 'Invalid rollback target.');
         }
 
-        // Proceed with rollback
+        $rolledBackStatus = $rollbackTo . '[ROLLED BACK]';
+
+        // Log new status with [ROLLED BACK] mark
         $patient->statusLogs()->create([
-            'status' => $request->rollback_to,
+            'status' => $rolledBackStatus,
             'remarks' => '[ROLLED BACK] ' . $request->rollback_remarks,
-            'user_id' => AUTH::id(),
+            'user_id' => Auth::id(),
+            'created_at' => now(),
         ]);
 
-        return redirect()->back()->with('success', 'Process rolled back to ' . $request->rollback_to);
+        // Reload latest status log before broadcasting
+        $patient->load('latestStatusLog');
+
+        // Broadcast base status only (for UI logic)
+        broadcast(new PatientStatusChanged($patient, strtolower($rollbackTo)))->toOthers();
+
+        return redirect()->back()->with('success', 'Process rolled back to ' . $rolledBackStatus);
     }
+
     public function sendOtpForDisbursement($id)
     {
         abort_if(Gate::denies('treasury_disburse'), 403);
@@ -211,7 +316,7 @@ class ProcessTrackingController extends Controller
         PatientStatusLog::create([
             'patient_id' => $patient->id,
             'user_id' => Auth::id(),
-            'status' => 'Ready for Disbursement',
+            'status' => PatientStatusLog::STATUS_READY_FOR_DISBURSEMENT,
             'remarks' => 'OTP sent to claimant.',
         ]);
 

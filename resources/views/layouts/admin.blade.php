@@ -38,6 +38,7 @@
 <!-- AdminLTE and Custom Styles -->
 <link href="{{ asset('css/adminltev3.css') }}" rel="stylesheet">
 <link href="{{ asset('css/custom.css') }}" rel="stylesheet">
+@vite(['resources/js/app.js', 'resources/css/app.css'])
 
 
   @yield('styles')

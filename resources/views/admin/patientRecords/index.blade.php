@@ -289,5 +289,70 @@
                 }, 1000);
             }
         });
+        
+        setTimeout(() => {
+            Echo.channel('patients')
+                .listen('.patientRecord.changed', function (e) {
+                    console.log('Patient Record added:', e);
+
+                    const table = $('.datatable-PatientRecord').DataTable();
+
+                    const newRow = table.row.add([
+                        '', // For checkbox or placeholder
+                        formatDate(e.date_processed),
+                        e.case_type ?? '',
+                        e.control_number ?? '',
+                        e.claimant_name ?? '',
+                        caseCategoryLabel(e.case_category),
+                        e.patient_name ?? '',
+                        `<span class="text-truncate" style="max-width: 200px; display: inline-block; overflow: hidden; white-space: nowrap;">${e.diagnosis ?? ''}</span>`,
+                        e.age ?? '',
+                        e.address ?? '',
+                        e.contact_number ?? '',
+                        e.case_worker ?? '',
+                        generateActions(e.id)
+                    ]).draw(false).node();
+
+                    // Optional: Highlight the new row
+                    $(newRow).addClass('table-success');
+
+                    // Optional: Remove the highlight after a few seconds
+                    setTimeout(() => {
+                        $(newRow).removeClass('table-success');
+                    }, 3000);
+                });
+
+            function formatDate(input) {
+                const date = new Date(input);
+                return date.toLocaleString('en-PH', {
+                    year: 'numeric', month: 'long', day: 'numeric',
+                    hour: 'numeric', minute: '2-digit', hour12: true
+                });
+            }
+
+            function caseCategoryLabel(code) {
+                const categoryMap = @json(App\Models\PatientRecord::CASE_CATEGORY_SELECT);
+                return categoryMap[code] ?? code;
+            }
+
+            function generateActions(id) {
+                return `
+                <div class="d-flex align-items-center">
+                    <a href="/admin/patient-records/${id}" class="mr-3" title="View"><i class="fas fa-eye"></i></a>
+                    <a href="/admin/patient-records/${id}/edit" class="mr-3" title="Edit"><i class="fas fa-edit"></i></a>
+                    <form method="POST" action="/admin/patient-records/${id}" class="m-0 p-0 delete-form" style="display:inline;">
+                        <input type="hidden" name="_method" value="DELETE">
+                        <input type="hidden" name="_token" value="${_token}">
+                        <button type="submit" class="btn p-0 border-0 bg-transparent mr-3 delete-button" title="Delete">
+                            <i class="fas fa-trash-alt text-danger"></i>
+                        </button>
+                    </form>
+                </div>`;
+            }
+        }, 200);
+
+
+
+
     </script>
 @endsection

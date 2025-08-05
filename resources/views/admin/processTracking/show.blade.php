@@ -65,9 +65,14 @@
                     'Disbursed' => 'Treasury Office',
                 ];
 
-                $currentStatus = $latestStatus->status;
-                $currentIndex = array_search($currentStatus, $steps);
+                // Normalize the latest status (strip anything after brackets like '[ROLLED BACK]')
+                $rawStatus = $latestStatus->status;
+                $baseStatus = trim(preg_replace('/\[.*?\]/', '', $rawStatus));
+
+                // Get the current index in the steps
+                $currentIndex = array_search($baseStatus, $steps);
             @endphp
+
 
             <style>
                 .stepper {
@@ -127,12 +132,11 @@
 
             <div class="stepper">
                 @foreach ($steps as $index => $step)
-                    <div
-                        class="step 
-                                                                                            {{ $latestStatus->status !== 'Rejected' && $index < $currentIndex ? 'completed' : '' }} 
-                                                                                            {{ $latestStatus->status !== 'Rejected' && $index === $currentIndex ? 'active' : '' }}">
+                    <div class="step 
+                                        {{ $baseStatus !== 'Rejected' && $index < $currentIndex ? 'completed' : '' }} 
+                                        {{ $baseStatus !== 'Rejected' && $index === $currentIndex ? 'active' : '' }}">
                         <div class="circle">
-                            @if ($latestStatus->status !== 'Rejected' && $index <= $currentIndex)
+                            @if ($baseStatus !== 'Rejected' && $index <= $currentIndex)
                                 <i class="fas fa-check"></i>
                             @else
                                 {{ $index + 1 }}
@@ -142,6 +146,7 @@
                     </div>
                 @endforeach
             </div>
+
             {{-- ✅ END PROCESS TRACKER --}}
 
             {{-- PROCESS SUMMARY --}}
@@ -205,7 +210,7 @@
             @php $isFinalized = in_array(optional($latestStatus)->status, ['Approved', 'Rejected']); @endphp
 
             @can('approve_patient')
-                @if ($latestStatus->status === 'Submitted')
+                @if ($baseStatus === 'Submitted')
                     <div class="card mb-4">
                         <div class="card-header bg-primary text-white">
                             <i class="fas fa-paper-plane me-2"></i> Mayor Approval
@@ -228,17 +233,20 @@
             @endcan
 
             @can('budget_allocate')
-                @if ($latestStatus->status === 'Approved' && !$patient->budgetAllocation)
+                @if ($baseStatus === 'Approved')
                     <div class="card shadow-sm border-0 mb-4" style="background-color: #f8f9fa;">
                         <div class="card-header bg-primary text-white d-flex align-items-center">
                             <i class="fas fa-wallet"></i>
-                            <h5 class="mb-0" style="margin-left: 10px;">Budget Allocation</h5>
+                            <h5 class="mb-0" style="margin-left: 10px;">
+                                {{ $patient->budgetAllocation ? 'Edit Budget Allocation' : 'Budget Allocation' }}
+                            </h5>
                         </div>
 
                         <div class="card-body text-center">
                             <button type="button" class="btn btn-warning btn-lg px-4 text-white" data-bs-toggle="modal"
                                 data-bs-target="#budgetModal">
-                                <i class="fas fa-plus-circle me-2"></i> Allocate Budget
+                                <i class="fas fa-plus-circle me-2"></i>
+                                {{ $patient->budgetAllocation ? 'Edit Budget' : 'Allocate Budget' }}
                             </button>
                             <button type="button" class="btn btn-danger btn-lg px-4 text-white" data-bs-toggle="modal"
                                 data-bs-target="#rollbackModal">
@@ -251,12 +259,19 @@
                     <div class="modal fade" id="budgetModal" tabindex="-1" role="dialog" aria-labelledby="budgetModalLabel"
                         aria-hidden="true">
                         <div class="modal-dialog modal-dialog-centered" role="document">
-                            <form action="{{ route('admin.process-tracking.storeBudget', $patient->id) }}" method="POST">
+                            <form action="{{ $patient->budgetAllocation
+                        ? route('admin.process-tracking.updateBudget', $patient->id)
+                        : route('admin.process-tracking.storeBudget', $patient->id) }}" method="POST">
                                 @csrf
+                                @if($patient->budgetAllocation)
+                                    @method('PUT')
+                                @endif
+
                                 <div class="modal-content border-0 shadow-lg rounded-4" style="overflow: hidden;">
                                     <div class="modal-header bg-primary text-white">
                                         <h5 class="modal-title" id="budgetModalLabel">
-                                            <i class="fas fa-wallet me-2"></i> Allocate Budget
+                                            <i class="fas fa-wallet me-2"></i>
+                                            {{ $patient->budgetAllocation ? 'Edit Budget Allocation' : 'Allocate Budget' }}
                                         </h5>
                                         <button type="button" class="close text-white" data-bs-dismiss="modal" aria-label="Close">
                                             <span aria-hidden="true" style="font-size: 1.5rem;">&times;</span>
@@ -267,10 +282,11 @@
                                         <div class="form-group mb-4">
                                             <label for="amount" class="form-label">Amount (₱)</label>
                                             <input type="number" step="0.01" name="amount" id="amount"
-                                                class="form-control form-control-lg rounded-3 shadow-sm" required>
+                                                class="form-control form-control-lg rounded-3 shadow-sm" required
+                                                value="{{ old('amount', $patient->budgetAllocation->amount ?? '') }}">
 
                                             <div class="d-flex flex-wrap gap-2 mt-3">
-                                                @foreach([1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000] as $suggested)
+                                                @foreach ([1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000] as $suggested)
                                                     <button type="button"
                                                         class="btn btn-outline-primary btn-sm suggested-amount rounded-pill px-3"
                                                         data-value="{{ $suggested }}">₱{{ number_format($suggested) }}</button>
@@ -281,13 +297,14 @@
                                         <div class="form-group">
                                             <label for="remarks" class="form-label">Remarks</label>
                                             <textarea name="remarks" id="remarks" class="form-control rounded-3 shadow-sm" rows="4"
-                                                placeholder="Enter any remarks here..."></textarea>
+                                                placeholder="Enter any remarks here...">{{ old('remarks', $patient->budgetAllocation->remarks ?? '') }}</textarea>
                                         </div>
                                     </div>
 
                                     <div class="modal-footer d-flex flex-column gap-2 p-4 pt-0">
                                         <button type="submit" class="btn btn-success w-100 rounded-pill py-2">
-                                            <i class="fas fa-check-circle me-1"></i> Confirm Allocation
+                                            <i class="fas fa-check-circle me-1"></i>
+                                            {{ $patient->budgetAllocation ? 'Update Allocation' : 'Confirm Allocation' }}
                                         </button>
                                         <button type="button" class="btn btn-secondary w-100 rounded-pill py-2"
                                             data-bs-dismiss="modal">Cancel</button>
@@ -296,62 +313,60 @@
                             </form>
                         </div>
                     </div>
-
-                    <!-- Rollback Modal -->
-                    <div class="modal fade" id="rollbackModal" tabindex="-1" aria-labelledby="rollbackModalLabel"
-                        aria-hidden="true">
-                        <div class="modal-dialog">
-                            <form action="{{ route('admin.process-tracking.rollback', $patient->id) }}" method="POST">
-                                @csrf
-                                <div class="modal-content">
-                                    <div class="modal-header bg-danger text-white">
-                                        <h5 class="modal-title" id="rollbackModalLabel">Rollback Process</h5>
-                                        <button type="button" class="close text-white" data-bs-dismiss="modal" aria-label="Close">
-                                            <span aria-hidden="true">&times;</span>
-                                        </button>
-                                    </div>
-
-                                    <div class="modal-body">
-                                        <div class="form-group">
-                                            <label for="rollback_to">Rollback to</label>
-                                            <select class="form-control" name="rollback_to" id="rollback_to" required>
-                                                @php
-                                                    $previousStatuses = $patient->statusLogs
-                                                        ->pluck('status')
-                                                        ->unique()
-                                                        ->filter(function ($status) use ($latestStatus) {
-                                                            return $status !== $latestStatus->status;
-                                                        });
-                                                @endphp
-
-                                                @foreach ($previousStatuses as $status)
-                                                    <option value="{{ $status }}">{{ $status }}</option>
-                                                @endforeach
-
-                                            </select>
-                                        </div>
-
-                                        <div class="form-group">
-                                            <label for="rollback_remarks">Remarks</label>
-                                            <textarea name="rollback_remarks" class="form-control" id="rollback_remarks" rows="3"
-                                                required></textarea>
-                                        </div>
-                                    </div>
-
-                                    <div class="modal-footer">
-                                        <button type="submit" class="btn btn-danger">Rollback</button>
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-
                 @endif
             @endcan
 
+            <!-- Rollback Modal -->
+            <div class="modal fade" id="rollbackModal" tabindex="-1" aria-labelledby="rollbackModalLabel"
+                aria-hidden="true">
+                <div class="modal-dialog">
+                    <form action="{{ route('admin.process-tracking.rollback', $patient->id) }}" method="POST">
+                        @csrf
+                        <div class="modal-content">
+                            <div class="modal-header bg-danger text-white">
+                                <h5 class="modal-title" id="rollbackModalLabel">Rollback Process</h5>
+                                <button type="button" class="close text-white" data-bs-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <label for="rollback_to">Rollback to</label>
+                                    <select class="form-control" name="rollback_to" id="rollback_to" required>
+                                        @php
+                                            $previousStatuses = $patient->statusLogs
+                                                ->pluck('status')
+                                                ->unique()
+                                                ->filter(function ($status) use ($latestStatus) {
+                                                    return $status !== $latestStatus->status;
+                                                });
+                                        @endphp
+
+                                        @foreach ($previousStatuses as $status)
+                                            <option value="{{ $status }}">{{ $status }}</option>
+                                        @endforeach
+
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="rollback_remarks">Remarks</label>
+                                    <textarea name="rollback_remarks" class="form-control" id="rollback_remarks" rows="3"
+                                        required></textarea>
+                                </div>
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="submit" class="btn btn-danger">Rollback</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
             @can('accounting_dv_input')
-                @if ($latestStatus->status === 'Budget Allocated' && !$patient->disbursementVoucher)
+                @if ($baseStatus === 'Budget Allocated')
                     <div class="card shadow-sm border-0 mb-4" style="background-color: #f8f9fa;">
                         <div class="card-header bg-primary text-white d-flex align-items-center">
                             <i class="fas fa-file-invoice"></i>
@@ -361,7 +376,12 @@
                         <div class="card-body text-center">
                             <button type="button" class="btn btn-info btn-lg px-4 text-white" data-bs-toggle="modal"
                                 data-bs-target="#dvModal">
-                                <i class="fas fa-file-alt me-2"></i> Enter DV Details
+                                <i class="fas fa-file-alt me-2"></i> {{ $patient->disbursementVoucher ? 'Edit' : 'Enter' }} DV
+                                Details
+                            </button>
+                            <button type="button" class="btn btn-danger btn-lg px-4 text-white" data-bs-toggle="modal"
+                                data-bs-target="#rollbackModal">
+                                <i class="fas fa-undo-alt me-1"></i> Rollback Process
                             </button>
                         </div>
                     </div>
@@ -370,12 +390,19 @@
                     <div class="modal fade" id="dvModal" tabindex="-1" role="dialog" aria-labelledby="dvModalLabel"
                         aria-hidden="true">
                         <div class="modal-dialog" role="document">
-                            <form action="{{ route('admin.process-tracking.storeDV', $patient->id) }}" method="POST">
+                            <form action="{{ $patient->disbursementVoucher
+                        ? route('admin.process-tracking.updateDV', $patient->id)
+                        : route('admin.process-tracking.storeDV', $patient->id) }}" method="POST">
                                 @csrf
+                                @if ($patient->disbursementVoucher)
+                                    @method('PUT')
+                                @endif
+
                                 <div class="modal-content border-0">
                                     <div class="modal-header bg-primary text-white">
-                                        <h5 class="modal-title" id="dvModalLabel"><i class="fas fa-file-invoice me-2"></i> Enter
-                                            Disbursement Voucher</h5>
+                                        <h5 class="modal-title" id="dvModalLabel"><i class="fas fa-file-invoice me-2"></i>
+                                            {{ $patient->disbursementVoucher ? 'Edit' : 'Enter' }} Disbursement Voucher
+                                        </h5>
                                         <button type="button" class="close text-white" data-bs-dismiss="modal" aria-label="Close">
                                             <span aria-hidden="true">&times;</span>
                                         </button>
@@ -385,18 +412,20 @@
                                         <div class="form-group mb-3">
                                             <label for="dv_code">DV Code</label>
                                             <input type="text" name="dv_code" id="dv_code" class="form-control form-control-lg"
-                                                required>
+                                                value="{{ old('dv_code', $patient->disbursementVoucher->dv_code ?? '') }}" required>
                                         </div>
                                         <div class="form-group mb-3">
                                             <label for="dv_date">DV Date</label>
                                             <input type="date" name="dv_date" id="dv_date" class="form-control form-control-lg"
+                                                value="{{ old('dv_date', optional($patient->disbursementVoucher)->dv_date ? \Carbon\Carbon::parse($patient->disbursementVoucher->dv_date)->format('Y-m-d') : '') }}"
                                                 required>
                                         </div>
                                     </div>
 
                                     <div class="modal-footer">
                                         <button type="submit" class="btn btn-success w-100">
-                                            <i class="fas fa-check-circle me-1"></i> Submit DV
+                                            <i class="fas fa-check-circle me-1"></i>
+                                            {{ $patient->disbursementVoucher ? 'Update' : 'Submit' }} DV
                                         </button>
                                         <button type="button" class="btn btn-secondary w-100 mt-2"
                                             data-bs-dismiss="modal">Cancel</button>
@@ -405,25 +434,27 @@
                             </form>
                         </div>
                     </div>
-
                 @endif
             @endcan
 
+
             @can('treasury_disburse')
                 @if (
-                        in_array($latestStatus->status, ['DV Submitted', 'Ready for Disbursement']) &&
+                        in_array($baseStatus, ['DV Submitted', 'Ready for Disbursement']) &&
                         $patient->budgetAllocation &&
                         $patient->budgetAllocation->budget_status !== 'Disbursed'
                     )
-
-                    @if ($latestStatus->status === 'DV Submitted' && $patient->budgetAllocation->budget_status === 'Not Disbursed')
+                    @if ($baseStatus === 'DV Submitted' && $patient->budgetAllocation->budget_status === 'Not Disbursed')
                         {{-- READY FOR DISBURSEMENT --}}
                         <form action="{{ route('admin.process-tracking.sendOtp', $patient->id) }}" method="POST">
                             @csrf
                             <button class="btn btn-warning mt-4">Ready for Disbursement</button>
+                            <button type="button" class="btn btn-danger btn-lg px-4 text-white" data-bs-toggle="modal"
+                                data-bs-target="#rollbackModal">
+                                <i class="fas fa-undo-alt me-1"></i> Rollback Process
+                            </button>
                         </form>
-
-                    @elseif ($latestStatus->status === 'Ready for Disbursement')
+                    @elseif ($baseStatus === 'Ready for Disbursement')
                         {{-- VERIFY OTP --}}
                         @php
                             $otp = $patient->otpCodes()->latest()->first();
@@ -436,7 +467,6 @@
                             <button class="btn btn-success">Confirm & Mark Disbursed</button>
                         </form>
                     @endif
-
                 @elseif ($patient->budgetAllocation && $patient->budgetAllocation->budget_status === 'Disbursed')
                     <div class="alert alert-success mt-4">
                         <strong>Status:</strong> Disbursed
@@ -457,7 +487,6 @@
 @endsection
 @push('scripts')
     <script>
-
         document.addEventListener('DOMContentLoaded', function () {
             const amountInput = document.getElementById('amount');
             const buttons = document.querySelectorAll('.suggested-amount');

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Events\PatientRecordCreated;
+use App\Events\PatientStatusChanged;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Traits\CsvImportTrait;
 use App\Http\Requests\MassDestroyPatientRecordRequest;
@@ -97,6 +99,7 @@ class PatientRecordsController extends Controller
         //     'user_id' => Auth::id(),
         //     'created_at' => now(),
         // ]);
+        broadcast(new PatientRecordCreated($patientRecord))->toOthers();
 
         return redirect()->route('admin.patient-records.index')->with('toast', [
             'type' => 'success',
@@ -172,71 +175,79 @@ class PatientRecordsController extends Controller
             'status' => 'required|string',
         ]);
 
+        $status = $request->input('status'); 
+
+        // Create status log
         PatientStatusLog::create([
             'patient_id' => $id,
-            'status' => PatientStatusLog::STATUS_SUBMITTED,  // "Submitted"
+            'status' => $status,
             'user_id' => Auth::id(),
             'remarks' => $request->remarks,
             'created_at' => now(),
         ]);
 
-        return redirect()->route('admin.patient-records.show', $id)
+        $patientRecord = PatientRecord::with('latestStatusLog')->findOrFail($id);
+
+        $action = $status === 'Submitted' ? 'submitted' : 'updated';
+        broadcast(new PatientStatusChanged($patientRecord, $action))->toOthers();
+
+        return redirect()
+            ->route('admin.patient-records.show', $id)
             ->with('success', 'Application submitted successfully with remarks.');
     }
-public function massSubmit(Request $request)
-{
-    $ids = $request->input('ids');
-    $remarks = $request->input('remarks');
-    $submitted = [];
-    $skipped = [];
+    public function massSubmit(Request $request)
+    {
+        $ids = $request->input('ids');
+        $remarks = $request->input('remarks');
+        $submitted = [];
+        $skipped = [];
 
-    DB::beginTransaction();
+        DB::beginTransaction();
 
-    try {
-        foreach ($ids as $id) {
-            $patient = PatientRecord::find($id);
-            if (!$patient) continue;
+        try {
+            foreach ($ids as $id) {
+                $patient = PatientRecord::find($id);
+                if (!$patient) continue;
 
-            $latestStatus = $patient->statusLogs()->latest()->first();
+                $latestStatus = $patient->statusLogs()->latest()->first();
 
-            if (!$latestStatus || $latestStatus->status === PatientStatusLog::STATUS_REJECTED) {
-                $patient->statusLogs()->create([
-                    'status' => PatientStatusLog::STATUS_SUBMITTED,
-                    'user_id' => Auth::id(),
-                    'remarks' => $remarks,
-                    'created_at' => now(),
-                ]);
-                $submitted[] = $patient->control_number;
-            } else {
-                $skipped[] = $patient->control_number;
+                if (!$latestStatus || $latestStatus->status === PatientStatusLog::STATUS_REJECTED) {
+                    $patient->statusLogs()->create([
+                        'status' => PatientStatusLog::STATUS_SUBMITTED,
+                        'user_id' => Auth::id(),
+                        'remarks' => $remarks,
+                        'created_at' => now(),
+                    ]);
+                    $submitted[] = $patient->control_number;
+                } else {
+                    $skipped[] = $patient->control_number;
+                }
             }
+
+            DB::commit();
+
+            return response()->json([
+                'toast' => [
+                    'type' => 'success',
+                    'title' => 'Patient Record Mass Submitted',
+                    'message' => implode('', [
+                        count($submitted) ? '✅ <strong>Submitted:</strong> ' . implode(', ', $submitted) . '<br>' : '',
+                        count($skipped) ? '⚠️ <strong>Skipped:</strong> ' . implode(', ', $skipped) . '<br>' : '',
+                    ]),
+                    'time' => now()->diffForHumans(),
+                ]
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'toast' => [
+                    'type' => 'danger',
+                    'title' => 'Error Submitting Records',
+                    'message' => 'An error occurred: ' . $e->getMessage(),
+                    'time' => now()->diffForHumans(),
+                ]
+            ], 500);
         }
-
-        DB::commit();
-
-        return response()->json([
-            'toast' => [
-                'type' => 'success',
-                'title' => 'Patient Record Mass Submitted',
-                'message' => implode('', [
-                    count($submitted) ? '✅ <strong>Submitted:</strong> ' . implode(', ', $submitted) . '<br>' : '',
-                    count($skipped) ? '⚠️ <strong>Skipped:</strong> ' . implode(', ', $skipped) . '<br>' : '',
-                ]),
-                'time' => now()->diffForHumans(),
-            ]
-        ]);
-    } catch (\Exception $e) {
-        DB::rollBack();
-
-        return response()->json([
-            'toast' => [
-                'type' => 'danger',
-                'title' => 'Error Submitting Records',
-                'message' => 'An error occurred: ' . $e->getMessage(),
-                'time' => now()->diffForHumans(),
-            ]
-        ], 500);
     }
-}
-
 }
