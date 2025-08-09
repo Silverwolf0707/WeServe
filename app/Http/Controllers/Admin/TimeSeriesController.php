@@ -11,13 +11,34 @@ class TimeSeriesController extends Controller
 {
     public function index()
     {
-        if (!Gate::allows('CSWD-ANALYTICS')) {
-            abort(403);
-        }
+        $type = request('type'); // get ?type=cswd, budget, etc.
+
         $this->exportToCsvFile();
         $this->runPythonStl();
-        return view('admin.timeseries.cswd.index');
-    }   
+
+        // Map type to permissions and views
+        $analyticsViews = [
+            'cswd'      => ['permission' => 'CSWD-ANALYTICS',     'view' => 'admin.timeseries.cswd.index'],
+            'budget'    => ['permission' => 'BUDGET-ANALYTICS',   'view' => 'admin.timeseries.budget.index'],
+            'treasury'  => ['permission' => 'TREASURY-ANALYTICS', 'view' => 'admin.timeseries.treasury.index'],
+            'accounting' => ['permission' => 'ACCOUNTING-ANALYTICS', 'view' => 'admin.timeseries.accounting.index'],
+        ];
+
+        if (!isset($analyticsViews[$type])) {
+            abort(404, 'Invalid analytics type.');
+        }
+
+        $permission = $analyticsViews[$type]['permission'];
+        $view = $analyticsViews[$type]['view'];
+
+        if (!Gate::allows($permission)) {
+            abort(403, 'You do not have permission to view this analytics.');
+        }
+
+        return view($view);
+    }
+
+
 
     public function exportToCsvFile()
     {

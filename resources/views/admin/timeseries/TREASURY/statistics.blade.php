@@ -68,9 +68,8 @@
     </div>
     <div class="d-flex gap-2">
       <select id="statDropdown" class="form-select form-select-sm">
-        <option value="case_type">Age</option>
-        <option value="case_type">Case Type</option>
         <option value="case_category">Case Category</option>
+        <option value="case_type">Case Type</option>
       </select>
       <input type="date" class="form-control form-control-sm" id="datePicker">
     </div>
@@ -153,75 +152,95 @@
 </div>
 
 
+      <!-- Chart Panel for Treasury Dashboard -->
+<div class="col-md-4 text-center">
+  <div class="chart-card h-100">
+    <div class="mb-2">
+      <select id="treasuryChartSelector" class="form-select form-select-sm w-75 mx-auto">
+        <option value="check_status">Check Status Breakdown</option>
+        <option value="approval">Approved vs Pending</option>
+      </select>
+    </div>
+    <div style="position:relative; width:100%; height:300px; max-width:260px; margin: 0 auto;">
+      <canvas id="treasuryChart"></canvas>
+    </div>
+    <ul id="treasuryLegend" class="list-unstyled mt-3 small d-flex flex-wrap justify-content-center gap-2"></ul>
+    <p id="treasurySummary" class="mt-2 small text-muted text-center"></p>
+  </div>
+</div>
 
-      <!-- Chart Panel -->
-      <div class="col-md-4 text-center">
-        <div class="chart-card h-100">
-          <div class="mb-2">
-            <select id="chartTypeSelector" class="form-select form-select-sm w-75 mx-auto">
-              <option value="applicants">Applicants by Category</option>
-              <option value="acceptance">Accepted vs Rejected</option>
-            </select>
-          </div>
-          <div style="position:relative; width:100%; height:300px; max-width:260px; margin: 0 auto;">
-            <canvas id="categoryChart"></canvas>
-          </div>
-          <ul id="customLegend" class="list-unstyled mt-3 small d-flex flex-wrap justify-content-center gap-2"></ul>
-          <p id="pieSummary" class="mt-2 small text-muted text-center"></p>
-        </div>
-      </div>
 
-<!-- Document Deficiency Breakdown Panel -->
+     <!-- Peak Activity Insights Panel (Treasury Style - Green Theme) -->
 <div class="col-md-4">
-  <div class="card shadow-sm summary-equal-height h-100 border border-warning" style="background: #fef9e7; border-radius: 1rem;">
-    <div class="card-header d-flex align-items-center text-white border-0" style="background-color: #b9770e; border-radius: 1rem 1rem 0 0;">
+  <div class="card shadow-sm summary-equal-height h-100 border border-success" style="background: #e9fbe7; border-radius: 1rem;">
+    <div class="card-header d-flex align-items-center text-white border-0" style="background-color: #28a745; border-radius: 1rem 1rem 0 0;">
       <h6 class="mb-0 text-center w-100">
-        <i class="fas fa-file-excel me-1"></i>Document Deficiency Breakdown
+        <i class="fas fa-bolt me-1"></i>Peak Activity Insights
       </h6>
     </div>
     <div class="card-body d-flex flex-column justify-content-between">
-      <canvas id="deficiencyChart" style="max-height: 260px;"></canvas>
+      
+      <!-- First Chart: Peak Hour -->
+      <div class="mb-3">
+        <div style="height: 140px;">
+          <canvas id="peakHourChart"></canvas>
+        </div>
+        <div class="text-center small text-muted mt-1">Hourly Trend</div>
+      </div>
 
-      <p class="text-muted small mt-3 text-center">
-        Most deficiencies are observed in <strong>Medical</strong> and <strong>Education</strong> assistance case types, often due to missing IDs and incomplete certifications.
-      </p>
+      <!-- Second Chart: Category Breakdown -->
+      <div class="mb-3">
+        <div style="height: 140px;">
+          <canvas id="peakCategoryChart"></canvas>
+        </div>
+        <div class="text-center small text-muted mt-1">Category Breakdown</div>
+      </div>
+
+      <!-- Summary List -->
+      <ul class="list-unstyled mb-0 small">
+        <li><strong>Peak Day:</strong> <span id="peakDay" class="text-muted">-</span></li>
+        <li><strong>Total Requests:</strong> <span id="peakRequests" class="text-muted">-</span></li>
+        <li><strong>Most Availed Category:</strong> <span id="peakCategory" class="text-muted">-</span></li>
+      </ul>
+
     </div>
   </div>
 </div>
 
 
+    </div>
   </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  // ===== PIE / DOUGHNUT CHART SECTION =====
-  const pieCtx = document.getElementById('categoryChart').getContext('2d');
-  const customLegendContainer = document.getElementById('customLegend');
-  let pieChart;
+  // ===== TREASURY PIE / DOUGHNUT CHART SECTION =====
+  const treasuryCtx = document.getElementById('treasuryChart').getContext('2d');
+  const treasuryLegend = document.getElementById('treasuryLegend');
+  let treasuryChart;
 
-  function renderChart(type) {
-    const configs = {
-      applicants: {
+  function renderTreasuryChart(type) {
+    const treasuryConfigs = {
+      check_status: {
         chartType: 'pie',
-        labels: ['Student', 'PWD', 'Solo Parent', 'Senior Citizen'],
-        data: [120, 90, 60, 30],
-        text: 'Most applicants are students.'
+        labels: ['Received Checks', 'DV for Signature', 'Check Preparation', 'Voucher Scanned', 'Check Signed'],
+        data: [45, 30, 25, 20, 35],
+        text: 'Most documents are in "Received Checks" status.'
       },
-      acceptance: {
+      approval: {
         chartType: 'doughnut',
-        labels: ['Accepted', 'Rejected'],
-        data: [80, 20],
-        text: '80% of applications were accepted.'
+        labels: ['Approved', 'Pending'],
+        data: [70, 30],
+        text: '70% of treasury requests are approved.'
       }
     };
 
-    const cfg = configs[type];
-    const colors = ['#007bff', '#ffc107', '#28a745', '#dc3545', '#17a2b8'];
+    const cfg = treasuryConfigs[type];
+    const colors = ['#6610f2', '#20c997', '#fd7e14', '#6f42c1', '#e83e8c'];
 
-    if (pieChart) pieChart.destroy();
+    if (treasuryChart) treasuryChart.destroy();
 
-    pieChart = new Chart(pieCtx, {
+    treasuryChart = new Chart(treasuryCtx, {
       type: cfg.chartType,
       data: {
         labels: cfg.labels,
@@ -253,7 +272,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Custom Legend
-    customLegendContainer.innerHTML = '';
+    treasuryLegend.innerHTML = '';
     const total = cfg.data.reduce((a, b) => a + b, 0);
     cfg.labels.forEach((label, i) => {
       const value = cfg.data[i];
@@ -263,40 +282,33 @@ document.addEventListener('DOMContentLoaded', function () {
         <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background-color:${colors[i]};margin-right:6px;"></span>
         ${label}: <strong>${value}</strong> (${percent}%)
       `;
-      customLegendContainer.appendChild(li);
+      treasuryLegend.appendChild(li);
     });
 
-    document.getElementById('pieSummary').textContent = `📝 ${cfg.text}`;
+    document.getElementById('treasurySummary').textContent = `📊 ${cfg.text}`;
   }
 
-  document.getElementById('chartTypeSelector').addEventListener('change', function () {
-    renderChart(this.value);
+  document.getElementById('treasuryChartSelector').addEventListener('change', function () {
+    renderTreasuryChart(this.value);
   });
 
-  renderChart(document.getElementById('chartTypeSelector').value);
+  renderTreasuryChart(document.getElementById('treasuryChartSelector').value);
 
   // ===== STATISTICAL ANALYSIS SECTION =====
-  const generateRawAgeData = () =>
-    Array.from({ length: 101 }, () => Math.floor(Math.random() * 10));
-
+  const caseCategoryLabels = ['Burial', 'Medical', 'Educational', 'Emergenecy'];
   const caseTypeLabels = ['Student', 'PWD', 'Solo Parent', 'Senior Citizen'];
-  const caseCategoryLabels = ['Burial', 'Educational', 'Medical', 'Transportation'];
 
   const datasets = {
-    age: {
-      labels: ['All Ages'],
-      data: [generateRawAgeData()]
+    case_category: {
+      labels: caseCategoryLabels,
+      data: caseCategoryLabels.map(() =>
+        Array.from({ length: 12 }, () => Math.floor(Math.random() * 100 + 20))
+      )
     },
     case_type: {
       labels: caseTypeLabels,
       data: caseTypeLabels.map(() =>
-        Array.from({ length: 12 }, () => Math.floor(Math.random() * 50))
-      )
-    },
-    case_category: {
-      labels: caseCategoryLabels,
-      data: caseCategoryLabels.map(() =>
-        Array.from({ length: 12 }, () => Math.floor(Math.random() * 40))
+        Array.from({ length: 12 }, () => Math.floor(Math.random() * 50 + 10))
       )
     }
   };
@@ -305,32 +317,19 @@ document.addEventListener('DOMContentLoaded', function () {
     const mean = [], median = [], mode = [], stdDev = [], variance = [];
 
     dataArray.forEach(data => {
-      const expanded = [];
+      const sorted = [...data].sort((a, b) => a - b);
+      const total = sorted.length;
+      const meanVal = sorted.reduce((a, b) => a + b, 0) / total;
 
-      if (Array.isArray(data) && data.length === 101) {
-        data.forEach((count, age) => {
-          for (let i = 0; i < count; i++) expanded.push(age);
-        });
-      } else {
-        expanded.push(...data);
-      }
-
-      expanded.sort((a, b) => a - b);
-      const total = expanded.length;
-      const meanVal = expanded.reduce((a, b) => a + b, 0) / total;
-
-      let medianVal;
-      if (total % 2 === 0) {
-        medianVal = (expanded[total / 2 - 1] + expanded[total / 2]) / 2;
-      } else {
-        medianVal = expanded[Math.floor(total / 2)];
-      }
+      const medianVal = total % 2 === 0
+        ? (sorted[total / 2 - 1] + sorted[total / 2]) / 2
+        : sorted[Math.floor(total / 2)];
 
       const freq = {};
-      expanded.forEach(val => freq[val] = (freq[val] || 0) + 1);
+      sorted.forEach(val => freq[val] = (freq[val] || 0) + 1);
       const modeVal = +Object.keys(freq).reduce((a, b) => freq[a] > freq[b] ? a : b);
 
-      const varianceVal = expanded.reduce((acc, val) => acc + Math.pow(val - meanVal, 2), 0) / total;
+      const varianceVal = sorted.reduce((acc, val) => acc + Math.pow(val - meanVal, 2), 0) / total;
       const stdDevVal = Math.sqrt(varianceVal);
 
       mean.push(meanVal);
@@ -348,105 +347,88 @@ document.addEventListener('DOMContentLoaded', function () {
     standardDeviationVariance: null
   };
 
-  function renderCentralTendencyChart(ctx, stats, label, isAge = false) {
+  function renderCentralTendencyChart(ctx, stats, label) {
     return new Chart(ctx, {
       type: 'bar',
       data: {
         labels: ['Mean', 'Median', 'Mode'],
         datasets: [{
           label: label,
-          data: [stats.mean[0], stats.median[0], stats.mode[0]],
+          data: [stats.mean, stats.median, stats.mode],
           backgroundColor: ['#007bff', '#28a745', '#ffc107']
         }]
       },
       options: {
+        indexAxis: 'y',
         responsive: true,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: ctx => `${ctx.label}: ${ctx.raw.toFixed(2)}`
-            }
-          }
-        },
+        plugins: { legend: { display: false } },
         scales: {
+          x: {
+            beginAtZero: true,
+            max: 200,
+            title: { display: true, text: 'Number of Disbursed Applications' }
+          },
+          y: { title: { display: true, text: '' } }
+        }
+      }
+    });
+  }
+
+  function renderDispersionChart(ctx, dataPoints, xLabels, labelName, color) {
+    return new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: xLabels,
+        datasets: [{
+          label: labelName,
+          data: dataPoints,
+          fill: true,
+          tension: 0.4,
+          backgroundColor: color + '33',
+          borderColor: color,
+          pointBackgroundColor: color,
+          pointBorderColor: '#fff',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { title: { display: true, text: 'Category / Type' } },
           y: {
             beginAtZero: true,
-            title: {
-              display: true,
-              text: isAge ? 'Age Value' : 'Total Patients'
-            }
+            title: { display: true, text: 'Number of Disbursed Applications' }
           }
         }
       }
     });
   }
 
-  function renderDispersionChart(ctx, data, labels, metric, color) {
-  return new Chart(ctx, {
-    type: 'line', // Changed from 'bar' to 'line'
-    data: {
-      labels: labels,
-      datasets: [{
-        label: metric === 'stdDev' ? 'Standard Deviation' : 'Variance',
-        data: data,
-        fill: true,
-        backgroundColor: color + '33', // translucent fill
-        borderColor: color,
-        borderWidth: 2,
-        tension: 0.4, // curve for wave effect
-        pointRadius: 4,
-        pointBackgroundColor: color,
-        pointBorderColor: '#fff',
-        pointHoverRadius: 6
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false }
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          title: {
-            display: true,
-            text: metric === 'stdDev' ? 'Standard Deviation' : 'Variance'
-          }
-        }
-      }
-    }
-  });
-}
-
   function updateCharts(datasetKey, selectedIndex = 0) {
     const data = datasets[datasetKey];
-    const filterSelect = document.getElementById('centralFilter');
+    const stats = calculateStatsOverTime(data.data);
     const dispersionMetric = document.getElementById('dispersionDropdown').value;
     const color = dispersionMetric === 'stdDev' ? '#dc3545' : '#17a2b8';
+    const filterSelect = document.getElementById('centralFilter');
 
-    const stats = calculateStatsOverTime(data.data);
+    filterSelect.classList.remove('d-none');
+    filterSelect.innerHTML = data.labels.map((l, i) =>
+      `<option value="${i}">${l}</option>`
+    ).join('');
+    filterSelect.value = selectedIndex;
 
-    if (datasetKey === 'age') {
-      filterSelect.classList.add('d-none');
-    } else {
-      filterSelect.classList.remove('d-none');
-      filterSelect.innerHTML = data.labels.map((l, i) =>
-        `<option value="${i}">${l}</option>`
-      ).join('');
-      filterSelect.value = selectedIndex;
-    }
+    const selectedLabel = data.labels[selectedIndex];
 
     if (charts.meanMedianMode) charts.meanMedianMode.destroy();
     charts.meanMedianMode = renderCentralTendencyChart(
       document.getElementById('meanMedianModeChart').getContext('2d'),
       {
-        mean: [stats.mean[selectedIndex]],
-        median: [stats.median[selectedIndex]],
-        mode: [stats.mode[selectedIndex]]
+        mean: stats.mean[selectedIndex],
+        median: stats.median[selectedIndex],
+        mode: stats.mode[selectedIndex]
       },
-      data.labels[selectedIndex] || 'All Ages',
-      datasetKey === 'age'
+      selectedLabel
     );
 
     if (charts.standardDeviationVariance) charts.standardDeviationVariance.destroy();
@@ -454,7 +436,7 @@ document.addEventListener('DOMContentLoaded', function () {
       document.getElementById('standardDeviationVarianceChart').getContext('2d'),
       stats[dispersionMetric],
       data.labels,
-      dispersionMetric,
+      dispersionMetric === 'stdDev' ? 'Standard Deviation' : 'Variance',
       color
     );
 
@@ -478,55 +460,61 @@ document.addEventListener('DOMContentLoaded', function () {
     updateCharts(document.getElementById('statDropdown').value, parseInt(document.getElementById('centralFilter').value || 0));
   });
 
-    updateCharts('age');
+  // Initial chart render
+  updateCharts('case_category');
 
-  // ===== DOCUMENT DEFICIENCY BREAKDOWN - HORIZONTAL BAR CHART =====
-  const deficiencyCtx = document.getElementById('deficiencyChart').getContext('2d');
+  // ===== PEAK ACTIVITY INSIGHTS SCRIPT =====
+  (function renderPeakActivityInsight() {
+    document.getElementById('peakDay').textContent = 'July 18, 2025';
+    document.getElementById('peakRequests').textContent = 142;
+    document.getElementById('peakCategory').textContent = 'Medical Assistance';
 
-  new Chart(deficiencyCtx, {
-    type: 'bar',
-    data: {
-      labels: ['Missing ID', 'No Signature', 'Invalid Form', 'Lack of Proof', 'Wrong Name'],
-      datasets: [{
-        label: 'Deficiency Count',
-        data: [30, 25, 20, 15, 10],
-        backgroundColor: '#007bff',
-        borderRadius: 6,
-        barThickness: 18
-      }]
-    },
-    options: {
-      indexAxis: 'y', // makes it horizontal
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => `${ctx.label}: ${ctx.raw} cases`
-          }
-        }
+    new Chart(document.getElementById('peakHourChart').getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: ['8AM','9AM','10AM','11AM','12PM','1PM','2PM','3PM','4PM','5PM'],
+        datasets: [{
+          label: 'Requests',
+          data: [5, 8, 12, 24, 30, 20, 15, 10, 8, 5],
+          borderColor: '#0d6efd',
+          backgroundColor: 'rgba(13,110,253,0.1)',
+          tension: 0.3,
+          fill: true,
+          pointRadius: 2,
+          borderWidth: 1.5
+        }]
       },
-      scales: {
-        x: {
-          beginAtZero: true,
-          title: {
-            display: true,
-            text: 'Number of Cases'
-          }
-        },
-        y: {
-          ticks: {
-            autoSkip: false,
-            maxRotation: 0,
-            minRotation: 0
-          }
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }},
+        scales: {
+          y: { display: false },
+          x: { ticks: { font: { size: 10 } } }
         }
       }
-    }
-  });
+    });
 
+    new Chart(document.getElementById('peakCategoryChart').getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: ['Medical', 'Burial', 'Education', 'Emergency'],
+        datasets: [{
+          label: 'Requests',
+          data: [50, 35, 30, 27],
+          backgroundColor: ['#0d6efd','#6c757d','#ffc107','#dc3545']
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }},
+        scales: {
+          y: { display: false },
+          x: { ticks: { font: { size: 10 } } }
+        }
+      }
+    });
+  })();
 });
-
-
 </script>

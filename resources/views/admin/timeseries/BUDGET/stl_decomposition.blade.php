@@ -262,12 +262,13 @@
 <script>
   const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
 
-  const dataSeries = {
-    observed: { data: [12, 15, 18, 16, 20, 23], color: '#3b82f6', fill: 'rgba(59, 130, 246, 0.2)' },
-    trend: { data: [11, 13, 15, 17, 19, 21], color: '#10b981', fill: 'rgba(16, 185, 129, 0.2)' },
-    seasonal: { data: [1, 2, 3, -1, 0, 2], color: '#facc15', fill: 'rgba(250, 204, 21, 0.3)' },
-    residual: { data: [0, 0, 0, -1, 1, 0], color: '#ef4444', fill: 'rgba(239, 68, 68, 0.2)' }
-  };
+ const dataSeries = {
+  observed: { data: [120000, 150000, 180000, 160000, 200000, 230000], color: '#3b82f6', fill: 'rgba(59, 130, 246, 0.2)' },
+  trend: { data: [110000, 130000, 150000, 170000, 190000, 210000], color: '#10b981', fill: 'rgba(16, 185, 129, 0.2)' },
+  seasonal: { data: [10000, 20000, 30000, -10000, 0, 20000], color: '#facc15', fill: 'rgba(250, 204, 21, 0.3)' },
+  residual: { data: [0, 0, 0, -10000, 10000, 0], color: '#ef4444', fill: 'rgba(239, 68, 68, 0.2)' }
+};
+
 
   const ctx = document.getElementById('combinedChart').getContext('2d');
 
@@ -305,16 +306,17 @@
           }
         },
         y: {
-          title: {
-            display: true,
-            text: 'Number of Applicants',
-            color: '#6b7280',
-            font: {
-              size: 14,
-              weight: 'bold'
-            }
-          }
-        }
+  title: {
+    display: true,
+    text: 'Amount Disbursed (₱)',
+    color: '#6b7280',
+    font: {
+      size: 14,
+      weight: 'bold'
+    }
+  }
+}
+
       }
     }
   });

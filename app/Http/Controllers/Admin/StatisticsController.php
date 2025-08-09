@@ -14,38 +14,15 @@ class StatisticsController extends Controller
         if (!Gate::allows('CSWD-ANALYTICS')) {
             abort(403);
         }
-        $year = $request->input('year');
-
-        $query = PatientRecord::query();
-
-        if ($year) {
-            $query->whereYear('date_processed', $year);
+         if (!Gate::allows('BUDGET-ANALYTICS')) {
+            abort(403);
         }
-
-        $ages = $query->pluck('age')->filter()->sort()->values();
-
-        if ($ages->isEmpty()) {
-            return response()->json(['message' => 'No age data for selected year.'], 404);
+         if (!Gate::allows('TREASURY-ANALYTICS')) {
+            abort(403);
         }
-
-        $count = $ages->count();
-        $mean = $ages->avg();
-
-        $median = ($count % 2 === 0)
-            ? round(($ages[$count / 2 - 1] + $ages[$count / 2]) / 2, 2)
-            : $ages[floor($count / 2)];
-
-        $mode = $ages->countBy()->sortDesc()->keys()->first() ?? null;
-        $variance = $ages->map(fn($x) => pow($x - $mean, 2))->avg();
-        $stdDev = sqrt($variance);
-
-        return response()->json([
-            'mean' => round($mean),
-            'median' => $median,
-            'mode' => $mode,
-            'variance' => round($variance, 2),
-            'standard_deviation' => round($stdDev),
-            'year' => $year
-        ]);
+        if (!Gate::allows('ACCOUNTING-ANALYTICS')) {
+            abort(403);
+        }
+       
     }
 }

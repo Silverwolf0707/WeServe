@@ -68,7 +68,6 @@
     </div>
     <div class="d-flex gap-2">
       <select id="statDropdown" class="form-select form-select-sm">
-        <option value="case_type">Age</option>
         <option value="case_type">Case Type</option>
         <option value="case_category">Case Category</option>
       </select>
@@ -171,23 +170,24 @@
         </div>
       </div>
 
-<!-- Document Deficiency Breakdown Panel -->
+<!-- Average Processing Time Summary Panel -->
 <div class="col-md-4">
-  <div class="card shadow-sm summary-equal-height h-100 border border-warning" style="background: #fef9e7; border-radius: 1rem;">
-    <div class="card-header d-flex align-items-center text-white border-0" style="background-color: #b9770e; border-radius: 1rem 1rem 0 0;">
+  <div class="card shadow-sm summary-equal-height h-100 border border-warning" style="background: #fff8e1; border-radius: 1rem;">
+    <div class="card-header d-flex align-items-center text-white border-0" style="background-color: #f0ad4e; border-radius: 1rem 1rem 0 0;">
       <h6 class="mb-0 text-center w-100">
-        <i class="fas fa-file-excel me-1"></i>Document Deficiency Breakdown
+        <i class="fas fa-clock me-1"></i>Average Processing Time by Category
       </h6>
     </div>
     <div class="card-body d-flex flex-column justify-content-between">
-      <canvas id="deficiencyChart" style="max-height: 260px;"></canvas>
+      <canvas id="processingTimeChart" style="max-height: 260px;"></canvas>
 
       <p class="text-muted small mt-3 text-center">
-        Most deficiencies are observed in <strong>Medical</strong> and <strong>Education</strong> assistance case types, often due to missing IDs and incomplete certifications.
+        <strong>Medical</strong> and <strong>Education</strong> assistance take the longest to process. Consider streamlining documentation for faster approvals.
       </p>
     </div>
   </div>
 </div>
+
 
 
   </div>
@@ -276,17 +276,10 @@ document.addEventListener('DOMContentLoaded', function () {
   renderChart(document.getElementById('chartTypeSelector').value);
 
   // ===== STATISTICAL ANALYSIS SECTION =====
-  const generateRawAgeData = () =>
-    Array.from({ length: 101 }, () => Math.floor(Math.random() * 10));
-
   const caseTypeLabels = ['Student', 'PWD', 'Solo Parent', 'Senior Citizen'];
   const caseCategoryLabels = ['Burial', 'Educational', 'Medical', 'Transportation'];
 
   const datasets = {
-    age: {
-      labels: ['All Ages'],
-      data: [generateRawAgeData()]
-    },
     case_type: {
       labels: caseTypeLabels,
       data: caseTypeLabels.map(() =>
@@ -305,16 +298,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const mean = [], median = [], mode = [], stdDev = [], variance = [];
 
     dataArray.forEach(data => {
-      const expanded = [];
-
-      if (Array.isArray(data) && data.length === 101) {
-        data.forEach((count, age) => {
-          for (let i = 0; i < count; i++) expanded.push(age);
-        });
-      } else {
-        expanded.push(...data);
-      }
-
+      const expanded = [...data];
       expanded.sort((a, b) => a - b);
       const total = expanded.length;
       const meanVal = expanded.reduce((a, b) => a + b, 0) / total;
@@ -348,7 +332,7 @@ document.addEventListener('DOMContentLoaded', function () {
     standardDeviationVariance: null
   };
 
-  function renderCentralTendencyChart(ctx, stats, label, isAge = false) {
+  function renderCentralTendencyChart(ctx, stats, label) {
     return new Chart(ctx, {
       type: 'bar',
       data: {
@@ -374,7 +358,7 @@ document.addEventListener('DOMContentLoaded', function () {
             beginAtZero: true,
             title: {
               display: true,
-              text: isAge ? 'Age Value' : 'Total Patients'
+              text: 'Total Disbursed Amount (₱)'
             }
           }
         }
@@ -383,41 +367,41 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function renderDispersionChart(ctx, data, labels, metric, color) {
-  return new Chart(ctx, {
-    type: 'line', // Changed from 'bar' to 'line'
-    data: {
-      labels: labels,
-      datasets: [{
-        label: metric === 'stdDev' ? 'Standard Deviation' : 'Variance',
-        data: data,
-        fill: true,
-        backgroundColor: color + '33', // translucent fill
-        borderColor: color,
-        borderWidth: 2,
-        tension: 0.4, // curve for wave effect
-        pointRadius: 4,
-        pointBackgroundColor: color,
-        pointBorderColor: '#fff',
-        pointHoverRadius: 6
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false }
+    return new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: metric === 'stdDev' ? 'Standard Deviation' : 'Variance',
+          data: data,
+          fill: true,
+          backgroundColor: color + '33',
+          borderColor: color,
+          borderWidth: 2,
+          tension: 0.4,
+          pointRadius: 4,
+          pointBackgroundColor: color,
+          pointBorderColor: '#fff',
+          pointHoverRadius: 6
+        }]
       },
-      scales: {
-        y: {
-          beginAtZero: true,
-          title: {
-            display: true,
-            text: metric === 'stdDev' ? 'Standard Deviation' : 'Variance'
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: metric === 'stdDev' ? 'Disbursed Amount' : 'Disbursed Amount'
+            }
           }
         }
       }
-    }
-  });
-}
+    });
+  }
 
   function updateCharts(datasetKey, selectedIndex = 0) {
     const data = datasets[datasetKey];
@@ -427,15 +411,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const stats = calculateStatsOverTime(data.data);
 
-    if (datasetKey === 'age') {
-      filterSelect.classList.add('d-none');
-    } else {
-      filterSelect.classList.remove('d-none');
-      filterSelect.innerHTML = data.labels.map((l, i) =>
-        `<option value="${i}">${l}</option>`
-      ).join('');
-      filterSelect.value = selectedIndex;
-    }
+    filterSelect.classList.remove('d-none');
+    filterSelect.innerHTML = data.labels.map((l, i) =>
+      `<option value="${i}">${l}</option>`
+    ).join('');
+    filterSelect.value = selectedIndex;
 
     if (charts.meanMedianMode) charts.meanMedianMode.destroy();
     charts.meanMedianMode = renderCentralTendencyChart(
@@ -445,8 +425,7 @@ document.addEventListener('DOMContentLoaded', function () {
         median: [stats.median[selectedIndex]],
         mode: [stats.mode[selectedIndex]]
       },
-      data.labels[selectedIndex] || 'All Ages',
-      datasetKey === 'age'
+      data.labels[selectedIndex]
     );
 
     if (charts.standardDeviationVariance) charts.standardDeviationVariance.destroy();
@@ -478,55 +457,58 @@ document.addEventListener('DOMContentLoaded', function () {
     updateCharts(document.getElementById('statDropdown').value, parseInt(document.getElementById('centralFilter').value || 0));
   });
 
-    updateCharts('age');
+  updateCharts('case_type');
 
-  // ===== DOCUMENT DEFICIENCY BREAKDOWN - HORIZONTAL BAR CHART =====
-  const deficiencyCtx = document.getElementById('deficiencyChart').getContext('2d');
+ const processingTimeCtx = document.getElementById('processingTimeChart').getContext('2d');
 
-  new Chart(deficiencyCtx, {
-    type: 'bar',
-    data: {
-      labels: ['Missing ID', 'No Signature', 'Invalid Form', 'Lack of Proof', 'Wrong Name'],
-      datasets: [{
-        label: 'Deficiency Count',
-        data: [30, 25, 20, 15, 10],
-        backgroundColor: '#007bff',
-        borderRadius: 6,
-        barThickness: 18
-      }]
-    },
-    options: {
-      indexAxis: 'y', // makes it horizontal
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => `${ctx.label}: ${ctx.raw} cases`
-          }
+const processingTimeChart = new Chart(processingTimeCtx, {
+  type: 'bar',
+  data: {
+    labels: ['Medical', 'Burial', 'Education', 'Transportation'],
+    datasets: [{
+      label: 'Avg Processing Time (Days)',
+      data: [5.2, 3.1, 6.4, 2.8],
+      backgroundColor: ['#f0ad4e', '#f7c873', '#ffe0a3', '#ffd580'],
+      borderWidth: 1
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      y: {
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: 'Days'
+        },
+        ticks: {
+          stepSize: 1
         }
       },
-      scales: {
-        x: {
-          beginAtZero: true,
-          title: {
-            display: true,
-            text: 'Number of Cases'
-          }
-        },
-        y: {
-          ticks: {
-            autoSkip: false,
-            maxRotation: 0,
-            minRotation: 0
+      x: {
+        title: {
+          display: true,
+          text: 'Case Category'
+        }
+      }
+    },
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            const label = context.label || '';
+            const value = context.parsed;
+            return `${label}: ${value} days`;
           }
         }
       }
     }
-  });
-
+  }
 });
 
-
+});  
 </script>

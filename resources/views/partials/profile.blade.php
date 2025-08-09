@@ -1,13 +1,46 @@
-<li class="c-header-nav-item dropdown">
-    <a class="c-header-nav-link d-flex align-items-center" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-        <i class="fas fa-user-circle fa-lg mr-2"></i>
-        <span>{{ Auth::user()->name }}</span>
-        <i class="fas fa-caret-down ml-1"></i>
-    </a>
-    <div class="dropdown-menu dropdown-menu-right shadow-sm border-0 mt-2">
-        <a class="dropdown-item d-flex align-items-center" href="#" data-toggle="modal" data-target="#profileModal">
-            <i class="fas fa-id-badge fa-fw mr-2 text-primary"></i>
-            View Profile
-        </a>
+<div class="modal fade" id="profileModal" tabindex="-1" aria-labelledby="profileModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content shadow rounded-4 border-0 overflow-hidden">
+
+            <!-- Profile Image -->
+            <div class="position-relative text-center pt-3"
+                style="background: linear-gradient(135deg, #4e73df, #1cc88a);">
+                <div class="rounded-circle border border-3 border-white shadow-sm mx-auto"
+                    style="width: 90px; height: 90px; background-color: #ffffff; overflow: hidden;">
+                    @if(Auth::user()->profile_image)
+                        <img src="{{ asset('storage/' . Auth::user()->profile_image) }}" alt="Profile"
+                            class="rounded-circle w-100 h-100 object-fit-cover">
+                    @else
+                        <i class="fas fa-user text-secondary" style="font-size: 90px; line-height: 90px;"></i>
+                    @endif
+                </div>
+            </div>
+
+
+            <div class="modal-body px-3 py-2">
+                <ul class="list-group list-group-flush list-unstyled">
+                    <li class="list-group-item d-flex align-items-center border-0 px-0 py-2">
+                        <i class="fas fa-user text-primary me-2 fa-sm"></i>
+                        <span class="text-dark"><strong>Name:</strong> {{ Auth::user()->name }}</span>
+                    </li>
+                    <li class="list-group-item d-flex align-items-center border-0 px-0 py-2">
+                        <i class="fas fa-envelope text-info me-2 fa-sm"></i>
+                        <span class="text-dark"><strong>Email:</strong> {{ Auth::user()->email }}</span>
+                    </li>
+                    <li class="list-group-item d-flex align-items-center border-0 px-0 py-2">
+                        <i class="fas fa-user-tag text-warning me-2 fa-sm"></i>
+                        <span class="text-dark"><strong>Role:</strong>
+                            {{ Auth::user()->roles->pluck('title')->first() ?? 'User' }}</span>
+                    </li>
+                </ul>
+            </div>
+
+
+            <!-- Footer -->
+            <div class="modal-footer px-3 py-2 d-flex justify-content-between" style="background-color: #f8f9fc;">
+                <button type="button" class="btn btn-success btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+
+        </div>
     </div>
-</li>
+</div>

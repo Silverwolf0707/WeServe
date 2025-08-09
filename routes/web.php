@@ -82,6 +82,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     //time series
     Route::get('time-series', [TimeSeriesController::class, 'index'])->name('time-series.index');
     Route::get('analytics/age-stats', [StatisticsController::class, 'getAgeStatistics'])->name('analytics.age-stats');
+    
 });
 
 Route::group(['prefix' => 'settings', 'as' => 'settings.', 'middleware' => ['auth']], function () {

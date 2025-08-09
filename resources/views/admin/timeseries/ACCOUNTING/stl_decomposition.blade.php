@@ -186,7 +186,7 @@
           </select>
 
           <!-- Date Range Picker (pure frontend) -->
-          <input type="text" id="dateRangePicker" class="form-control form-control-sm" placeholder="Select date range" style="width: 150px;" />
+          <input type="text" id="dateRangePicker" class="form-control form-control-sm" placeholder="Select date range" style="width: 140px;" />
         </div>
       </div>
 
@@ -305,16 +305,17 @@
           }
         },
         y: {
-          title: {
-            display: true,
-            text: 'Number of Applicants',
-            color: '#6b7280',
-            font: {
-              size: 14,
-              weight: 'bold'
-            }
-          }
-        }
+  title: {
+    display: true,
+    text: 'Total Vouchers Processed',
+    color: '#6b7280',
+    font: {
+      size: 14,
+      weight: 'bold'
+    }
+  }
+}
+
       }
     }
   });

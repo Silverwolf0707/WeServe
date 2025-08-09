@@ -68,7 +68,6 @@
     </div>
     <div class="d-flex gap-2">
       <select id="statDropdown" class="form-select form-select-sm">
-        <option value="case_type">Age</option>
         <option value="case_type">Case Type</option>
         <option value="case_category">Case Category</option>
       </select>
@@ -102,51 +101,47 @@
         </div>
       </div>
 
-      <!-- Statistical Summary -->
-<div class="col-lg-4">
-  <div class="card shadow-sm summary-equal-height h-100 border-0" style="background: linear-gradient(135deg, #e0eafc, #cfdef3); border-radius: 1rem;">
-
-    <!-- Header -->
-    <div class="card-header d-flex align-items-center text-white border-0" style="background-color: #004080; border-radius: 1rem 1rem 0 0; padding: 1rem;">
-      <i class="fas fa-clipboard-list me-2 fs-5"></i>
-      <h6 class="mb-0 fw-semibold">Statistical Summary</h6>
+   <!-- Budget Summary Report -->
+<div class="col-md-4">
+  <div class="card border border-success shadow-sm rounded-4 bg-white h-100">
+    <div class="card-header bg-success text-white rounded-top-4 d-flex align-items-center">
+      <i class="fas fa-coins me-2 fs-5"></i>
+      <h6 class="mb-0 fw-semibold">Summary Report</h6>
     </div>
-
-    <!-- Body -->
-    <div class="card-body d-flex flex-column gap-3" style="padding: 1.2rem;">
+    <div class="card-body py-3 px-4 d-flex flex-column gap-2">
 
       <div class="d-flex align-items-start text-dark">
-        <i class="fas fa-calculator text-primary me-3 fs-5 mt-1"></i>
-        <span><strong>Mean:</strong> <span class="text-muted" id="summaryMean">—</span></span>
+        <i class="fas fa-calculator text-success me-3 mt-1"></i>
+        <span><strong>Mean:</strong> <span class="text-muted" id="budgetSummaryMean">—</span></span>
       </div>
 
       <div class="d-flex align-items-start text-dark">
-        <i class="fas fa-arrows-alt-v text-primary me-3 fs-5 mt-1"></i>
-        <span><strong>Median:</strong> <span class="text-muted" id="summaryMedian">—</span></span>
+        <i class="fas fa-arrows-alt-v text-success me-3 mt-1"></i>
+        <span><strong>Median:</strong> <span class="text-muted" id="budgetSummaryMedian">—</span></span>
       </div>
 
       <div class="d-flex align-items-start text-dark">
-        <i class="fas fa-chart-bar text-primary me-3 fs-5 mt-1"></i>
-        <span><strong>Mode:</strong> <span class="text-muted" id="summaryMode">—</span></span>
+        <i class="fas fa-chart-bar text-success me-3 mt-1"></i>
+        <span><strong>Mode:</strong> <span class="text-muted" id="budgetSummaryMode">—</span></span>
       </div>
 
       <div class="d-flex align-items-start text-dark">
-        <i class="fas fa-wave-square text-primary me-3 fs-5 mt-1"></i>
-        <span><strong>Std Dev:</strong> <span class="text-muted" id="summaryStdDev">—</span></span>
+        <i class="fas fa-wave-square text-success me-3 mt-1"></i>
+        <span><strong>Std Dev:</strong> <span class="text-muted" id="budgetSummaryStdDev">—</span></span>
       </div>
 
       <div class="d-flex align-items-start text-dark">
-        <i class="fas fa-braille text-primary me-3 fs-5 mt-1"></i>
-        <span><strong>Variance:</strong> <span class="text-muted" id="summaryVariance">—</span></span>
+        <i class="fas fa-braille text-success me-3 mt-1"></i>
+        <span><strong>Variance:</strong> <span class="text-muted" id="budgetSummaryVariance">—</span></span>
       </div>
 
       <div class="d-flex align-items-start text-muted mt-2 small">
         <i class="fas fa-calendar-alt me-2 mt-1"></i>
-        <span>Date Selected: <span id="summaryTimeLabel">—</span></span>
+        <span>Date Selected: <span id="budgetSummaryTimeLabel">—</span></span>
       </div>
 
       <p class="text-secondary small mt-3 mb-0">
-        This summary provides insights into the dispersion and central tendency of the selected category.
+        This summary provides insights into the mean, median, mode, statistical and variance of the selected budget data.
       </p>
     </div>
   </div>
@@ -171,25 +166,52 @@
         </div>
       </div>
 
-<!-- Document Deficiency Breakdown Panel -->
+  <!-- Per Beneficiary Budget Average  -->
 <div class="col-md-4">
-  <div class="card shadow-sm summary-equal-height h-100 border border-warning" style="background: #fef9e7; border-radius: 1rem;">
-    <div class="card-header d-flex align-items-center text-white border-0" style="background-color: #b9770e; border-radius: 1rem 1rem 0 0;">
-      <h6 class="mb-0 text-center w-100">
-        <i class="fas fa-file-excel me-1"></i>Document Deficiency Breakdown
+  <div class="card shadow-sm summary-equal-height h-100 border border-success" style="background: #e9fbe7; border-radius: 1rem;">
+
+    <!-- Header -->
+    <div class="card-header d-flex align-items-center text-white border-0" style="background-color: #28a745; border-radius: 1rem 1rem 0 0;">
+      <h6 class="mb-0 w-100 text-center">
+        <i class="fas fa-wallet me-1"></i> Per Beneficiary Budget Average
       </h6>
     </div>
+
+    <!-- Body -->
     <div class="card-body d-flex flex-column justify-content-between">
-      <canvas id="deficiencyChart" style="max-height: 260px;"></canvas>
 
-      <p class="text-muted small mt-3 text-center">
-        Most deficiencies are observed in <strong>Medical</strong> and <strong>Education</strong> assistance case types, often due to missing IDs and incomplete certifications.
-      </p>
+      <!-- Chart Section -->
+      <div class="text-center mb-4">
+        <div style="height: 160px;">
+          <canvas id="perBeneficiaryChart"></canvas>
+        </div>
+        <p class="small text-muted mt-2 mb-0">Average Budget Allocation</p>
+      </div>
+
+      <!-- Value Summary Section -->
+      <div class="px-1">
+        <div class="mb-3">
+          <p class="fw-bold text-success fs-4 mb-1" id="avgBudgetPerBeneficiary">₱—</p>
+          <p class="text-muted small mb-0" id="avgBudgetInfo">Across — accepted applicants</p>
+        </div>
+
+        <div class="row gx-2 gy-2 small text-muted">
+          <div class="col-6">
+            <p class="mb-1"><strong>Highest Budget</strong></p>
+            <p class="text-dark mb-0" id="maxBudget">₱—</p>
+          </div>
+          <div class="col-6">
+            <p class="mb-1"><strong>Lowest Budget</strong></p>
+            <p class="text-dark mb-0" id="minBudget">₱—</p>
+          </div>
+          <div class="col-12 mt-2">
+            <p class="mb-1"><strong>Total Beneficiaries</strong></p>
+            <p class="text-dark mb-0" id="totalBeneficiaries">—</p>
+          </div>
+        </div>
+      </div>
+      
     </div>
-  </div>
-</div>
-
-
   </div>
 </div>
 
@@ -275,28 +297,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
   renderChart(document.getElementById('chartTypeSelector').value);
 
-  // ===== STATISTICAL ANALYSIS SECTION =====
-  const generateRawAgeData = () =>
-    Array.from({ length: 101 }, () => Math.floor(Math.random() * 10));
 
+  // ===== STATISTICAL ANALYSIS SECTION =====
+  const caseCategoryLabels = ['Burial', 'Medical', 'Educational', 'Transportation'];
   const caseTypeLabels = ['Student', 'PWD', 'Solo Parent', 'Senior Citizen'];
-  const caseCategoryLabels = ['Burial', 'Educational', 'Medical', 'Transportation'];
 
   const datasets = {
-    age: {
-      labels: ['All Ages'],
-      data: [generateRawAgeData()]
+    case_category: {
+      labels: caseCategoryLabels,
+      data: caseCategoryLabels.map(() =>
+        Array.from({ length: 12 }, () => Math.floor(Math.random() * 10000 + 1000))
+      )
     },
     case_type: {
       labels: caseTypeLabels,
       data: caseTypeLabels.map(() =>
-        Array.from({ length: 12 }, () => Math.floor(Math.random() * 50))
-      )
-    },
-    case_category: {
-      labels: caseCategoryLabels,
-      data: caseCategoryLabels.map(() =>
-        Array.from({ length: 12 }, () => Math.floor(Math.random() * 40))
+        Array.from({ length: 12 }, () => Math.floor(Math.random() * 50 + 10))
       )
     }
   };
@@ -305,32 +321,19 @@ document.addEventListener('DOMContentLoaded', function () {
     const mean = [], median = [], mode = [], stdDev = [], variance = [];
 
     dataArray.forEach(data => {
-      const expanded = [];
+      const sorted = [...data].sort((a, b) => a - b);
+      const total = sorted.length;
+      const meanVal = sorted.reduce((a, b) => a + b, 0) / total;
 
-      if (Array.isArray(data) && data.length === 101) {
-        data.forEach((count, age) => {
-          for (let i = 0; i < count; i++) expanded.push(age);
-        });
-      } else {
-        expanded.push(...data);
-      }
-
-      expanded.sort((a, b) => a - b);
-      const total = expanded.length;
-      const meanVal = expanded.reduce((a, b) => a + b, 0) / total;
-
-      let medianVal;
-      if (total % 2 === 0) {
-        medianVal = (expanded[total / 2 - 1] + expanded[total / 2]) / 2;
-      } else {
-        medianVal = expanded[Math.floor(total / 2)];
-      }
+      const medianVal = total % 2 === 0
+        ? (sorted[total / 2 - 1] + sorted[total / 2]) / 2
+        : sorted[Math.floor(total / 2)];
 
       const freq = {};
-      expanded.forEach(val => freq[val] = (freq[val] || 0) + 1);
+      sorted.forEach(val => freq[val] = (freq[val] || 0) + 1);
       const modeVal = +Object.keys(freq).reduce((a, b) => freq[a] > freq[b] ? a : b);
 
-      const varianceVal = expanded.reduce((acc, val) => acc + Math.pow(val - meanVal, 2), 0) / total;
+      const varianceVal = sorted.reduce((acc, val) => acc + Math.pow(val - meanVal, 2), 0) / total;
       const stdDevVal = Math.sqrt(varianceVal);
 
       mean.push(meanVal);
@@ -345,36 +348,31 @@ document.addEventListener('DOMContentLoaded', function () {
 
   let charts = {
     meanMedianMode: null,
-    standardDeviationVariance: null
+    standardDeviationVariance: null, 
   };
 
-  function renderCentralTendencyChart(ctx, stats, label, isAge = false) {
+  function renderCentralTendencyChart(ctx, stats, label) {
     return new Chart(ctx, {
       type: 'bar',
       data: {
         labels: ['Mean', 'Median', 'Mode'],
         datasets: [{
           label: label,
-          data: [stats.mean[0], stats.median[0], stats.mode[0]],
+          data: [stats.mean, stats.median, stats.mode],
           backgroundColor: ['#007bff', '#28a745', '#ffc107']
         }]
       },
       options: {
         responsive: true,
         plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: ctx => `${ctx.label}: ${ctx.raw.toFixed(2)}`
-            }
-          }
+          legend: { display: false }
         },
         scales: {
           y: {
             beginAtZero: true,
             title: {
               display: true,
-              text: isAge ? 'Age Value' : 'Total Patients'
+              text: 'Amount'
             }
           }
         }
@@ -382,82 +380,78 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  function renderDispersionChart(ctx, data, labels, metric, color) {
-  return new Chart(ctx, {
-    type: 'line', // Changed from 'bar' to 'line'
-    data: {
-      labels: labels,
-      datasets: [{
-        label: metric === 'stdDev' ? 'Standard Deviation' : 'Variance',
-        data: data,
-        fill: true,
-        backgroundColor: color + '33', // translucent fill
-        borderColor: color,
-        borderWidth: 2,
-        tension: 0.4, // curve for wave effect
-        pointRadius: 4,
-        pointBackgroundColor: color,
-        pointBorderColor: '#fff',
-        pointHoverRadius: 6
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false }
+  function renderDispersionChart(ctx, dataPoints, labels, labelName, color) {
+    return new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: labelName,
+          data: dataPoints,
+          borderColor: color,
+          backgroundColor: color + '33',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 4
+        }]
       },
-      scales: {
-        y: {
-          beginAtZero: true,
-          title: {
-            display: true,
-            text: metric === 'stdDev' ? 'Standard Deviation' : 'Variance'
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Amount'
+            }
           }
         }
       }
-    }
-  });
-}
+    });
+  }
 
   function updateCharts(datasetKey, selectedIndex = 0) {
     const data = datasets[datasetKey];
-    const filterSelect = document.getElementById('centralFilter');
+    const stats = calculateStatsOverTime(data.data);
     const dispersionMetric = document.getElementById('dispersionDropdown').value;
     const color = dispersionMetric === 'stdDev' ? '#dc3545' : '#17a2b8';
+    const filterSelect = document.getElementById('centralFilter');
 
-    const stats = calculateStatsOverTime(data.data);
+    filterSelect.classList.remove('d-none');
+    filterSelect.innerHTML = data.labels.map((l, i) =>
+      `<option value="${i}">${l}</option>`
+    ).join('');
+    filterSelect.value = selectedIndex;
 
-    if (datasetKey === 'age') {
-      filterSelect.classList.add('d-none');
-    } else {
-      filterSelect.classList.remove('d-none');
-      filterSelect.innerHTML = data.labels.map((l, i) =>
-        `<option value="${i}">${l}</option>`
-      ).join('');
-      filterSelect.value = selectedIndex;
-    }
+    const selectedLabel = data.labels[selectedIndex];
 
+    // Render Central Tendency Chart
     if (charts.meanMedianMode) charts.meanMedianMode.destroy();
     charts.meanMedianMode = renderCentralTendencyChart(
       document.getElementById('meanMedianModeChart').getContext('2d'),
       {
-        mean: [stats.mean[selectedIndex]],
-        median: [stats.median[selectedIndex]],
-        mode: [stats.mode[selectedIndex]]
+        mean: stats.mean[selectedIndex],
+        median: stats.median[selectedIndex],
+        mode: stats.mode[selectedIndex]
       },
-      data.labels[selectedIndex] || 'All Ages',
-      datasetKey === 'age'
+      selectedLabel
     );
 
+    // Render Dispersion Chart
     if (charts.standardDeviationVariance) charts.standardDeviationVariance.destroy();
     charts.standardDeviationVariance = renderDispersionChart(
       document.getElementById('standardDeviationVarianceChart').getContext('2d'),
       stats[dispersionMetric],
       data.labels,
-      dispersionMetric,
+      dispersionMetric === 'stdDev' ? 'Standard Deviation' : 'Variance',
       color
     );
 
+    // Update summary
     document.getElementById('summaryMean').textContent = stats.mean[selectedIndex].toFixed(2);
     document.getElementById('summaryMedian').textContent = stats.median[selectedIndex];
     document.getElementById('summaryMode').textContent = stats.mode[selectedIndex];
@@ -478,55 +472,7 @@ document.addEventListener('DOMContentLoaded', function () {
     updateCharts(document.getElementById('statDropdown').value, parseInt(document.getElementById('centralFilter').value || 0));
   });
 
-    updateCharts('age');
-
-  // ===== DOCUMENT DEFICIENCY BREAKDOWN - HORIZONTAL BAR CHART =====
-  const deficiencyCtx = document.getElementById('deficiencyChart').getContext('2d');
-
-  new Chart(deficiencyCtx, {
-    type: 'bar',
-    data: {
-      labels: ['Missing ID', 'No Signature', 'Invalid Form', 'Lack of Proof', 'Wrong Name'],
-      datasets: [{
-        label: 'Deficiency Count',
-        data: [30, 25, 20, 15, 10],
-        backgroundColor: '#007bff',
-        borderRadius: 6,
-        barThickness: 18
-      }]
-    },
-    options: {
-      indexAxis: 'y', // makes it horizontal
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => `${ctx.label}: ${ctx.raw} cases`
-          }
-        }
-      },
-      scales: {
-        x: {
-          beginAtZero: true,
-          title: {
-            display: true,
-            text: 'Number of Cases'
-          }
-        },
-        y: {
-          ticks: {
-            autoSkip: false,
-            maxRotation: 0,
-            minRotation: 0
-          }
-        }
-      }
-    }
-  });
-
+  // Initial chart render
+  updateCharts('case_category');
 });
-
-
 </script>

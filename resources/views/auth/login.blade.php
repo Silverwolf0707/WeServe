@@ -1,84 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>WeServe Login</title>
-    <link rel="icon" type="image/svg+xml" href="{{ asset('icon.svg') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="icon" href="{{ asset('favicon.ico') }}" type="image/x-icon" />
 
     <style>
         * {
             box-sizing: border-box;
         }
 
-        html, body {
+        html,
+        body {
             margin: 0;
             padding: 0;
             height: 100%;
             width: 100%;
-            overflow-x: hidden;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        .split-screen {
+        .container {
             display: flex;
             height: 100vh;
-            width: 100vw;
-            margin: 0;
-            padding: 0;
+            width: 100%;
         }
 
         .left-panel {
+            position: relative;
             flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            background: linear-gradient(to bottom right, #0c7746, #a2e4a9);
-            padding: 40px;
+            background: url('{{ asset('municipal.jpg') }}') no-repeat center center/cover;
+            z-index: 1;
         }
 
-        .left-panel h1 {
-            font-size: 3rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
+        .left-panel::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.3);
+            
+            z-index: 1;
         }
 
-        .left-panel p {
-            font-size: 1.25rem;
-        }
 
         .right-panel {
-            flex: 1;
-            background-color: #f7fff9;
+            background-color: rgba(255, 255, 255, 0.30);
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            width: 30%;
+            padding: 2rem;
         }
 
-        .login-card {
-            background: radial-gradient(circle at center, #5CB338, #8FD694);
-            padding: 40px;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        .login-wrapper {
             width: 100%;
             max-width: 400px;
+            padding: 40px;
+            border-radius: 16px;
         }
 
-        .login-card h2 {
-            text-align: center;
-            color: white;
-            font-size: 2rem;
-            margin-bottom: 10px;
+        .logo {
+            display: block;
+            margin: 0 auto 10px;
+            width: 60px;
         }
 
-        .login-card p {
+        .login-wrapper h2 {
             text-align: center;
-            color: #444;
-            margin-bottom: 30px;
+            color: #333;
+            font-size: 2.2rem;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
         }
 
         .form-group {
@@ -89,42 +86,51 @@
             display: block;
             margin-bottom: 6px;
             color: #333;
+            font-weight: 600;
         }
 
         .form-group input {
             width: 100%;
-            padding: 12px;
-            padding-left: 40px;
+            padding: 12px 12px 12px 40px;
             border: 1px solid #ccc;
             border-radius: 8px;
-            background-color: #e6f1ed;
+            background-color: #f0f8f4;
+            transition: all 0.3s ease;
         }
 
-        .form-group .input-icon {
+        .form-group input:focus {
+            border-color: #2ebf59;
+            box-shadow: 0 0 5px #2ebf59;
+            outline: none;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-icon {
             position: absolute;
             top: 50%;
             left: 12px;
             transform: translateY(-50%);
-            color: #1e7a3a;
+            color: #2ebf59;
         }
 
-        .form-group .toggle-password {
+        .toggle-password {
             position: absolute;
             top: 50%;
             right: 12px;
             transform: translateY(-50%);
             cursor: pointer;
-            color: #1e7a3a;
-        }
-
-        .form-group .input-wrapper {
-            position: relative;
+            color: #2ebf59;
         }
 
         .remember-me {
             display: flex;
             align-items: center;
             margin-bottom: 20px;
+            color: #333;
+            font-size: 0.95rem;
         }
 
         .remember-me input {
@@ -139,6 +145,7 @@
             background-color: #2ebf59;
             color: white;
             font-size: 1rem;
+            font-weight: bold;
             cursor: pointer;
             transition: background 0.3s ease;
         }
@@ -154,40 +161,34 @@
 
         .forgot-password a {
             text-decoration: none;
-            color: white;
+            color: #007bff;
             font-size: 0.9rem;
         }
 
+        .forgot-password a:hover {
+            text-decoration: underline;
+        }
+
         @media (max-width: 768px) {
-            .split-screen {
+            .container {
                 flex-direction: column;
             }
 
-            .left-panel, .right-panel {
-                flex: none;
+            .left-panel,
+            .right-panel {
                 width: 100%;
-                height: 50%;
-            }
-
-            .left-panel h1 {
-                font-size: 2.2rem;
+                height: 50vh;
             }
         }
     </style>
 </head>
-<body>
-    <div class="split-screen">
-        <!-- LEFT PANEL -->
-        <div class="left-panel">
-            <h1>WeServe</h1>
-            <p>Your trusted financial assistance partner.</p>
-        </div>
 
-        <!-- RIGHT PANEL -->
+<body>
+    <div class="container">
+        <div class="left-panel"></div>
         <div class="right-panel">
-            <div class="login-card">
-                <h2>WeServe</h2>
-                <p>Login</p>
+            <div class="login-wrapper">
+                <h2>LOGIN</h2>
 
                 <form method="POST" action="{{ route('login') }}">
                     @csrf
@@ -196,7 +197,8 @@
                         <label for="email">Email</label>
                         <div class="input-wrapper">
                             <i class="fas fa-user input-icon"></i>
-                            <input type="email" id="email" name="email" placeholder="admin@example.com" required autofocus>
+                            <input type="email" id="email" name="email" placeholder="admin@example.com" required
+                                autofocus>
                         </div>
                     </div>
 
@@ -225,14 +227,17 @@
     </div>
 
     <script>
-        const togglePassword = document.querySelector("#togglePassword");
-        const passwordInput = document.querySelector("#password");
+        const togglePassword = document.getElementById("togglePassword");
+        const passwordField = document.getElementById("password");
 
-        togglePassword.addEventListener("click", function () {
-            const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
-            passwordInput.setAttribute("type", type);
-            this.classList.toggle("fa-eye-slash");
+        togglePassword.addEventListener("click", () => {
+            const type = passwordField.getAttribute("type") === "password" ? "text" : "password";
+            passwordField.setAttribute("type", type);
+
+            togglePassword.classList.toggle("fa-eye-slash");
+            togglePassword.classList.toggle("fa-eye");
         });
     </script>
 </body>
+
 </html>
