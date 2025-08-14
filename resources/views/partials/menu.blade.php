@@ -176,6 +176,15 @@
                         </a>
                     </li>
                 @endcan
+                @can('budget_records')
+                    <li class="nav-item">
+                        <a href="{{ route('admin.budget-records.index') }}"
+                            class="nav-link {{ request()->is('admin.budget-records*') ? 'active' : '' }}">
+                            <i class="fa-fw nav-icon fas fa-cog"></i>
+                            <p>{{ __('Budget Records') }}</p>
+                        </a>
+                    </li>
+                @endcan
 
                 {{-- Change Password --}}
                 @if(file_exists(app_path('Http/Controllers/Auth/ChangePasswordController.php')))

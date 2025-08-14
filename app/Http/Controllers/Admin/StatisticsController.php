@@ -29,56 +29,10 @@ class StatisticsController extends Controller
         if (!Gate::allows($permission)) {
             abort(403, 'You do not have permission to view this statistics.');
         }
-
-        // Export CSV for Python script input
-        $this->exportCsvFiles();
-
-        // Run Python script to process CSV and generate JSON output
         $this->runPythonAgeStats();
-
-
-        // Return JSON output from Python script
         return $this->getPythonJsonOutput();
     }
 
-    // Export patient ages by case_category and case_type into CSV for Python
-    protected function exportCsvFiles()
-    {
-        // Export patient ages CSV
-        $ageData = DB::table('patient_records as pr')
-            ->join('patient_status_logs as psl', 'psl.patient_id', '=', 'pr.id')
-            ->select('pr.case_category', 'pr.case_type', 'pr.age')
-            ->whereNull('pr.deleted_at')
-            ->whereNull('psl.deleted_at')
-            ->where('psl.status', 'Disbursed')
-            ->get();
-
-        $ageCsv = "case_category,case_type,age\n";
-        foreach ($ageData as $row) {
-            $ageCsv .= "\"{$row->case_category}\",\"{$row->case_type}\",{$row->age}\n";
-        }
-        Storage::disk('public')->put('patient_ages.csv', $ageCsv);
-
-        // Export application counts CSV
-        $applicationCounts = DB::table('patient_records as pr')
-            ->join('patient_status_logs as psl', 'psl.patient_id', '=', 'pr.id')
-            ->select('pr.case_category', 'pr.case_type', DB::raw('COUNT(*) as application_count'))
-            ->whereNull('pr.deleted_at')
-            ->whereNull('psl.deleted_at')
-            ->where('psl.status', 'Disbursed')
-            ->groupBy('pr.case_category', 'pr.case_type')
-            ->get();
-
-        $applicationCsv = "case_category,case_type,application_count\n";
-        foreach ($applicationCounts as $row) {
-            $applicationCsv .= "\"{$row->case_category}\",\"{$row->case_type}\",{$row->application_count}\n";
-        }
-        Storage::disk('public')->put('application_counts.csv', $applicationCsv);
-    }
-
-
-
-    // Run Python script to analyze age data CSV and output JSON
     protected function runPythonAgeStats()
     {
         $pythonPath = base_path('venv/Scripts/python.exe');  // Adjust path to your python executable

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\BudgetRecordController;
 use App\Http\Controllers\Admin\DocumentManagementController;
 use App\Http\Controllers\Admin\HomeController;
 use App\Http\Controllers\Admin\OnlineApplicationController;
@@ -57,6 +58,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     Route::post('patient-records/mass-submit', [PatientRecordsController::class, 'massSubmit'])->name('patient-records.massSubmit');
 
 
+
     //process tracking
     Route::resource('process-tracking', ProcessTrackingController::class)->only(['index', 'show']);
     Route::post('process-tracking/{id}/decision', [ProcessTrackingController::class, 'decision'])->name('process-tracking.decision');
@@ -66,15 +68,15 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     Route::put('process-tracking/{id}/update-dv', [ProcessTrackingController::class, 'updateDV'])->name('process-tracking.updateDV');
     Route::post('process-tracking/{id}/disburse-budget', [ProcessTrackingController::class, 'markBudgetAsDisbursed'])->name('process-tracking.disburseBudget');
     Route::post('process-tracking/{patient}/rollback', [ProcessTrackingController::class, 'rollback'])->name('process-tracking.rollback');
-    Route::post('process-tracking/send-otp/{id}', [ProcessTrackingController::class, 'sendOtpForDisbursement'])
-        ->name('process-tracking.sendOtp');
-    Route::post('process-tracking/{id}/verify-otp', [ProcessTrackingController::class, 'verifyOtp'])
-        ->name('process-tracking.verifyOtp');
+    Route::post('process-tracking/send-otp/{id}', [ProcessTrackingController::class, 'sendOtpForDisbursement'])->name('process-tracking.sendOtp');
+    Route::post('process-tracking/{id}/verify-otp', [ProcessTrackingController::class, 'verifyOtp'])->name('process-tracking.verifyOtp');
 
-    Route::post('process-tracking/{id}/quick-disburse', [ProcessTrackingController::class, 'quickDisburse'])
-        ->name('process-tracking.quickDisburse');
+    Route::post('process-tracking/{id}/quick-disburse', [ProcessTrackingController::class, 'quickDisburse'])->name('process-tracking.quickDisburse');
+
+    Route::post('process-tracking/{id}/return-to-rollbacker', [ProcessTrackingController::class, 'returnToRollbacker'])->name('process-tracking.returnToRollbacker');
 
 
+    Route::resource('budget-records', BudgetRecordController::class)->only(['index']);
 
 
 
@@ -87,8 +89,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     Route::get('time-series', [TimeSeriesController::class, 'index'])->name('time-series.index');
     Route::get('timeseries/get-stl-json', [TimeSeriesController::class, 'getStlJson']);
     Route::get('statistics/get-age-statistics', [StatisticsController::class, 'index'])
-    ->name('statistics.getAgeStatistics');
-    
+        ->name('statistics.getAgeStatistics');
 });
 
 Route::group(['prefix' => 'settings', 'as' => 'settings.', 'middleware' => ['auth']], function () {

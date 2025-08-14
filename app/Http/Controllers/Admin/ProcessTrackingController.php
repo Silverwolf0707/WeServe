@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Events\PatientStatusChanged;
 use App\Models\OtpCode;
+use App\Models\RejectionReason;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\PatientRecord;
@@ -47,10 +48,19 @@ class ProcessTrackingController extends Controller
     {
         abort_if(Gate::denies('approve_patient'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        $request->validate([
+        $rules = [
             'remarks' => 'required|string|max:1000',
-            'action' => 'required|in:approve,reject',
-        ]);
+            'action'  => 'required|in:approve,reject',
+        ];
+
+        // Multi-select validation if rejecting
+        if ($request->action === 'reject') {
+            $rules['reasons']       = 'required|array|min:1';
+            $rules['reasons.*']     = 'string|max:255';
+            $rules['other_reason']  = 'nullable|string|max:255';
+        }
+
+        $validated = $request->validate($rules);
 
         $patient = PatientRecord::findOrFail($id);
 
@@ -58,25 +68,46 @@ class ProcessTrackingController extends Controller
             ? PatientStatusLog::STATUS_APPROVED
             : PatientStatusLog::STATUS_REJECTED;
 
-        PatientStatusLog::create([
+        // 1️⃣ Create status log (remarks stored here)
+        $statusLog = PatientStatusLog::create([
             'patient_id' => $patient->id,
-            'status' => $status,
-            'user_id' => Auth::id(),
-            'remarks' => $request->remarks,
+            'status'     => $status,
+            'user_id'    => Auth::id(),
+            'remarks'    => $validated['remarks'],
             'created_at' => now(),
         ]);
 
-        // Refresh patient record if you want to include relationships like latest status
+        // 2️⃣ Store multiple reasons if rejected
+        if ($request->action === 'reject') {
+            $reasons = $validated['reasons'] ?? [];
+
+            // Append "Other Reason" if filled
+            if (!empty($validated['other_reason'])) {
+                $reasons[] = $validated['other_reason'];
+            }
+
+            foreach ($reasons as $reason) {
+                RejectionReason::create([
+                    'patient_id'            => $patient->id,
+                    'patient_status_log_id' => $statusLog->id,
+                    'reason'                => $reason,
+                ]);
+            }
+        }
+
+        // Reload patient with latest status log
         $patient->load('latestStatusLog');
 
-        // Broadcast the event
+        // Broadcast update
         $action = $request->action === 'approve' ? 'approved' : 'rejected';
         broadcast(new PatientStatusChanged($patient, $action))->toOthers();
 
         return redirect()
             ->route('admin.process-tracking.show', $id)
-            ->with('status', 'Patient has been ' . strtolower($status) . '.');
+            ->with('status', 'Patient has been ' . strtolower($action) . '.');
     }
+
+
 
     public function storeDV(Request $request, $id)
     {
@@ -403,5 +434,35 @@ class ProcessTrackingController extends Controller
         broadcast(new PatientStatusChanged($patient, strtolower($rollbackTo)))->toOthers();
 
         return redirect()->back()->with('success', 'Process rolled back to ' . $rolledBackStatus);
+    }
+
+    public function returnToRollbacker($id)
+    {
+        $patient = PatientRecord::findOrFail($id);
+
+        // Get the latest log (this should be the rollback one)
+        $latestLog = $patient->statusLogs()->latest()->first();
+
+        // Get the log before it
+        $previousLog = $patient->statusLogs()
+            ->where('id', '<', $latestLog->id)
+            ->latest()
+            ->first();
+
+        if (!$previousLog) {
+            return back()->with('error', 'No previous status found to return to.');
+        }
+
+        // Create a new log to restore previous status
+        $restoredLog = PatientStatusLog::create([
+            'patient_id' => $patient->id,
+            'status'     => $previousLog->status, // no rollback tag
+            'user_id'    => Auth::id(),
+            'remarks'    => 'Returned to rollbacker: ' . $previousLog->status,
+        ]);
+
+        broadcast(new PatientStatusChanged($patient, strtolower($previousLog->status)))->toOthers();
+
+        return back()->with('status', 'Case returned to previous rollbacker.');
     }
 }

@@ -11,12 +11,11 @@ class TimeSeriesController extends Controller
 {
     public function index()
     {
-        $type = request('type'); // get ?type=cswd, budget, etc.
+        $type = request('type');
 
         $this->exportToCsvFile();
         $this->runPythonStl();
 
-        // Map type to permissions and views
         $analyticsViews = [
             'cswd'      => ['permission' => 'CSWD-ANALYTICS',     'view' => 'admin.timeseries.cswd.index'],
             'budget'    => ['permission' => 'BUDGET-ANALYTICS',   'view' => 'admin.timeseries.budget.index'],
@@ -38,31 +37,84 @@ class TimeSeriesController extends Controller
         return view($view);
     }
 
-
-
-       public function exportToCsvFile()
+    public function exportToCsvFile()
     {
         $data = DB::table('patient_records as pr')
-            ->join('patient_status_logs as psl', 'psl.patient_id', '=', 'pr.id')
-            ->selectRaw('DATE_FORMAT(pr.date_processed, "%Y-%m-01") as month, pr.case_category, COUNT(*) as value')
+            ->join('patient_status_logs as psl', function ($join) {
+                $join->on('psl.patient_id', '=', 'pr.id')
+                    ->where('psl.status', 'Disbursed');
+            })
+            ->leftJoin('budget_allocations as ba', function ($join) {
+                $join->on('ba.patient_id', '=', 'pr.id');
+            })
+            ->leftJoin('disbursement_voucher as dv', function ($join) {
+                $join->on('dv.patient_id', '=', 'pr.id');
+            })
             ->whereNull('pr.deleted_at')
-            ->whereNull('psl.deleted_at')
-            ->where('psl.status', 'Disbursed')
-            ->groupBy('month', 'pr.case_category')
+            ->selectRaw('
+            DATE_FORMAT(pr.date_processed, "%Y-%m-01") as month,
+            pr.case_type,
+            pr.case_category,
+            pr.control_number,
+            pr.claimant_name,
+            pr.patient_name,
+            pr.diagnosis,
+            pr.age,
+            pr.address,
+            pr.contact_number,
+            pr.case_worker,
+            psl.status as patient_status,
+            ba.amount as budget_amount,
+            ba.budget_status,
+            dv.dv_code,
+            dv.dv_date
+        ')
             ->orderBy('month')
             ->get();
 
-        $csv = "month,case_category,value\n";
+        // CSV Header
+        $csv = "month,case_type,case_category,control_number,claimant_name,patient_name,diagnosis,age,address,contact_number,case_worker,patient_status,budget_amount,budget_status,dv_code,dv_date\n";
+
+        // CSV Rows
         foreach ($data as $row) {
-            $csv .= "{$row->month},\"{$row->case_category}\",{$row->value}\n";
+            $csv .= implode(',', [
+                $row->month,
+                $this->escapeCsv($row->case_type),
+                $this->escapeCsv($row->case_category),
+                $this->escapeCsv($row->control_number),
+                $this->escapeCsv($row->claimant_name),
+                $this->escapeCsv($row->patient_name),
+                $this->escapeCsv($row->diagnosis),
+                $row->age,
+                $this->escapeCsv($row->address),
+                $this->escapeCsv($row->contact_number),
+                $this->escapeCsv($row->case_worker),
+                $this->escapeCsv($row->patient_status),
+                $row->budget_amount,
+                $this->escapeCsv($row->budget_status),
+                $this->escapeCsv($row->dv_code),
+                $row->dv_date
+            ]) . "\n";
         }
 
-        Storage::disk('public')->put('patient_records.csv', $csv);
+        Storage::disk('public')->put('full_patient_data.csv', $csv);
+    }
+
+    private function escapeCsv($value)
+    {
+        if (is_null($value)) {
+            return '';
+        }
+        $value = str_replace('"', '""', $value); // Escape double quotes
+        if (preg_match('/[",\r\n]/', $value)) {
+            return '"' . $value . '"';
+        }
+        return $value;
     }
 
     public function runPythonStl()
     {
-        $pythonPath = base_path('venv/Scripts/python.exe'); 
+        $pythonPath = base_path('venv/Scripts/python.exe');
         $scriptPath = base_path('python/stl_analysis.py');
 
         exec("\"$pythonPath\" \"$scriptPath\"", $output, $return_var);

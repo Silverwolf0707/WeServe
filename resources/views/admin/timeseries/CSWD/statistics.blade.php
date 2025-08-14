@@ -141,8 +141,8 @@
 
             </div>
             <div style="position:relative; width:100%; height:300px; max-width:260px; margin: 20px auto 0 auto;">
-  <canvas id="categoryChart"></canvas>
-</div>
+              <canvas id="categoryChart"></canvas>
+            </div>
 
             <ul id="customLegend" class="list-unstyled mt-3 small d-flex flex-wrap justify-content-center gap-2"></ul>
             <p id="pieSummary" class="mt-2 small text-muted text-center"></p>
@@ -406,6 +406,51 @@
 
     // Initial fetch
     fetchStats();
+
+    const deficiencyCtx = document.getElementById('deficiencyChart').getContext('2d');
+
+    new Chart(deficiencyCtx, {
+      type: 'bar',
+      data: {
+        labels: ['Missing ID', 'No Signature', 'Invalid Form', 'Lack of Proof', 'Wrong Name'],
+        datasets: [{
+          label: 'Deficiency Count',
+          data: [30, 25, 20, 15, 10],
+          backgroundColor: '#007bff',
+          borderRadius: 6,
+          barThickness: 18
+        }]
+      },
+      options: {
+        indexAxis: 'y', // makes it horizontal
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => `${ctx.label}: ${ctx.raw} cases`
+            }
+          }
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Number of Cases'
+            }
+          },
+          y: {
+            ticks: {
+              autoSkip: false,
+              maxRotation: 0,
+              minRotation: 0
+            }
+          }
+        }
+      }
+    });
   </script>
 
 </body>

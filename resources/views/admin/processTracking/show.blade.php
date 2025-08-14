@@ -136,9 +136,10 @@
 
             <div class="stepper">
                 @foreach ($steps as $index => $step)
-                    <div class="step 
-                                                {{ $baseStatus !== 'Rejected' && $index < $currentIndex ? 'completed' : '' }} 
-                                                {{ $baseStatus !== 'Rejected' && $index === $currentIndex ? 'active' : '' }}">
+                    <div
+                        class="step 
+                                                                                                        {{ $baseStatus !== 'Rejected' && $index < $currentIndex ? 'completed' : '' }} 
+                                                                                                        {{ $baseStatus !== 'Rejected' && $index === $currentIndex ? 'active' : '' }}">
                         <div class="circle">
                             @if ($baseStatus !== 'Rejected' && $index <= $currentIndex)
                                 <i class="fas fa-check"></i>
@@ -198,7 +199,8 @@
                                     <em>Remarks:</em> {{ $log->remarks ?? '-' }}
                                 </div>
                                 <div>
-                                    <a href="#" data-bs-toggle="modal" data-bs-target="#processModal" title="View Action">
+                                    <a href="#" data-bs-toggle="modal" data-bs-target="#processModal"
+                                        title="View Action">
                                         <i class="fas fa-eye text-primary"></i>
                                     </a>
                                 </div>
@@ -222,11 +224,13 @@
                         <div class="card-body">
                             <div class="d-flex gap-2 mt-3">
                                 <!-- Trigger Approve Modal -->
-                                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#approveModal">
+                                <button type="button" class="btn btn-success" data-bs-toggle="modal"
+                                    data-bs-target="#approveModal">
                                     Approve
                                 </button>
                                 <!-- Trigger Reject Modal -->
-                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                                <button type="button" class="btn btn-danger" data-bs-toggle="modal"
+                                    data-bs-target="#rejectModal">
                                     Reject
                                 </button>
                             </div>
@@ -234,20 +238,21 @@
                     </div>
 
                     <!-- Approve Modal -->
-                    <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="approveModalLabel" aria-hidden="true">
+                    <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="approveModalLabel"
+                        aria-hidden="true">
                         <div class="modal-dialog">
                             <form method="POST" action="{{ route('admin.process-tracking.decision', $patient->id) }}">
                                 @csrf
                                 <div class="modal-content">
                                     <div class="modal-header bg-success text-white">
                                         <h5 class="modal-title" id="approveModalLabel">Approve Application</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                            aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
                                         <div class="mb-3">
                                             <label for="approveRemarks" class="form-label">Remarks</label>
-                                            <textarea name="remarks" id="approveRemarks" class="form-control" rows="3"
-                                                placeholder="Enter remarks..."></textarea>
+                                            <textarea name="remarks" id="approveRemarks" class="form-control" rows="3" placeholder="Enter remarks..."></textarea>
                                         </div>
                                     </div>
                                     <div class="modal-footer">
@@ -260,36 +265,65 @@
                     </div>
 
                     <!-- Reject Modal -->
-                    <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+                    <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel"
+                        aria-hidden="true">
                         <div class="modal-dialog">
                             <form method="POST" action="{{ route('admin.process-tracking.decision', $patient->id) }}">
                                 @csrf
                                 <div class="modal-content">
                                     <div class="modal-header bg-danger text-white">
                                         <h5 class="modal-title" id="rejectModalLabel">Reject Application</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                            aria-label="Close"></button>
                                     </div>
+
                                     <div class="modal-body">
+
+                                        <!-- Multiple Reasons -->
                                         <div class="mb-3">
-                                            <label for="rejectReason" class="form-label">Reason for Rejection</label>
-                                            <select name="reason" id="rejectReason" class="form-select" required>
-                                                <option value="Missing ID">Missing ID</option>
-                                                <option value="No signature">No signature</option>
-                                                <option value="Expired documents">Expired documents</option>
-                                                <option value="Wrong name">Wrong name</option>
-                                                <option value="Missing document">Missing document</option>
-                                                <option value="Others">Others</option>
-                                            </select>
+                                            <label class="form-label">Reason(s) for Rejection</label>
+
+                                            @php
+                                                $reasonsList = [
+                                                    'Missing ID',
+                                                    'No signature',
+                                                    'Expired documents',
+                                                    'Wrong name',
+                                                    'Missing document',
+                                                ];
+                                            @endphp
+
+                                            @foreach ($reasonsList as $index => $reason)
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="reasons[]"
+                                                        value="{{ $reason }}" id="reason{{ $index }}"
+                                                        {{ collect(old('reasons'))->contains($reason) ? 'checked' : '' }}>
+                                                    <label class="form-check-label"
+                                                        for="reason{{ $index }}">{{ $reason }}</label>
+                                                </div>
+                                            @endforeach
                                         </div>
+
+                                        <!-- Other Reason -->
+                                        <div class="mb-3">
+                                            <label for="otherReason" class="form-label">Other Reason (Optional)</label>
+                                            <input type="text" name="other_reason" id="otherReason" class="form-control"
+                                                value="{{ old('other_reason') }}" placeholder="Specify other reason here">
+                                        </div>
+
+                                        <!-- Remarks -->
                                         <div class="mb-3">
                                             <label for="rejectRemarks" class="form-label">Remarks</label>
-                                            <textarea name="remarks" id="rejectRemarks" class="form-control" rows="3"
-                                                placeholder="Enter remarks..."></textarea>
+                                            <textarea name="remarks" id="rejectRemarks" class="form-control" rows="3" placeholder="Enter remarks..."
+                                                required>{{ old('remarks') }}</textarea>
                                         </div>
+
                                     </div>
+
                                     <div class="modal-footer">
-                                        <button type="submit" name="action" value="reject" class="btn btn-danger">Confirm
-                                            Reject</button>
+                                        <button type="submit" name="action" value="reject" class="btn btn-danger">
+                                            Confirm Reject
+                                        </button>
                                     </div>
                                 </div>
                             </form>
@@ -319,18 +353,33 @@
                                 data-bs-target="#rollbackModal">
                                 <i class="fas fa-undo-alt me-1"></i> Rollback Process
                             </button>
+                            @php
+                                $latestLog = $patient->statusLogs->last();
+                            @endphp
+
+                            @if ($latestLog && str_contains(strtolower($latestLog->remarks), 'rolled back'))
+                                <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}"
+                                    method="POST" style="display:inline;">
+                                    @csrf
+                                    <button type="submit" class="btn btn-warning btn-lg px-4 text-white">
+                                        <i class="fas fa-share me-1"></i> Return to Rollbacker
+                                    </button>
+                                </form>
+                            @endif
                         </div>
                     </div>
 
                     <!-- Budget Modal -->
-                    <div class="modal fade" id="budgetModal" tabindex="-1" role="dialog" aria-labelledby="budgetModalLabel"
-                        aria-hidden="true">
+                    <div class="modal fade" id="budgetModal" tabindex="-1" role="dialog"
+                        aria-labelledby="budgetModalLabel" aria-hidden="true">
                         <div class="modal-dialog modal-dialog-centered" role="document">
-                            <form action="{{ $patient->budgetAllocation
-                        ? route('admin.process-tracking.updateBudget', $patient->id)
-                        : route('admin.process-tracking.storeBudget', $patient->id) }}" method="POST">
+                            <form
+                                action="{{ $patient->budgetAllocation
+                                    ? route('admin.process-tracking.updateBudget', $patient->id)
+                                    : route('admin.process-tracking.storeBudget', $patient->id) }}"
+                                method="POST">
                                 @csrf
-                                @if($patient->budgetAllocation)
+                                @if ($patient->budgetAllocation)
                                     @method('PUT')
                                 @endif
 
@@ -340,7 +389,8 @@
                                             <i class="fas fa-wallet me-2"></i>
                                             {{ $patient->budgetAllocation ? 'Edit Budget Allocation' : 'Allocate Budget' }}
                                         </h5>
-                                        <button type="button" class="close text-white" data-bs-dismiss="modal" aria-label="Close">
+                                        <button type="button" class="close text-white" data-bs-dismiss="modal"
+                                            aria-label="Close">
                                             <span aria-hidden="true" style="font-size: 1.5rem;">&times;</span>
                                         </button>
                                     </div>
@@ -392,7 +442,8 @@
                         <div class="modal-content">
                             <div class="modal-header bg-danger text-white">
                                 <h5 class="modal-title" id="rollbackModalLabel">Rollback Process</h5>
-                                <button type="button" class="close text-white" data-bs-dismiss="modal" aria-label="Close">
+                                <button type="button" class="close text-white" data-bs-dismiss="modal"
+                                    aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button>
                             </div>
@@ -402,25 +453,39 @@
                                     <label for="rollback_to">Rollback to</label>
                                     <select class="form-control" name="rollback_to" id="rollback_to" required>
                                         @php
+                                            $statusToOffice = [
+                                                'Draft' => 'CSWD Office',
+                                                'Submitted' => 'Mayor\'s Office',
+                                                'Approved' => 'Budget Office',
+                                                // 'Rejected'           => skip
+                                                'Budget Allocated' => 'Accounting Office',
+                                                'DV Submitted' => 'Treasury Office',
+                                                // 'Disbursed'          => skip
+                                                // 'Ready for Disbursement' => skip
+                                            ];
+
                                             $previousStatuses = $patient->statusLogs
                                                 ->pluck('status')
                                                 ->unique()
-                                                ->filter(function ($status) use ($latestStatus) {
-                                                    return $status !== $latestStatus->status;
+                                                ->filter(function ($status) use ($latestStatus, $statusToOffice) {
+                                                    return $status !== $latestStatus->status &&
+                                                        isset($statusToOffice[$status]);
                                                 });
                                         @endphp
 
                                         @foreach ($previousStatuses as $status)
-                                            <option value="{{ $status }}">{{ $status }}</option>
+                                            <option value="{{ $status }}">{{ $statusToOffice[$status] }}
+                                            </option>
                                         @endforeach
+
+
 
                                     </select>
                                 </div>
 
                                 <div class="form-group">
                                     <label for="rollback_remarks">Remarks</label>
-                                    <textarea name="rollback_remarks" class="form-control" id="rollback_remarks" rows="3"
-                                        required></textarea>
+                                    <textarea name="rollback_remarks" class="form-control" id="rollback_remarks" rows="3" required></textarea>
                                 </div>
                             </div>
 
@@ -450,6 +515,19 @@
                                 data-bs-target="#rollbackModal">
                                 <i class="fas fa-undo-alt me-1"></i> Rollback Process
                             </button>
+                            @php
+                                $latestLog = $patient->statusLogs->last();
+                            @endphp
+
+                            @if ($latestLog && str_contains(strtolower($latestLog->remarks), 'rolled back'))
+                                <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}"
+                                    method="POST" style="display:inline;">
+                                    @csrf
+                                    <button type="submit" class="btn btn-warning btn-lg px-4 text-white">
+                                        <i class="fas fa-share me-1"></i> Return to Rollbacker
+                                    </button>
+                                </form>
+                            @endif
                         </div>
                     </div>
 
@@ -457,9 +535,11 @@
                     <div class="modal fade" id="dvModal" tabindex="-1" role="dialog" aria-labelledby="dvModalLabel"
                         aria-hidden="true">
                         <div class="modal-dialog" role="document">
-                            <form action="{{ $patient->disbursementVoucher
-                        ? route('admin.process-tracking.updateDV', $patient->id)
-                        : route('admin.process-tracking.storeDV', $patient->id) }}" method="POST">
+                            <form
+                                action="{{ $patient->disbursementVoucher
+                                    ? route('admin.process-tracking.updateDV', $patient->id)
+                                    : route('admin.process-tracking.storeDV', $patient->id) }}"
+                                method="POST">
                                 @csrf
                                 @if ($patient->disbursementVoucher)
                                     @method('PUT')
@@ -470,7 +550,8 @@
                                         <h5 class="modal-title" id="dvModalLabel"><i class="fas fa-file-invoice me-2"></i>
                                             {{ $patient->disbursementVoucher ? 'Edit' : 'Enter' }} Disbursement Voucher
                                         </h5>
-                                        <button type="button" class="close text-white" data-bs-dismiss="modal" aria-label="Close">
+                                        <button type="button" class="close text-white" data-bs-dismiss="modal"
+                                            aria-label="Close">
                                             <span aria-hidden="true">&times;</span>
                                         </button>
                                     </div>
@@ -478,12 +559,15 @@
                                     <div class="modal-body">
                                         <div class="form-group mb-3">
                                             <label for="dv_code">DV Code</label>
-                                            <input type="text" name="dv_code" id="dv_code" class="form-control form-control-lg"
-                                                value="{{ old('dv_code', $patient->disbursementVoucher->dv_code ?? '') }}" required>
+                                            <input type="text" name="dv_code" id="dv_code"
+                                                class="form-control form-control-lg"
+                                                value="{{ old('dv_code', $patient->disbursementVoucher->dv_code ?? '') }}"
+                                                required>
                                         </div>
                                         <div class="form-group mb-3">
                                             <label for="dv_date">DV Date</label>
-                                            <input type="date" name="dv_date" id="dv_date" class="form-control form-control-lg"
+                                            <input type="date" name="dv_date" id="dv_date"
+                                                class="form-control form-control-lg"
                                                 value="{{ old('dv_date', optional($patient->disbursementVoucher)->dv_date ? \Carbon\Carbon::parse($patient->disbursementVoucher->dv_date)->format('Y-m-d') : '') }}"
                                                 required>
                                         </div>
@@ -506,20 +590,28 @@
 
 
             @can('treasury_disburse')
-                @if (
-                        in_array($baseStatus, ['DV Submitted', 'Ready for Disbursement']) &&
+                @if (in_array($baseStatus, ['DV Submitted', 'Ready for Disbursement']) &&
                         $patient->budgetAllocation &&
-                        $patient->budgetAllocation->budget_status !== 'Disbursed'
-                    )
+                        $patient->budgetAllocation->budget_status !== 'Disbursed')
                     @if ($baseStatus === 'DV Submitted' && $patient->budgetAllocation->budget_status === 'Not Disbursed')
                         {{-- READY FOR DISBURSEMENT --}}
-                        <form action="{{ route('admin.process-tracking.sendOtp', $patient->id) }}" method="POST">
+                        <form action="{{ route('admin.process-tracking.sendOtp', $patient->id) }}" method="POST"
+                            class="d-inline-block">
                             @csrf
                             <button class="btn btn-warning mt-4">Ready for Disbursement</button>
-                            <button type="button" class="btn btn-danger btn-lg px-4 text-white" data-bs-toggle="modal"
-                                data-bs-target="#rollbackModal">
-                                <i class="fas fa-undo-alt me-1"></i> Rollback Process
-                            </button>
+                        </form>
+
+                        <button type="button" class="btn btn-danger btn-lg px-4 text-white mt-4" data-bs-toggle="modal"
+                            data-bs-target="#rollbackModal">
+                            <i class="fas fa-undo-alt me-1"></i> Rollback Process
+                        </button>
+
+                        {{-- QUICK DISBURSE BUTTON --}}
+                        <form action="{{ route('admin.process-tracking.quickDisburse', $patient->id) }}" method="POST"
+                            class="d-inline-block mt-4"
+                            onsubmit="return confirm('Are you sure you want to disburse without OTP? This action cannot be undone.');">
+                            @csrf
+                            <button class="btn btn-outline-success">Quick Disburse (No OTP)</button>
                         </form>
                     @elseif ($baseStatus === 'Ready for Disbursement')
                         {{-- VERIFY OTP --}}
@@ -527,11 +619,20 @@
                             $otp = $patient->otpCodes()->latest()->first();
                         @endphp
 
-                        <form action="{{ route('admin.process-tracking.verifyOtp', $patient->id) }}" method="POST" class="mt-4">
+                        <form action="{{ route('admin.process-tracking.verifyOtp', $patient->id) }}" method="POST"
+                            class="mt-4">
                             @csrf
                             <label for="otp_code">Enter OTP to Confirm Disbursement:</label>
                             <input type="text" name="otp_code" required class="form-control mt-2 mb-2">
                             <button class="btn btn-success">Confirm & Mark Disbursed</button>
+                        </form>
+
+                        {{-- QUICK DISBURSE BUTTON --}}
+                        <form action="{{ route('admin.process-tracking.quickDisburse', $patient->id) }}" method="POST"
+                            class="d-inline-block mt-2"
+                            onsubmit="return confirm('Are you sure you want to disburse without OTP? This action cannot be undone.');">
+                            @csrf
+                            <button class="btn btn-outline-success">Quick Disburse (No OTP)</button>
                         </form>
                     @endif
                 @elseif ($patient->budgetAllocation && $patient->budgetAllocation->budget_status === 'Disbursed')
@@ -540,9 +641,6 @@
                     </div>
                 @endif
             @endcan
-
-
-
 
             <div class="form-group mt-4">
                 <a class="btn btn-secondary" href="{{ route('admin.process-tracking.index') }}">
@@ -554,12 +652,12 @@
 @endsection
 @push('scripts')
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
             const amountInput = document.getElementById('amount');
             const buttons = document.querySelectorAll('.suggested-amount');
 
             buttons.forEach(btn => {
-                btn.addEventListener('click', function () {
+                btn.addEventListener('click', function() {
                     const value = this.dataset.value;
                     amountInput.value = value;
                     amountInput.focus();
