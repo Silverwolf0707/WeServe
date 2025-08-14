@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>WeServe Login</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-    <link rel="icon" href="{{ asset('favicon.ico') }}" type="image/x-icon" />
+    <link rel="icon" href="{{ asset('WeServe Logo.png') }}" type="image/x-icon" />
 
     <style>
         * {
@@ -43,19 +43,58 @@
             right: 0;
             bottom: 0;
             background-color: rgba(0, 0, 0, 0.3);
-            
+
             z-index: 1;
         }
 
 
         .right-panel {
-            background-color: rgba(255, 255, 255, 0.30);
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             display: flex;
             justify-content: center;
             align-items: center;
             width: 30%;
             padding: 2rem;
+            position: relative;
+            z-index: 2;
         }
+
+        /* Add a background behind the right panel to blur */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: lightblue;
+            filter: brightness(0.9);
+            z-index: 0;
+        }
+
+        .footer-image {
+            width: 100%;
+            /* take full width of right panel */
+            margin-top: auto;
+            /* push footer to bottom */
+            margin-top: 1.5rem;
+            /* optional spacing */
+        }
+
+        .footer-image img {
+            width: 100%;
+            /* image fills footer container */
+            height: auto;
+            /* keep aspect ratio */
+            border-radius: 8px;
+            /* optional styling */
+            object-fit: contain;
+            /* scale nicely */
+        }
+
 
         .login-wrapper {
             width: 100%;

@@ -34,7 +34,7 @@ class ProcessTrackingController extends Controller
         abort_if(Gate::denies('process_tracking_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         $patient = PatientRecord::with(['statusLogs.user'])
-            ->select('id', 'control_number', 'date_processed', 'claimant_name', 'case_worker')
+            ->select('id', 'control_number', 'date_processed', 'claimant_name', 'case_worker', 'case_category')
             ->findOrFail($id);
 
         $latestStatus = $patient->statusLogs->last(); // or ->whereNotNull('created_at')->last()
@@ -246,41 +246,32 @@ class ProcessTrackingController extends Controller
         return redirect()->route('admin.process-tracking.show', $id)
             ->with('status', 'Budget status updated to Disbursed.');
     }
-    public function rollback(Request $request, PatientRecord $patient)
+    public function quickDisburse($id)
     {
-        $request->validate([
-            'rollback_to' => 'required|string',
-            'rollback_remarks' => 'required|string',
+        abort_if(Gate::denies('treasury_disburse'), 403);
+
+        $allocation = BudgetAllocation::where('patient_id', $id)->firstOrFail();
+
+        $allocation->update([
+            'budget_status' => 'Disbursed',
         ]);
 
-        $validStatuses = $patient->statusLogs->pluck('status')->map(function ($status) {
-            return str_replace('[ROLLED BACK]', '', $status);
-        })->unique();
-
-        $rollbackTo = $request->rollback_to;
-
-        if (!$validStatuses->contains($rollbackTo)) {
-            return back()->with('error', 'Invalid rollback target.');
-        }
-
-        $rolledBackStatus = $rollbackTo . '[ROLLED BACK]';
-
-        // Log new status with [ROLLED BACK] mark
-        $patient->statusLogs()->create([
-            'status' => $rolledBackStatus,
-            'remarks' => '[ROLLED BACK] ' . $request->rollback_remarks,
+        PatientStatusLog::create([
+            'patient_id' => $id,
             'user_id' => Auth::id(),
+            'status' => PatientStatusLog::STATUS_DISBURSED,
+            'remarks' => 'Budget marked as disbursed (OTP bypassed).',
             'created_at' => now(),
         ]);
 
-        // Reload latest status log before broadcasting
-        $patient->load('latestStatusLog');
+        $patient = PatientRecord::with('latestStatusLog')->findOrFail($id);
+        broadcast(new PatientStatusChanged($patient, 'disbursed'))->toOthers();
 
-        // Broadcast base status only (for UI logic)
-        broadcast(new PatientStatusChanged($patient, strtolower($rollbackTo)))->toOthers();
-
-        return redirect()->back()->with('success', 'Process rolled back to ' . $rolledBackStatus);
+        return redirect()->route('admin.process-tracking.show', $id)
+            ->with('status', 'Budget status updated to Disbursed (no OTP).');
     }
+
+
 
     public function sendOtpForDisbursement($id)
     {
@@ -376,5 +367,41 @@ class ProcessTrackingController extends Controller
 
         return redirect()->route('admin.process-tracking.show', $patient->id)
             ->with('status', 'OTP verified and disbursement completed.');
+    }
+
+    public function rollback(Request $request, PatientRecord $patient)
+    {
+        $request->validate([
+            'rollback_to' => 'required|string',
+            'rollback_remarks' => 'required|string',
+        ]);
+
+        $validStatuses = $patient->statusLogs->pluck('status')->map(function ($status) {
+            return str_replace('[ROLLED BACK]', '', $status);
+        })->unique();
+
+        $rollbackTo = $request->rollback_to;
+
+        if (!$validStatuses->contains($rollbackTo)) {
+            return back()->with('error', 'Invalid rollback target.');
+        }
+
+        $rolledBackStatus = $rollbackTo . '[ROLLED BACK]';
+
+        // Log new status with [ROLLED BACK] mark
+        $patient->statusLogs()->create([
+            'status' => $rolledBackStatus,
+            'remarks' => '[ROLLED BACK] ' . $request->rollback_remarks,
+            'user_id' => Auth::id(),
+            'created_at' => now(),
+        ]);
+
+        // Reload latest status log before broadcasting
+        $patient->load('latestStatusLog');
+
+        // Broadcast base status only (for UI logic)
+        broadcast(new PatientStatusChanged($patient, strtolower($rollbackTo)))->toOthers();
+
+        return redirect()->back()->with('success', 'Process rolled back to ' . $rolledBackStatus);
     }
 }

@@ -71,6 +71,10 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     Route::post('process-tracking/{id}/verify-otp', [ProcessTrackingController::class, 'verifyOtp'])
         ->name('process-tracking.verifyOtp');
 
+    Route::post('process-tracking/{id}/quick-disburse', [ProcessTrackingController::class, 'quickDisburse'])
+        ->name('process-tracking.quickDisburse');
+
+
 
 
 
@@ -81,7 +85,9 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
 
     //time series
     Route::get('time-series', [TimeSeriesController::class, 'index'])->name('time-series.index');
-    Route::get('analytics/age-stats', [StatisticsController::class, 'getAgeStatistics'])->name('analytics.age-stats');
+    Route::get('timeseries/get-stl-json', [TimeSeriesController::class, 'getStlJson']);
+    Route::get('statistics/get-age-statistics', [StatisticsController::class, 'index'])
+    ->name('statistics.getAgeStatistics');
     
 });
 

@@ -2,8 +2,8 @@
 @section('content')
 
 <div class="card">
-    <div class="card-header">
-        {{ __('Documents List') }}
+    <div class="card-header bg-primary text-white font-weight-bold">
+        <i class="fas fa-file-alt me-2"></i> {{ __('Documents List') }}
     </div>
 
     <div class="card-body">
@@ -50,8 +50,8 @@
 
         @can('documents_management')
         let deleteButton = {
-            text: '{{ trans("global.datatables.delete") }}',
-            url: "{{ route('admin.document-management.massDestroy') }}",
+            text: @json(trans('global.datatables.delete')),
+            url: @json(route('admin.document-management.massDestroy')),
             className: 'btn-danger',
             action: function (e, dt, node, config) {
                 let ids = $.map(dt.rows({ selected: true }).nodes(), function (entry) {
@@ -59,11 +59,11 @@
                 });
 
                 if (ids.length === 0) {
-                    alert('{{ trans("global.datatables.zero_selected") }}');
+                    alert(@json(trans('global.datatables.zero_selected')));
                     return;
                 }
 
-                if (confirm('{{ trans("global.areYouSure") }}')) {
+                if (confirm(@json(trans('global.areYouSure')))) {
                     $.ajax({
                         headers: {
                             'x-csrf-token': _token
@@ -96,4 +96,20 @@
         });
     });
 </script>
+
+<style>
+    /* Enhance card header */
+    .card-header.bg-success {
+        background-color: #28a745 !important; /* Bootstrap green */
+        color: #fff !important;
+        font-weight: bold;
+        font-size: 1.1rem;
+        text-shadow: 0 0 3px rgba(255, 255, 255, 0.6);
+        display: flex;
+        align-items: center;
+    }
+    .card-header i {
+        font-size: 1.2rem;
+    }
+</style>
 @endsection

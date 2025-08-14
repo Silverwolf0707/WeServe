@@ -1,19 +1,23 @@
-<aside class="main-sidebar sidebar-dark-primary elevation-4" style="min-height: 917px;">
+<aside id="sidebar" class="main-sidebar sidebar-dark-primary elevation-4" style="min-height: 917px;">
     <!-- Brand Logo -->
-    <a href="#" class="brand-link">
-        <span class="brand-text font-weight-light">{{ trans('panel.site_title') }}</span>
+    <a href="#" class="brand-link d-flex justify-content-center py-3 border-bottom">
+        <span class="brand-icon">
+            <img src="{{ asset('WeServe Logo.png') }}" alt="Logo" style="width: 60px; height: 60px;">
+        </span>
+        <span class="brand-text font-weight-light fs-5">{{ trans('panel.site_title') }}</span>
     </a>
 
     <!-- Sidebar -->
     <div class="sidebar">
         <!-- Sidebar Menu -->
         <nav class="mt-2">
-            <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+            <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false"
+                style="gap: 0.25rem;">
 
                 {{-- Dashboard --}}
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs("admin.home") ? "active" : "" }}"
-                        href="{{ route("admin.home") }}">
+                    <a href="{{ route('admin.home') }}"
+                        class="nav-link {{ request()->routeIs('admin.home') ? 'active' : '' }}">
                         <i class="fas fa-fw fa-tachometer-alt nav-icon"></i>
                         <p>{{ trans('global.dashboard') }}</p>
                     </a>
@@ -21,16 +25,17 @@
 
                 {{-- User Management --}}
                 @can('user_management_access')
-                    <li class="nav-item has-treeview {{ request()->is("admin/permissions*") || request()->is("admin/roles*") || request()->is("admin/users*") || request()->is("admin/audit-logs*") ? "menu-open" : "" }}">
-                        <a class="nav-link {{ request()->is("admin/permissions*") || request()->is("admin/roles*") || request()->is("admin/users*") || request()->is("admin/audit-logs*") ? "active" : "" }}"
-                            href="#">
+                    <li
+                        class="nav-item has-treeview {{ request()->is('admin/permissions*') || request()->is('admin/roles*') || request()->is('admin/users*') || request()->is('admin/audit-logs*') ? 'menu-open' : '' }}">
+                        <a href="#"
+                            class="nav-link {{ request()->is('admin/permissions*') || request()->is('admin/roles*') || request()->is('admin/users*') || request()->is('admin/audit-logs*') ? 'active' : '' }}">
                             <i class="fa-fw nav-icon fas fa-users"></i>
                             <p>
                                 {{ trans('cruds.userManagement.title') }}
                                 <i class="right fas fa-angle-left"></i>
                             </p>
                         </a>
-                        <ul class="nav nav-treeview">
+                        <ul class="nav nav-treeview ps-3">
                             @can('permission_access')
                                 <li class="nav-item">
                                     <a href="{{ route('admin.permissions.index') }}"
@@ -40,6 +45,7 @@
                                     </a>
                                 </li>
                             @endcan
+
                             @can('role_access')
                                 <li class="nav-item">
                                     <a href="{{ route('admin.roles.index') }}"
@@ -49,6 +55,7 @@
                                     </a>
                                 </li>
                             @endcan
+
                             @can('user_access')
                                 <li class="nav-item">
                                     <a href="{{ route('admin.users.index') }}"
@@ -58,6 +65,7 @@
                                     </a>
                                 </li>
                             @endcan
+
                             @can('audit_log_access')
                                 <li class="nav-item">
                                     <a href="{{ route('admin.audit-logs.index') }}"
@@ -114,7 +122,7 @@
                                 <i class="right fas fa-angle-left"></i>
                             </p>
                         </a>
-                        <ul class="nav nav-treeview">
+                        <ul class="nav nav-treeview ps-3">
                             @can('CSWD-ANALYTICS')
                                 <li class="nav-item">
                                     <a href="{{ route('admin.time-series.index', ['type' => 'cswd']) }}"
@@ -124,6 +132,7 @@
                                     </a>
                                 </li>
                             @endcan
+
                             @can('BUDGET-ANALYTICS')
                                 <li class="nav-item">
                                     <a href="{{ route('admin.time-series.index', ['type' => 'budget']) }}"
@@ -133,6 +142,7 @@
                                     </a>
                                 </li>
                             @endcan
+
                             @can('TREASURY-ANALYTICS')
                                 <li class="nav-item">
                                     <a href="{{ route('admin.time-series.index', ['type' => 'treasury']) }}"
@@ -142,6 +152,7 @@
                                     </a>
                                 </li>
                             @endcan
+
                             @can('ACCOUNTING-ANALYTICS')
                                 <li class="nav-item">
                                     <a href="{{ route('admin.time-series.index', ['type' => 'accounting']) }}"
@@ -170,8 +181,8 @@
                 @if(file_exists(app_path('Http/Controllers/Auth/ChangePasswordController.php')))
                     @can('profile_password_edit')
                         <li class="nav-item">
-                            <a class="nav-link {{ request()->is('profile/password*') ? 'active' : '' }}"
-                                href="{{ route('profile.password.edit') }}">
+                            <a href="{{ route('profile.password.edit') }}"
+                                class="nav-link {{ request()->is('profile/password*') ? 'active' : '' }}">
                                 <i class="fa-fw fas fa-key nav-icon"></i>
                                 <p>{{ trans('global.change_password') }}</p>
                             </a>
@@ -195,7 +206,37 @@
                         <p>{{ trans('global.logout') }}</p>
                     </a>
                 </li>
+
             </ul>
         </nav>
     </div>
 </aside>
+
+<style>
+    /* Hide icon by default, show text */
+    .brand-icon {
+        display: none;
+    }
+
+    /* When sidebar is collapsed (AdminLTE adds sidebar-collapse to body) */
+    body.sidebar-collapse .brand-text {
+        display: none !important;
+    }
+
+    body.sidebar-collapse .brand-icon {
+        display: inline-block !important;
+        color: white;
+    }
+
+    .sidebar {
+        overflow-y: scroll;
+        /* or auto */
+        scrollbar-width: none;
+        /* Firefox */
+    }
+
+    /* Chrome, Edge, Safari */
+    .sidebar::-webkit-scrollbar {
+        display: none;
+    }
+</style>

@@ -1,9 +1,11 @@
 @extends('layouts.admin')
 
 @section('content')
-<div class="container-fluid" style="background-color: #f8f9fa; padding: 20px;">
-    <div class="card shadow-sm">
-        <div class="card-header bg-dark text-white d-flex align-items-center">
+<div class="container-fluid">
+    <div class="card shadow-sm border-0">
+        
+        {{-- Green Header --}}
+        <div class="card-header bg-success text-white d-flex align-items-center">
             <h5 class="mb-0">
                 <i class="fas fa-user-plus mr-2"></i>
                 {{ trans('global.create') }} {{ trans('cruds.user.title_singular') }}
@@ -17,12 +19,11 @@
                 {{-- Name --}}
                 <div class="form-group">
                     <label class="required" for="name">{{ trans('cruds.user.fields.name') }}</label>
-                    <input type="text" name="name" id="name" class="form-control {{ $errors->has('name') ? 'is-invalid' : '' }}"
-                           value="{{ old('name', '') }}" required>
+                    <input type="text" name="name" id="name" 
+                        class="form-control {{ $errors->has('name') ? 'is-invalid' : '' }}"
+                        value="{{ old('name', '') }}" required>
                     @if($errors->has('name'))
-                        <div class="invalid-feedback">
-                            {{ $errors->first('name') }}
-                        </div>
+                        <div class="invalid-feedback">{{ $errors->first('name') }}</div>
                     @endif
                     <small class="form-text text-muted">{{ trans('cruds.user.fields.name_helper') }}</small>
                 </div>
@@ -30,12 +31,11 @@
                 {{-- Email --}}
                 <div class="form-group">
                     <label class="required" for="email">{{ trans('cruds.user.fields.email') }}</label>
-                    <input type="email" name="email" id="email" class="form-control {{ $errors->has('email') ? 'is-invalid' : '' }}"
-                           value="{{ old('email') }}" required>
+                    <input type="email" name="email" id="email" 
+                        class="form-control {{ $errors->has('email') ? 'is-invalid' : '' }}"
+                        value="{{ old('email') }}" required>
                     @if($errors->has('email'))
-                        <div class="invalid-feedback">
-                            {{ $errors->first('email') }}
-                        </div>
+                        <div class="invalid-feedback">{{ $errors->first('email') }}</div>
                     @endif
                     <small class="form-text text-muted">{{ trans('cruds.user.fields.email_helper') }}</small>
                 </div>
@@ -44,25 +44,26 @@
                 <div class="form-group">
                     <label class="required" for="password">{{ trans('cruds.user.fields.password') }}</label>
                     <input type="password" name="password" id="password"
-                           class="form-control {{ $errors->has('password') ? 'is-invalid' : '' }}" required>
+                        class="form-control {{ $errors->has('password') ? 'is-invalid' : '' }}" required>
                     @if($errors->has('password'))
-                        <div class="invalid-feedback">
-                            {{ $errors->first('password') }}
-                        </div>
+                        <div class="invalid-feedback">{{ $errors->first('password') }}</div>
                     @endif
                     <small class="form-text text-muted">{{ trans('cruds.user.fields.password_helper') }}</small>
                 </div>
 
-                {{-- Roles Dropdown --}}
+                {{-- Roles --}}
                 <div class="form-group">
                     <label class="required" for="roles">{{ trans('cruds.user.fields.roles') }}</label>
                     <div class="mb-2">
-                        <button type="button" class="btn btn-info select-all">{{ trans('global.select_all') }}</button>
-<button type="button" class="btn btn-danger deselect-all">{{ trans('global.deselect_all') }}</button>
-
-                    </div>
-                    <select name="roles[]" id="roles" class="form-control select2 {{ $errors->has('roles') ? 'is-invalid' : '' }}" multiple required>
-                        <option disabled>{{ __('Select roles') }}</option>
+                    <button type="button" class="btn btn-sm btn-success select-all">
+                        <i class="fas fa-check-double me-1"></i> {{ trans('global.select_all') }}
+                    </button>
+                    <button type="button" class="btn btn-sm btn-danger deselect-all">
+                        <i class="fas fa-times-circle me-1"></i> {{ trans('global.deselect_all') }}
+                    </button>
+                </div>
+                    <select name="roles[]" id="roles" 
+                        class="form-control select2 {{ $errors->has('roles') ? 'is-invalid' : '' }}" multiple required>
                         @foreach($roles as $id => $role)
                             <option value="{{ $id }}" {{ in_array($id, old('roles', [])) ? 'selected' : '' }}>
                                 {{ $role }}
@@ -70,20 +71,18 @@
                         @endforeach
                     </select>
                     @if($errors->has('roles'))
-                        <div class="invalid-feedback">
-                            {{ $errors->first('roles') }}
-                        </div>
+                        <div class="invalid-feedback">{{ $errors->first('roles') }}</div>
                     @endif
                     <small class="form-text text-muted">{{ trans('cruds.user.fields.roles_helper') }}</small>
                 </div>
 
-                {{-- Save Button --}}
-                <div class="form-group mt-4">
-                    <button type="submit" class="btn btn-success">
+                {{-- Buttons: Save & Back to List side by side --}}
+                <div class="form-group mt-4 d-flex">
+                    <button type="submit" class="btn btn-success mr-2">
                         <i class="fas fa-save mr-1"></i> {{ trans('global.save') }}
                     </button>
-                    <a href="{{ route('admin.users.index') }}" class="btn btn-secondary ml-2">
-                        <i class="fas fa-arrow-left mr-1"></i> {{ trans('global.back_to_list') }}
+                    <a href="{{ route('admin.users.index') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left mr-1"></i> {{ trans('global.cancel') }}
                     </a>
                 </div>
             </form>

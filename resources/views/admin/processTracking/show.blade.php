@@ -23,6 +23,10 @@
                             <th>Claimant Name:</th>
                             <td>{{ $patient->claimant_name }}</td>
                         </tr>
+                        <tr>
+                            <th>Case Category:</th>
+                            <td>{{ $patient->case_category }}</td>
+                        </tr>
                     </table>
                 </div>
 
@@ -133,8 +137,8 @@
             <div class="stepper">
                 @foreach ($steps as $index => $step)
                     <div class="step 
-                                        {{ $baseStatus !== 'Rejected' && $index < $currentIndex ? 'completed' : '' }} 
-                                        {{ $baseStatus !== 'Rejected' && $index === $currentIndex ? 'active' : '' }}">
+                                                {{ $baseStatus !== 'Rejected' && $index < $currentIndex ? 'completed' : '' }} 
+                                                {{ $baseStatus !== 'Rejected' && $index === $currentIndex ? 'active' : '' }}">
                         <div class="circle">
                             @if ($baseStatus !== 'Rejected' && $index <= $currentIndex)
                                 <i class="fas fa-check"></i>
@@ -216,21 +220,84 @@
                             <i class="fas fa-paper-plane me-2"></i> Mayor Approval
                         </div>
                         <div class="card-body">
-                            <form action="{{ route('admin.process-tracking.decision', $patient->id) }}" method="POST">
+                            <div class="d-flex gap-2 mt-3">
+                                <!-- Trigger Approve Modal -->
+                                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#approveModal">
+                                    Approve
+                                </button>
+                                <!-- Trigger Reject Modal -->
+                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                                    Reject
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Approve Modal -->
+                    <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="approveModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <form method="POST" action="{{ route('admin.process-tracking.decision', $patient->id) }}">
                                 @csrf
-                                <div class="form-group">
-                                    <label for="remarks">Remarks</label>
-                                    <textarea name="remarks" id="remarks" rows="3" class="form-control" required></textarea>
+                                <div class="modal-content">
+                                    <div class="modal-header bg-success text-white">
+                                        <h5 class="modal-title" id="approveModalLabel">Approve Application</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label for="approveRemarks" class="form-label">Remarks</label>
+                                            <textarea name="remarks" id="approveRemarks" class="form-control" rows="3"
+                                                placeholder="Enter remarks..."></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="submit" name="action" value="approve" class="btn btn-success">Confirm
+                                            Approve</button>
+                                    </div>
                                 </div>
-                                <div class="d-flex gap-2 mt-3">
-                                    <button name="action" value="approve" class="btn btn-success">Approve</button>
-                                    <button name="action" value="reject" class="btn btn-danger">Reject</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Reject Modal -->
+                    <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <form method="POST" action="{{ route('admin.process-tracking.decision', $patient->id) }}">
+                                @csrf
+                                <div class="modal-content">
+                                    <div class="modal-header bg-danger text-white">
+                                        <h5 class="modal-title" id="rejectModalLabel">Reject Application</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label for="rejectReason" class="form-label">Reason for Rejection</label>
+                                            <select name="reason" id="rejectReason" class="form-select" required>
+                                                <option value="Missing ID">Missing ID</option>
+                                                <option value="No signature">No signature</option>
+                                                <option value="Expired documents">Expired documents</option>
+                                                <option value="Wrong name">Wrong name</option>
+                                                <option value="Missing document">Missing document</option>
+                                                <option value="Others">Others</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="rejectRemarks" class="form-label">Remarks</label>
+                                            <textarea name="remarks" id="rejectRemarks" class="form-control" rows="3"
+                                                placeholder="Enter remarks..."></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="submit" name="action" value="reject" class="btn btn-danger">Confirm
+                                            Reject</button>
+                                    </div>
                                 </div>
                             </form>
                         </div>
                     </div>
                 @endif
             @endcan
+
 
             @can('budget_allocate')
                 @if ($baseStatus === 'Approved')

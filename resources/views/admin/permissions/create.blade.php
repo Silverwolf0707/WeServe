@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="card shadow-sm border-0">
-    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
         <div>
             <h5 class="mb-0">
                 <i class="fas fa-key me-2"></i> {{ trans('global.create') }} {{ trans('cruds.permission.title_singular') }}

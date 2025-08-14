@@ -10,35 +10,37 @@
 
   <title>WeServe</title>
   <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="{{ asset('icon.svg') }}">
+  <link rel="icon" type="image/png+xml" href="{{ asset('WeServe Logo.png') }}">
 
-<!-- Bootstrap 5.3 -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap 5.3 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
-<!-- Font Awesome (latest 5.x) -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+  <!-- Font Awesome (latest 5.x) -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
 
-<!-- Google Fonts -->
-<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
 
-<!-- Select2 -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet">
+  <!-- Select2 -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet">
 
-<!-- DateTime Picker -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css" rel="stylesheet">
+  <!-- DateTime Picker -->
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css"
+    rel="stylesheet">
 
-<!-- DataTables Core + Plugins -->
-<link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
-<link href="https://cdn.datatables.net/select/1.7.0/css/select.dataTables.min.css" rel="stylesheet">
-<link href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" rel="stylesheet">
+  <!-- DataTables Core + Plugins -->
+  <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+  <link href="https://cdn.datatables.net/select/1.7.0/css/select.dataTables.min.css" rel="stylesheet">
+  <link href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" rel="stylesheet">
 
-<!-- Dropzone -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.css" rel="stylesheet">
+  <!-- Dropzone -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.css" rel="stylesheet">
 
-<!-- AdminLTE and Custom Styles -->
-<link href="{{ asset('css/adminltev3.css') }}" rel="stylesheet">
-<link href="{{ asset('css/custom.css') }}" rel="stylesheet">
-@vite(['resources/js/app.js', 'resources/css/app.css'])
+  <!-- AdminLTE and Custom Styles -->
+  <link href="{{ asset('css/adminltev3.css') }}" rel="stylesheet">
+  <link href="{{ asset('css/custom.css') }}" rel="stylesheet">
+  @vite(['resources/js/app.js', 'resources/css/app.css'])
 
 
   @yield('styles')
@@ -81,10 +83,21 @@
 <body class="sidebar-mini layout-fixed" style="height: auto;">
   <div class="wrapper">
     <nav class="main-header navbar navbar-expand bg-white navbar-light border-bottom">
-      <!-- Left navbar links -->
+
       <ul class="navbar-nav">
         <li class="nav-item">
           <a class="nav-link" data-widget="pushmenu" href="#"><i class="fa fa-bars"></i></a>
+        </li>
+      </ul>
+      <ul class="navbar-nav ml-auto">
+        <!-- Notification -->
+        <li class="nav-item">
+          <a class="nav-link" href="#"><i class="fa fa-bell"></i></a>
+        </li>
+
+        <!-- Chat -->
+        <li class="nav-item">
+          <a class="nav-link" href="#"><i class="fa fa-comments"></i></a>
         </li>
       </ul>
 
@@ -146,42 +159,43 @@
     </form>
   </div>
 
-<!-- jQuery -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <!-- jQuery -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 
-<!-- Bootstrap 5 Bundle (includes Popper) -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Bootstrap 5 Bundle (includes Popper) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- Moment.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+  <!-- Moment.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
 
-<!-- Select2 -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.full.min.js"></script>
+  <!-- Select2 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.full.min.js"></script>
 
-<!-- DateTime Picker -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
+  <!-- DateTime Picker -->
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
 
-<!-- Dropzone -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.js"></script>
+  <!-- Dropzone -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.js"></script>
 
-<!-- DataTables Core + Bootstrap 5 Integration -->
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+  <!-- DataTables Core + Bootstrap 5 Integration -->
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 
-<!-- DataTables Extensions -->
-<script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.colVis.min.js"></script>
-<script src="https://cdn.datatables.net/select/1.7.0/js/dataTables.select.min.js"></script>
+  <!-- DataTables Extensions -->
+  <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.colVis.min.js"></script>
+  <script src="https://cdn.datatables.net/select/1.7.0/js/dataTables.select.min.js"></script>
 
-<!-- Dependencies for DataTables export -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+  <!-- Dependencies for DataTables export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 
-<!-- CKEditor -->
-<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+  <!-- CKEditor -->
+  <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
 
 
   <script src="{{ asset('js/main.js') }}"></script>
@@ -209,7 +223,7 @@
         'en': 'https://cdn.datatables.net/plug-ins/1.10.19/i18n/English.json'
       };
 
-      $.extend(true, $.fn.dataTable.Buttons.defaults.dom.button, { className: 'btn' });
+      $.extend(true, $.fn.dataTable.Buttons.defaults.dom.button, { className: 'btn btn-sm' });
 
       $.extend(true, $.fn.dataTable.defaults, {
         language: {
@@ -218,7 +232,7 @@
         columnDefs: [
           {
             orderable: false,
-            className: 'select-checkbox',
+            className: 'select-checkbox text-center',
             targets: 0
           },
           {
@@ -234,15 +248,19 @@
         order: [],
         scrollX: true,
         pageLength: 100,
-        dom: '<"row justify-content-between align-items-center mb-2"' +
-          '<"col-md-4"l>' +
-          '<"col-md-8 text-right"fB>' +
+
+        // New DOM layout: length + buttons on left, search on right
+        dom:
+          '<"row mb-3 align-items-center"' +
+          '<"col-md-6 d-flex align-items-center gap-2"lB>' +
+          '<"col-md-6 d-flex justify-content-end"f>' +
           '>rtip',
+
         buttons: [
           {
             extend: 'selectAll',
-            className: 'btn btn-primary',
-            text: '<i class="fas fa-check-square mr-1"></i> ' + selectAllButtonTrans,
+            className: 'btn btn-primary me-1',
+            text: '<i class="fas fa-check-square me-1"></i> ' + selectAllButtonTrans,
             exportOptions: {
               columns: ':visible:not(:first-child):not(:last-child)'
             },
@@ -254,8 +272,8 @@
           },
           {
             extend: 'selectNone',
-            className: 'btn btn-primary',
-            text: '<i class="fas fa-square mr-1"></i> ' + selectNoneButtonTrans,
+            className: 'btn btn-primary me-1',
+            text: '<i class="fas fa-square me-1"></i> ' + selectNoneButtonTrans,
             exportOptions: {
               columns: ':visible:not(:first-child):not(:last-child)'
             }
@@ -263,12 +281,12 @@
           {
             extend: 'collection',
             text: '<i class="fas fa-ellipsis-h"></i> More',
-            className: 'btn btn-secondary ml-2',
+            className: 'btn btn-secondary',
             buttons: [
               {
                 extend: 'copy',
                 className: 'dropdown-item',
-                text: '<i class="fas fa-copy mr-2"></i> ' + copyButtonTrans,
+                text: '<i class="fas fa-copy me-2"></i> ' + copyButtonTrans,
                 exportOptions: {
                   columns: ':visible:not(:first-child):not(:last-child)'
                 }
@@ -276,7 +294,7 @@
               {
                 extend: 'csv',
                 className: 'dropdown-item',
-                text: '<i class="fas fa-file-csv mr-2"></i> ' + csvButtonTrans,
+                text: '<i class="fas fa-file-csv me-2"></i> ' + csvButtonTrans,
                 exportOptions: {
                   columns: ':visible:not(:first-child):not(:last-child)'
                 }
@@ -284,7 +302,7 @@
               {
                 extend: 'excel',
                 className: 'dropdown-item',
-                text: '<i class="fas fa-file-excel mr-2"></i> ' + excelButtonTrans,
+                text: '<i class="fas fa-file-excel me-2"></i> ' + excelButtonTrans,
                 exportOptions: {
                   columns: ':visible:not(:first-child):not(:last-child)'
                 }
@@ -292,7 +310,7 @@
               {
                 extend: 'print',
                 className: 'dropdown-item',
-                text: '<i class="fas fa-print mr-2"></i> ' + printButtonTrans,
+                text: '<i class="fas fa-print me-2"></i> ' + printButtonTrans,
                 exportOptions: {
                   columns: ':visible:not(:first-child):not(:last-child)'
                 }
@@ -300,7 +318,7 @@
               {
                 extend: 'colvis',
                 className: 'dropdown-item',
-                text: '<i class="fas fa-columns mr-2"></i> ' + colvisButtonTrans,
+                text: '<i class="fas fa-columns me-2"></i> ' + colvisButtonTrans,
                 exportOptions: {
                   columns: ':visible'
                 }
@@ -312,8 +330,8 @@
 
       $.fn.dataTable.ext.classes.sPageButton = '';
     });
-
   </script>
+
   @yield('scripts')
   <!-- User Profile Modal -->
   <div class="modal fade" id="profileModal" tabindex="-1" role="dialog" aria-labelledby="profileModalLabel"

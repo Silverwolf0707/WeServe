@@ -40,12 +40,15 @@ class TimeSeriesController extends Controller
 
 
 
-    public function exportToCsvFile()
+       public function exportToCsvFile()
     {
-        $data = DB::table('patient_records')
-            ->selectRaw('DATE_FORMAT(date_processed, "%Y-%m-01") as month, case_category, COUNT(*) as value')
-            ->whereNull('deleted_at')
-            ->groupBy('month', 'case_category')
+        $data = DB::table('patient_records as pr')
+            ->join('patient_status_logs as psl', 'psl.patient_id', '=', 'pr.id')
+            ->selectRaw('DATE_FORMAT(pr.date_processed, "%Y-%m-01") as month, pr.case_category, COUNT(*) as value')
+            ->whereNull('pr.deleted_at')
+            ->whereNull('psl.deleted_at')
+            ->where('psl.status', 'Disbursed')
+            ->groupBy('month', 'pr.case_category')
             ->orderBy('month')
             ->get();
 
@@ -57,35 +60,29 @@ class TimeSeriesController extends Controller
         Storage::disk('public')->put('patient_records.csv', $csv);
     }
 
-
     public function runPythonStl()
     {
-        $pythonPath = base_path('venv/Scripts/python.exe');
+        $pythonPath = base_path('venv/Scripts/python.exe'); 
         $scriptPath = base_path('python/stl_analysis.py');
 
         exec("\"$pythonPath\" \"$scriptPath\"", $output, $return_var);
 
         if ($return_var !== 0) {
-            if (request()->expectsJson()) {
-                return response()->json(['error' => 'Python script failed', 'output' => $output], 500);
-            }
-            return;
+            \Log::error("STL Python script failed", ['output' => $output]);
         }
+    }
 
+    public function getStlJson()
+    {
         $jsonPath = storage_path('app/public/stl_output.json');
 
         if (!file_exists($jsonPath)) {
-            if (request()->expectsJson()) {
-                return response()->json(['error' => 'STL output JSON file not found'], 500);
-            }
-            return;
+            return response()->json(['error' => 'No STL data found'], 404);
         }
 
         $json = file_get_contents($jsonPath);
         $data = json_decode($json, true);
 
-        if (request()->expectsJson()) {
-            return response()->json($data);
-        }
+        return response()->json($data);
     }
 }

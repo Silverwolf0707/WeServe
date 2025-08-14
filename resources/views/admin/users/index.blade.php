@@ -1,20 +1,26 @@
 @extends('layouts.admin')
 @section('content')
 
-<div class="card shadow-sm border-0">
-    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-        <div>
+    <style>
+        .btn-warning {
+            color: black !important;
+        }
+    </style>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header text-white d-flex align-items-center" style="background-color: green;">
             <h5 class="mb-0">
                 <i class="fas fa-users me-2"></i> {{ trans('cruds.user.title') }}
             </h5>
-        </div>
 
-        @can('user_create')
-            <a class="btn btn-success" href="{{ route('admin.users.create') }}">
-                <i class="fas fa-user-plus me-1"></i> {{ trans('global.add') }} {{ trans('cruds.user.title_singular') }}
-            </a>
-        @endcan
+            @can('user_create')
+                <a class="btn btn-warning ms-auto" href="{{ route('admin.users.create') }}" style="color: black !important;">
+                    <i class="fas fa-user-plus me-1"></i> {{ trans('global.add') }} {{ trans('cruds.user.title_singular') }}
+                </a>
+            @endcan
+        </div>
     </div>
+
 
     <div class="card-body">
         <div class="table-responsive">
@@ -57,8 +63,8 @@
                                     @endcan
                                     @can('user_delete')
                                         <form action="{{ route('admin.users.destroy', $user->id) }}" method="POST"
-                                              onsubmit="return confirm('{{ trans('global.areYouSure') }}');"
-                                              class="m-0 p-0" style="display: inline;">
+                                            onsubmit="return confirm('{{ trans('global.areYouSure') }}');" class="m-0 p-0"
+                                            style="display: inline;">
                                             @method('DELETE')
                                             @csrf
                                             <button type="submit" class="btn p-0 border-0 bg-transparent mr-2" title="Delete">
@@ -74,55 +80,55 @@
             </table>
         </div>
     </div>
-</div>
+    </div>
 @endsection
 
 @section('scripts')
-@parent
-<script>
-    $(function () {
-        let dtButtons = $.extend(true, [], $.fn.dataTable.defaults.buttons);
+    @parent
+    <script>
+        $(function () {
+            let dtButtons = $.extend(true, [], $.fn.dataTable.defaults.buttons);
 
-        @can('user_delete')
-        let deleteButton = {
-            text: '{{ trans('global.datatables.delete') }}',
-            url: "{{ route('admin.users.massDestroy') }}",
-            className: 'btn-danger',
-            action: function (e, dt, node, config) {
-                var ids = $.map(dt.rows({ selected: true }).nodes(), function (entry) {
-                    return $(entry).data('entry-id');
-                });
+            @can('user_delete')
+                let deleteButton = {
+                    text: '{{ trans('global.datatables.delete') }}',
+                    url: "{{ route('admin.users.massDestroy') }}",
+                    className: 'btn-danger',
+                    action: function (e, dt, node, config) {
+                        var ids = $.map(dt.rows({ selected: true }).nodes(), function (entry) {
+                            return $(entry).data('entry-id');
+                        });
 
-                if (ids.length === 0) {
-                    alert('{{ trans('global.datatables.zero_selected') }}');
-                    return;
+                        if (ids.length === 0) {
+                            alert('{{ trans('global.datatables.zero_selected') }}');
+                            return;
+                        }
+
+                        if (confirm('{{ trans('global.areYouSure') }}')) {
+                            $.ajax({
+                                headers: { 'x-csrf-token': _token },
+                                method: 'POST',
+                                url: config.url,
+                                data: { ids: ids, _method: 'DELETE' }
+                            }).done(function () { location.reload(); });
+                        }
+                    }
                 }
+                dtButtons.push(deleteButton);
+            @endcan
 
-                if (confirm('{{ trans('global.areYouSure') }}')) {
-                    $.ajax({
-                        headers: {'x-csrf-token': _token},
-                        method: 'POST',
-                        url: config.url,
-                        data: { ids: ids, _method: 'DELETE' }
-                    }).done(function () { location.reload(); });
-                }
-            }
-        }
-        dtButtons.push(deleteButton);
-        @endcan
+            $.extend(true, $.fn.dataTable.defaults, {
+                orderCellsTop: true,
+                order: [[1, 'desc']],
+                pageLength: 100
+                // dom removed so it inherits from admin layout
+            });
 
-        $.extend(true, $.fn.dataTable.defaults, {
-            orderCellsTop: true,
-            order: [[1, 'desc']],
-            pageLength: 100,
-            dom: 'lBfrtip',
+            let table = $('.datatable-User:not(.ajaxTable)').DataTable({ buttons: dtButtons });
+
+            $('a[data-toggle="tab"]').on('shown.bs.tab click', function () {
+                $($.fn.dataTable.tables(true)).DataTable().columns.adjust();
+            });
         });
-
-        let table = $('.datatable-User:not(.ajaxTable)').DataTable({ buttons: dtButtons });
-
-        $('a[data-toggle="tab"]').on('shown.bs.tab click', function () {
-            $($.fn.dataTable.tables(true)).DataTable().columns.adjust();
-        });
-    });
-</script>
+    </script>
 @endsection
