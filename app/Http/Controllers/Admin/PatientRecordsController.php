@@ -157,14 +157,44 @@ class PatientRecordsController extends Controller
 
     public function massDestroy(MassDestroyPatientRecordRequest $request)
     {
-        $patientRecords = PatientRecord::find(request('ids'));
+        $ids = $request->input('ids', []);
+        $deletedCount = 0;
 
-        foreach ($patientRecords as $patientRecord) {
-            $patientRecord->delete();
+        DB::beginTransaction();
+
+        try {
+            $patientRecords = PatientRecord::whereIn('id', $ids)->get();
+
+            foreach ($patientRecords as $patientRecord) {
+                $patientRecord->delete();
+                $deletedCount++;
+            }
+
+            DB::commit();
+
+            // Redirect with toast
+            return redirect()
+                ->route('admin.patient-records.index')
+                ->with('toast', [
+                    'type' => 'danger',
+                    'title' => 'Mass Delete Completed',
+                    'message' => "✅ {$deletedCount} " . ($deletedCount === 1 ? "record was" : "records were") . " deleted successfully",
+                    'time' => now()->diffForHumans(),
+                ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return redirect()
+                ->route('admin.patient-records.index')
+                ->with('toast', [
+                    'type' => 'danger',
+                    'title' => 'Error Deleting Records',
+                    'message' => 'An error occurred: ' . $e->getMessage(),
+                    'time' => now()->diffForHumans(),
+                ]);
         }
-
-        return response(null, Response::HTTP_NO_CONTENT);
     }
+
 
     public function submit(Request $request, $id)
     {
@@ -173,15 +203,18 @@ class PatientRecordsController extends Controller
         $request->validate([
             'remarks' => 'required|string|max:1000',
             'status' => 'required|string',
+            'submitted_date' => 'required|date'
         ]);
 
-        $status = $request->input('status'); 
+        $status = $request->input('status');
+        $statusDate = $request->input('submitted_date');
 
         // Create status log
         PatientStatusLog::create([
             'patient_id' => $id,
             'status' => $status,
             'user_id' => Auth::id(),
+            'status_date' => $statusDate, 
             'remarks' => $request->remarks,
             'created_at' => now(),
         ]);
@@ -197,8 +230,12 @@ class PatientRecordsController extends Controller
     }
     public function massSubmit(Request $request)
     {
-        $ids = $request->input('ids');
+        abort_if(Gate::denies('submit_patient_application'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $ids = $request->input('ids', []);
         $remarks = $request->input('remarks');
+        $statusDate = $request->input('submitted_date');
+
         $submitted = [];
         $skipped = [];
 
@@ -216,6 +253,7 @@ class PatientRecordsController extends Controller
                         'status' => PatientStatusLog::STATUS_SUBMITTED,
                         'user_id' => Auth::id(),
                         'remarks' => $remarks,
+                        'status_date' => $statusDate,
                         'created_at' => now(),
                     ]);
                     $submitted[] = $patient->control_number;
@@ -226,28 +264,35 @@ class PatientRecordsController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'toast' => [
+            // Prepare toast message
+            $messages = [];
+            if (count($submitted)) {
+                $messages[] = "✅ " . count($submitted) . " " . (count($submitted) === 1 ? "patient has" : "patients have") . " been submitted";
+            }
+            if (count($skipped)) {
+                $messages[] = "⚠️ " . count($skipped) . " " . (count($skipped) === 1 ? "patient was" : "patients were") . " skipped (already submitted)";
+            }
+
+            $toastMessage = implode('<br>', $messages);
+
+            return redirect()
+                ->route('admin.patient-records.index')
+                ->with('toast', [
                     'type' => 'success',
-                    'title' => 'Patient Record Mass Submitted',
-                    'message' => implode('', [
-                        count($submitted) ? '✅ <strong>Submitted:</strong> ' . implode(', ', $submitted) . '<br>' : '',
-                        count($skipped) ? '⚠️ <strong>Skipped:</strong> ' . implode(', ', $skipped) . '<br>' : '',
-                    ]),
+                    'title' => 'Mass Submit Completed',
+                    'message' => $toastMessage,
                     'time' => now()->diffForHumans(),
-                ]
-            ]);
+                ]);
         } catch (\Exception $e) {
             DB::rollBack();
-
-            return response()->json([
-                'toast' => [
+            return redirect()
+                ->route('admin.patient-records.index')
+                ->with('toast', [
                     'type' => 'danger',
                     'title' => 'Error Submitting Records',
                     'message' => 'An error occurred: ' . $e->getMessage(),
                     'time' => now()->diffForHumans(),
-                ]
-            ], 500);
+                ]);
         }
     }
 }

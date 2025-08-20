@@ -77,80 +77,26 @@
                 $currentIndex = array_search($baseStatus, $steps);
             @endphp
 
-
-            <style>
-                .stepper {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin: 2rem 0;
-                    padding: 1.5rem;
-                    background: #fff;
-                    border-radius: 10px;
-
-                }
-
-                .step {
-                    text-align: center;
-                    flex: 1;
-                    position: relative;
-                }
-
-                .step:not(:last-child)::after {
-                    content: "";
-                    position: absolute;
-                    top: 15px;
-                    right: -50%;
-                    width: 100%;
-                    height: 4px;
-                    background: #e0e0e0;
-                    z-index: 0;
-                }
-
-                .step.completed::after {
-                    background: #28a745;
-                }
-
-                .circle {
-                    width: 30px;
-                    height: 30px;
-                    background: #e0e0e0;
-                    border-radius: 50%;
-                    margin: 0 auto;
-                    line-height: 30px;
-                    color: white;
-                    position: relative;
-                    z-index: 1;
-                }
-
-                .step.completed .circle,
-                .step.active .circle {
-                    background: #28a745;
-                }
-
-                .label {
-                    margin-top: 0.5rem;
-                    font-weight: 500;
-                }
-            </style>
-
             <div class="stepper">
                 @foreach ($steps as $index => $step)
                     <div
-                        class="step 
-                                                                                                        {{ $baseStatus !== 'Rejected' && $index < $currentIndex ? 'completed' : '' }} 
-                                                                                                        {{ $baseStatus !== 'Rejected' && $index === $currentIndex ? 'active' : '' }}">
-                        <div class="circle">
+                        class="stepper-step
+                {{ $baseStatus !== 'Rejected' && $index < $currentIndex ? 'completed' : '' }} 
+                {{ $baseStatus !== 'Rejected' && $index === $currentIndex ? 'active' : '' }}">
+
+                        <div class="stepper-circle">
                             @if ($baseStatus !== 'Rejected' && $index <= $currentIndex)
                                 <i class="fas fa-check"></i>
                             @else
                                 {{ $index + 1 }}
                             @endif
                         </div>
-                        <div class="label">{{ $stepLabels[$step] ?? $step }}</div>
+
+                        <div class="stepper-label">{{ $stepLabels[$step] ?? $step }}</div>
                     </div>
                 @endforeach
             </div>
+
 
             {{-- ✅ END PROCESS TRACKER --}}
 
@@ -195,7 +141,7 @@
                                 <div>
                                     <strong>{{ ucfirst($log->status) }}:</strong>
                                     {{ $log->user->name ?? 'System' }} -
-                                    {{ \Carbon\Carbon::parse($log->created_at)->format('F j, Y g:i A') }}<br>
+                                    {{ \Carbon\Carbon::parse($log->status_date)->format('F j, Y g:i A') }}<br>
                                     <em>Remarks:</em> {{ $log->remarks ?? '-' }}
                                 </div>
                                 <div>
@@ -250,6 +196,12 @@
                                             aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label for="statusDate" class="form-label">Status Date</label>
+                                            <input type="date" name="status_date" id="statusDate" class="form-control"
+                                                value="{{ now()->toDateString() }}" required>
+                                        </div>
+
                                         <div class="mb-3">
                                             <label for="approveRemarks" class="form-label">Remarks</label>
                                             <textarea name="remarks" id="approveRemarks" class="form-control" rows="3" placeholder="Enter remarks..."></textarea>
@@ -313,6 +265,12 @@
 
                                         <!-- Remarks -->
                                         <div class="mb-3">
+                                            <div class="mb-3">
+                                                <label for="statusDate" class="form-label">Status Date</label>
+                                                <input type="date" name="status_date" id="statusDate"
+                                                    class="form-control" value="{{ now()->toDateString() }}" required>
+                                            </div>
+
                                             <label for="rejectRemarks" class="form-label">Remarks</label>
                                             <textarea name="remarks" id="rejectRemarks" class="form-control" rows="3" placeholder="Enter remarks..."
                                                 required>{{ old('remarks') }}</textarea>
@@ -409,6 +367,12 @@
                                                         data-value="{{ $suggested }}">₱{{ number_format($suggested) }}</button>
                                                 @endforeach
                                             </div>
+                                        </div>
+                                        <div class="form-group mb-3">
+                                            <label for="budget_status_date" class="form-label">Status Date</label>
+                                            <input type="date" name="status_date" id="budget_status_date"
+                                                class="form-control rounded-3 shadow-sm" value="{{ now()->toDateString() }}"
+                                                required>
                                         </div>
 
                                         <div class="form-group">
@@ -571,17 +535,23 @@
                                                 value="{{ old('dv_date', optional($patient->disbursementVoucher)->dv_date ? \Carbon\Carbon::parse($patient->disbursementVoucher->dv_date)->format('Y-m-d') : '') }}"
                                                 required>
                                         </div>
-                                    </div>
 
-                                    <div class="modal-footer">
-                                        <button type="submit" class="btn btn-success w-100">
-                                            <i class="fas fa-check-circle me-1"></i>
-                                            {{ $patient->disbursementVoucher ? 'Update' : 'Submit' }} DV
-                                        </button>
-                                        <button type="button" class="btn btn-secondary w-100 mt-2"
-                                            data-bs-dismiss="modal">Cancel</button>
+                                        <div class="form-group mb-3">
+                                            <label for="status_date">Status Date</label>
+                                            <input type="date" name="status_date" id="status_date"
+                                                class="form-control form-control-lg"
+                                                value="{{ old('status_date', now()->toDateString()) }}" required>
+                                        </div>
+
+                                        <div class="modal-footer">
+                                            <button type="submit" class="btn btn-success w-100">
+                                                <i class="fas fa-check-circle me-1"></i>
+                                                {{ $patient->disbursementVoucher ? 'Update' : 'Submit' }} DV
+                                            </button>
+                                            <button type="button" class="btn btn-secondary w-100 mt-2"
+                                                data-bs-dismiss="modal">Cancel</button>
+                                        </div>
                                     </div>
-                                </div>
                             </form>
                         </div>
                     </div>

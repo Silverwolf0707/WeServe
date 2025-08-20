@@ -6,7 +6,7 @@
     <title>Statistical Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  
+
 
     <style>
         body {
@@ -138,14 +138,13 @@
 
 <body>
     <div class="container-fluid py-4">
-        <!-- Summary Boxes -->
         <div class="row g-3 mb-4">
             <div class="col-md-3">
                 <div class="card shadow-sm bg-light-blue border-blue-500">
                     <div class="card-body d-flex justify-content-between align-items-center">
                         <div>
                             <div class="text-muted small">Top Assistance</div>
-                            <div class="fw-semibold fs-5">{{ $top_assistance ?? 'Medical' }}</div>
+                            <div class="fw-semibold fs-5" id="topAssistance">Loading...</div>
                         </div>
                         <div class="icon-circle bg-blue text-white">
                             <i class="fas fa-hand-holding-medical fa-lg"></i>
@@ -158,7 +157,7 @@
                     <div class="card-body d-flex justify-content-between align-items-center">
                         <div>
                             <div class="text-muted small">Most Common</div>
-                            <div class="fw-semibold fs-5">{{ $most_common_category ?? 'Senior' }}</div>
+                            <div class="fw-semibold fs-5" id="mostCommonCategory">Loading...</div>
                         </div>
                         <div class="icon-circle bg-green text-white">
                             <i class="fas fa-users fa-lg"></i>
@@ -171,7 +170,7 @@
                     <div class="card-body d-flex justify-content-between align-items-center">
                         <div>
                             <div class="text-muted small">Total Applicants</div>
-                            <div class="fw-semibold fs-5">{{ $total_applicants ?? 0 }}</div>
+                            <div class="fw-semibold fs-5" id="totalApplicants">Loading...</div>
                         </div>
                         <div class="icon-circle bg-yellow text-white">
                             <i class="fas fa-user-check fa-lg"></i>
@@ -184,7 +183,7 @@
                     <div class="card-body d-flex justify-content-between align-items-center">
                         <div>
                             <div class="text-muted small">Avg. Processing Time</div>
-                            <div class="fw-semibold fs-5">{{ $average_processing_time ?? '0 days' }}</div>
+                            <div class="fw-semibold fs-5" id="averageProcessingTime">Loading...</div>
                         </div>
                         <div class="icon-circle bg-red text-white">
                             <i class="fas fa-clock fa-lg"></i>
@@ -543,9 +542,26 @@
                     );
                 });
 
-                window.addEventListener('DOMContentLoaded', () => {
-                    loadStlData();
-                });
+                async function loadDashboardSummary() {
+                    try {
+                        const res = await fetch('/admin/statistics/get-age-statistics?type=cswd');
+                        const json = await res.json();
+                        const summary = json.dashboard_summary;
+                        if (!summary) return;
+
+                        document.getElementById('topAssistance').textContent = summary.top_assistance || 'N/A';
+                        document.getElementById('mostCommonCategory').textContent = summary.most_common_category || 'N/A';
+                        document.getElementById('totalApplicants').textContent = summary.total_applicants || 0;
+                        document.getElementById('averageProcessingTime').textContent = summary.average_processing_time || '0 days';
+                    } catch (err) {
+                        console.error(err);
+                    }
+                }
+
+                // call it immediately
+                loadDashboardSummary();
+                loadStlData();
+
             </script>
 
 

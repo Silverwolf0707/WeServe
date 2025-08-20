@@ -15,6 +15,7 @@ return new class extends Migration
             $table->decimal('amount', 10, 2);
             $table->text('remarks')->nullable();
             $table->string('budget_status');
+            $table->datetime('allocation_date');
             $table->timestamps();
             $table->softDeletes();
         });

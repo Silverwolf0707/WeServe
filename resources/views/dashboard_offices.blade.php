@@ -3,7 +3,7 @@
 @section('content')
     <div class="content">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h4 class="fw-bold">Dashboard Overview</h4>
+            <h4 class="fw-bold">Welcome {{ Auth::user()->name }}</h4>
             <form method="GET" action="{{ route('admin.home') }}" class="d-flex align-items-center">
                 <label for="year" class="me-2 mb-0 text-muted">Select Year:</label>
                 <select name="year" id="year" class="form-select" onchange="this.form.submit()">

@@ -64,12 +64,12 @@ table.dataTable thead .sorting_desc {
     z-index: 9999;
 }
 .searchable-fields {
-    padding-left:5px;
+    padding-left: 5px;
 }
 .searchable-link {
-    padding:0 5px 0 5px;
+    padding: 0 5px 0 5px;
 }
-.searchable-link:hover   {
+.searchable-link:hover {
     cursor: pointer;
     background: #eaeaea;
 }
@@ -88,7 +88,7 @@ table.dataTable thead .sorting_desc {
 }
 
 .dataTables_length label select {
-    width: 65px!important;
+    width: 65px !important;
 }
 
 div.dt-button-collection {
@@ -103,3 +103,232 @@ div.dt-button-collection {
     background-color: rgba(128, 128, 128, 0.1);
     font-weight: bolder;
 }
+
+/* -------Admin button styles------- */
+.dataTables_wrapper .dt-buttons {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem; /* space between buttons */
+    flex-wrap: wrap; /* if screen is small, wrap to next line */
+}
+
+.dataTables_wrapper .dt-buttons .btn {
+    border-radius: 50px !important; /* pill shape */
+    padding: 0.4rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: all 0.3s ease-in-out;
+    border: none !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    display: inline-flex; /* ensures horizontal alignment */
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+/* Primary buttons (Select All / None) */
+.btn-primary {
+    background: linear-gradient(
+        135deg,
+        #4f46e5,
+        #3b82f6
+    ) !important; /* indigo → blue */
+    color: #fff !important;
+}
+.btn-primary:hover {
+    background: linear-gradient(135deg, #4338ca, #2563eb) !important;
+    transform: translateY(-2px);
+}
+
+/* Secondary (More dropdown) */
+.btn-secondary {
+    background: linear-gradient(
+        135deg,
+        #6b7280,
+        #9ca3af
+    ) !important; /* gray gradient */
+    color: #fff !important;
+}
+.btn-secondary:hover {
+    background: linear-gradient(135deg, #4b5563, #6b7280) !important;
+    transform: translateY(-2px);
+}
+
+/* Dropdown items (inside "More") */
+.dt-button.dropdown-item {
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    font-weight: 500;
+    transition: all 0.2s ease-in-out;
+}
+.dt-button.dropdown-item:hover {
+    background-color: #f3f4f6;
+    transform: translateX(4px);
+}
+
+/* Adjust spacing */
+.dataTables_wrapper .dt-buttons {
+    gap: 0.75rem !important;
+}
+
+/* -------Header for PatientRecord------- */
+.custom-header {
+    background: linear-gradient(135deg, #14b8a6, #10b981);
+    border-top-left-radius: 0.75rem;
+    border-top-right-radius: 0.75rem;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Title styling */
+.custom-header h4,
+.custom-header i {
+    color: #fff !important;
+}
+
+/* Button Modern Styles */
+.btn-add {
+    background: linear-gradient(135deg, #10b981, #059669); /* teal */
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    padding: 0.5rem 1.25rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+.btn-add:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+/* Import Button */
+.btn-import {
+    background: linear-gradient(135deg, #f59e0b, #d97706); /* amber/orange */
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    padding: 0.5rem 1.25rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+.btn-import:hover {
+    background: linear-gradient(135deg, #d97706, #b45309);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+}
+
+/* loading screen */
+/* Overlay background */
+#loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 250px;
+    width: calc(100% - 250px);
+    height: 100%;
+    background: #f5f6fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    transition: opacity 0.5s ease;
+}
+
+body.sidebar-collapse #loading-overlay {
+    left: 80px;
+    width: calc(100% - 80px);
+}
+
+/* Wrapper */
+.loader-wrapper {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Rotating Circle */
+.circle {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 1px solid transparent;
+    border-top-color: #4eff83;
+    border-right-color: #24f536;
+    border-bottom-color: rgba(106, 0, 255, 0.15);
+    border-left-color: rgba(106, 0, 255, 0.15);
+    animation: spin 1.5s linear infinite;
+}
+
+/* Brand Text */
+.loader-text {
+    font-family: "Source Sans Pro", sans-serif;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #00ff55;
+    letter-spacing: 2px;
+}
+
+/* Spin animation */
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+/* end of loading screen */
+
+/* 🔹 Process Tracker Styles */
+.stepper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: #fff;
+    border-radius: 10px;
+}
+
+.stepper-step {
+    text-align: center;
+    flex: 1;
+    position: relative;
+}
+
+.stepper-step:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: 15px;
+    right: -50%;
+    width: 100%;
+    height: 4px;
+    background: #e0e0e0;
+    z-index: 0;
+}
+
+.stepper-step.completed::after {
+    background: #28a745;
+}
+
+.stepper-circle {
+    width: 30px;
+    height: 30px;
+    background: #e0e0e0;
+    border-radius: 50%;
+    margin: 0 auto;
+    line-height: 30px;
+    color: white;
+    position: relative;
+    z-index: 1;
+}
+
+.stepper-step.completed .stepper-circle,
+.stepper-step.active .stepper-circle {
+    background: #28a745;
+}
+
+.stepper-label {
+    margin-top: 0.5rem;
+    font-weight: 500;
+}
+/* end of process tracker styles */

@@ -13,8 +13,10 @@ use App\Models\PatientStatusLog;
 use App\Models\DisbursementVoucher;
 use App\Services\VonageService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 class ProcessTrackingController extends Controller
@@ -51,6 +53,7 @@ class ProcessTrackingController extends Controller
         $rules = [
             'remarks' => 'required|string|max:1000',
             'action'  => 'required|in:approve,reject',
+            'status_date' => 'required|date',
         ];
 
         // Multi-select validation if rejecting
@@ -74,6 +77,7 @@ class ProcessTrackingController extends Controller
             'status'     => $status,
             'user_id'    => Auth::id(),
             'remarks'    => $validated['remarks'],
+            'status_date' => $validated['status_date'],
             'created_at' => now(),
         ]);
 
@@ -107,6 +111,120 @@ class ProcessTrackingController extends Controller
             ->with('status', 'Patient has been ' . strtolower($action) . '.');
     }
 
+    public function massDecision(Request $request)
+    {
+        abort_if(Gate::denies('approve_patient'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $rules = [
+            'ids'     => 'required|array|min:1',
+            'ids.*'   => 'integer|exists:patient_records,id',
+            'remarks' => 'required|string|max:1000',
+            'action'  => 'required|in:approve,reject',
+            'status_date' => 'required|date',
+        ];
+
+        if ($request->action === 'reject') {
+            $rules['reasons']      = 'required|array|min:1';
+            $rules['reasons.*']    = 'string|max:255';
+            $rules['other_reason'] = 'nullable|string|max:255';
+        }
+
+        $validated = $request->validate($rules);
+
+        $approved = [];
+        $rejected = [];
+        $skipped  = [];
+
+        DB::beginTransaction();
+
+        try {
+            foreach ($validated['ids'] as $id) {
+                $patient = PatientRecord::find($id);
+                if (!$patient) {
+                    $skipped[] = $id;
+                    continue;
+                }
+
+                $latestStatus = $patient->statusLogs()->latest()->first();
+
+                // Skip if not submitted or already approved/rejected
+                if (!$latestStatus || $latestStatus->status !== PatientStatusLog::STATUS_SUBMITTED) {
+                    $skipped[] = $patient->control_number;
+                    continue;
+                }
+
+                $status = $validated['action'] === 'approve'
+                    ? PatientStatusLog::STATUS_APPROVED
+                    : PatientStatusLog::STATUS_REJECTED;
+
+                // Create status log
+                $statusLog = $patient->statusLogs()->create([
+                    'status'     => $status,
+                    'user_id'    => Auth::id(),
+                    'remarks'    => $validated['remarks'],
+                    'status_date' => $validated['status_date'],
+                    'created_at' => now(),
+                ]);
+
+                if ($validated['action'] === 'reject') {
+                    $reasons = $validated['reasons'] ?? [];
+                    if (!empty($validated['other_reason'])) {
+                        $reasons[] = $validated['other_reason'];
+                    }
+
+                    foreach ($reasons as $reason) {
+                        RejectionReason::create([
+                            'patient_id'            => $patient->id,
+                            'patient_status_log_id' => $statusLog->id,
+                            'reason'                => $reason,
+                        ]);
+                    }
+
+                    $rejected[] = $patient->id;
+                } else {
+                    $approved[] = $patient->id;
+                }
+
+                $actionEvent = $validated['action'] === 'approve' ? 'approved' : 'rejected';
+                broadcast(new PatientStatusChanged($patient, $actionEvent))->toOthers();
+            }
+
+            DB::commit();
+
+            $messages = [];
+            if (count($approved)) {
+                $messages[] = "✅ " . count($approved) . " " . (count($approved) === 1 ? 'patient has' : 'patients have') . " been approved";
+            }
+            if (count($rejected)) {
+                $messages[] = "❌ " . count($rejected) . " " . (count($rejected) === 1 ? 'patient has' : 'patients have') . " been rejected";
+            }
+            if (count($skipped)) {
+                $messages[] = "⚠️ " . count($skipped) . " " . (count($skipped) === 1 ? 'patient was' : 'patients were') . " skipped (not submitted or already processed)";
+            }
+
+            $toastMessage = implode('<br>', $messages);
+
+            return redirect()
+                ->route('admin.process-tracking.index')
+                ->with('toast', [
+                    'type' => 'success',
+                    'title' => 'Mass Decision Completed',
+                    'message' => $toastMessage,
+                    'time' => now()->diffForHumans(),
+                ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'toast' => [
+                    'type' => 'danger',
+                    'title' => 'Error in Mass Decision',
+                    'message' => 'An error occurred: ' . $e->getMessage(),
+                    'time' => now()->diffForHumans(),
+                ]
+            ], 500);
+        }
+    }
+
 
 
     public function storeDV(Request $request, $id)
@@ -116,6 +234,7 @@ class ProcessTrackingController extends Controller
         $request->validate([
             'dv_code' => 'required|string|max:255',
             'dv_date' => 'required|date',
+            'status_date' => 'required|date',
         ]);
 
         $patient = PatientRecord::findOrFail($id);
@@ -137,10 +256,10 @@ class ProcessTrackingController extends Controller
             'user_id' => Auth::id(),
             'status' => PatientStatusLog::STATUS_DV_SUBMITTED,
             'remarks' => 'DV recorded: ' . $request->dv_code,
-            'created_at' => now(),
+            'status_date' => $request->status_date,
         ]);
 
-        $patient->load('latestStatusLog'); // Optional: load if your frontend expects it
+        $patient->load('latestStatusLog');
 
         broadcast(new PatientStatusChanged($patient, 'dv_submitted'))->toOthers();
 
@@ -155,6 +274,7 @@ class ProcessTrackingController extends Controller
         $validated = $request->validate([
             'dv_code' => 'required|string|max:255',
             'dv_date' => 'required|date',
+            'status_date' => 'required|date',
         ]);
 
         $dv = $patient->disbursementVoucher;
@@ -168,7 +288,7 @@ class ProcessTrackingController extends Controller
             'user_id' => Auth::id(),
             'status' => PatientStatusLog::STATUS_DV_SUBMITTED,
             'remarks' => 'DV updated: ' . $validated['dv_code'],
-            'created_at' => now(),
+            'status_date' => $validated['status_date'],
         ]);
 
         $patient->load('latestStatusLog');
@@ -177,6 +297,119 @@ class ProcessTrackingController extends Controller
         return back()->with('success', 'DV updated and status progressed.');
     }
 
+    public function massDVInput(Request $request)
+    {
+        abort_if(Gate::denies('accounting_dv_input'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $request->validate([
+            'ids'   => 'required|array|min:1',
+            'ids.*' => 'integer|exists:patient_records,id',
+            'dv_date' => 'required|date',
+            'status_date' => 'required|date',
+        ]);
+
+        $submitted = [];
+        $skipped   = [];
+
+        DB::beginTransaction();
+
+        try {
+            $patients = PatientRecord::with([
+                'latestStatusLog',
+                'disbursementVoucher',
+                'budgetAllocation'
+            ])->whereIn('id', $request->ids)->get();
+
+            foreach ($patients as $patient) {
+                // Skip if already has DV
+                if ($patient->disbursementVoucher) {
+                    $skipped[] = "{$patient->control_number} (Already has DV)";
+                    continue;
+                }
+                // Skip if no budget allocation record exists
+                if (!$patient->budgetAllocation) {
+                    $skipped[] = "{$patient->control_number} (No budget allocation)";
+                    continue;
+                }
+
+
+                // Skip if latest status is not Budget Allocated
+                if (!$patient->latestStatusLog || $patient->latestStatusLog->status !== PatientStatusLog::STATUS_BUDGET_ALLOCATED) {
+                    $skipped[] = "{$patient->control_number} (Latest status not Budget Allocated)";
+                    continue;
+                }
+
+                // Generate unique DV code
+                $dvCode = $this->generateUniqueDvCode();
+
+                // Create DV
+                $dv = DisbursementVoucher::create([
+                    'patient_id' => $patient->id,
+                    'user_id'    => Auth::id(),
+                    'dv_code'    => $dvCode,
+                    'dv_date'    => $request->dv_date,
+                ]);
+
+                // Status log
+                PatientStatusLog::create([
+                    'patient_id' => $patient->id,
+                    'user_id'    => Auth::id(),
+                    'status'     => PatientStatusLog::STATUS_DV_SUBMITTED,
+                    'remarks'    => 'DV recorded: ' . $dvCode,
+                    'status_date' => $request->status_date,
+                ]);
+
+                $patient->load('latestStatusLog');
+                broadcast(new PatientStatusChanged($patient, 'dv_submitted'))->toOthers();
+
+                $submitted[] = $patient->control_number;
+            }
+
+            DB::commit();
+
+            // Build toast messages
+            $messages = [];
+            if (count($submitted)) {
+                $messages[] = "✅ " . count($submitted) . " patient" . (count($submitted) > 1 ? "s" : "") . " DV submitted";
+            }
+            if (count($skipped)) {
+                $messages[] = "⚠️ " . count($skipped) . " patient" . (count($skipped) > 1 ? "s" : "") . " skipped (" . implode(", ", $skipped) . ")";
+            }
+
+            $toastMessage = implode('<br>', $messages);
+
+            return redirect()->route('admin.process-tracking.index')
+                ->with('toast', [
+                    'type' => 'success',
+                    'title' => 'Mass DV Submission',
+                    'message' => $toastMessage,
+                    'time' => now()->diffForHumans(),
+                ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('toast', [
+                'type' => 'danger',
+                'title' => 'Error in Mass DV Submission',
+                'message' => 'An error occurred: ' . $e->getMessage(),
+                'time' => now()->diffForHumans(),
+            ]);
+        }
+    }
+
+
+
+    /**
+     * Generate a unique DV Code (random, no duplicates).
+     */
+    private function generateUniqueDvCode()
+    {
+        do {
+            // Example format: DV-2025-XXXXX (random 5 alphanumeric)
+            $code = 'DV-' . date('Y') . '-' . strtoupper(Str::random(5));
+        } while (DisbursementVoucher::where('dv_code', $code)->exists());
+
+        return $code;
+    }
 
 
     public function storeBudget(Request $request, $id)
@@ -186,6 +419,7 @@ class ProcessTrackingController extends Controller
         $request->validate([
             'amount' => 'required|numeric|min:0',
             'remarks' => 'nullable|string|max:1000',
+            'status_date' => 'required|date',
         ]);
 
         $patient = PatientRecord::findOrFail($id);
@@ -200,6 +434,7 @@ class ProcessTrackingController extends Controller
             'amount' => $request->amount,
             'remarks' => $request->remarks,
             'budget_status' => 'Not Disbursed',
+            'allocation_date' => $request->status_date,
         ]);
 
         PatientStatusLog::create([
@@ -207,7 +442,7 @@ class ProcessTrackingController extends Controller
             'user_id' => Auth::id(),
             'status' => PatientStatusLog::STATUS_BUDGET_ALLOCATED,
             'remarks' => 'Budget allocated: ₱' . number_format($request->amount, 2),
-            'created_at' => now(),
+            'status_date' => $request->status_date,
         ]);
 
         $patient->load('latestStatusLog');
@@ -224,6 +459,7 @@ class ProcessTrackingController extends Controller
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0',
             'remarks' => 'nullable|string|max:1000',
+            'status_date' => 'required|date',
         ]);
 
         $budget = $patient->budgetAllocation;
@@ -237,7 +473,7 @@ class ProcessTrackingController extends Controller
             'status' => PatientStatusLog::STATUS_BUDGET_ALLOCATED,
             'user_id' => Auth::id(),
             'remarks' => 'Budget updated: ₱' . number_format($validated['amount'], 2),
-            'created_at' => now(),
+            'status_date' => $request->status_date,
         ]);
 
         $patient->load('latestStatusLog');
@@ -246,7 +482,92 @@ class ProcessTrackingController extends Controller
         return back()->with('success', 'Budget updated and status progressed.');
     }
 
+    public function massBudgetAllocate(Request $request)
+    {
+        abort_if(Gate::denies('budget_allocate'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:patient_records,id',
+            'amount' => 'required|numeric|min:0',
+            'status_date' => 'required|date',
+            'remarks' => 'nullable|string|max:1000',
+
+        ]);
+
+        $amount = $request->amount;
+        $remarks = $request->remarks;
+
+        $allocated = [];
+        $skipped = [];
+
+        DB::beginTransaction();
+
+        try {
+            $patients = PatientRecord::whereIn('id', $request->ids)->get();
+            $statusDate = $request->status_date;
+
+            foreach ($patients as $patient) {
+                $latestStatus = $patient->latestStatusLog?->status;
+
+                // Skip if not approved or already has budget
+                if ($latestStatus !== PatientStatusLog::STATUS_APPROVED || $patient->budgetAllocation) {
+                    $skipped[] = $patient->control_number;
+                    continue;
+                }
+
+                // Allocate budget
+                BudgetAllocation::create([
+                    'patient_id' => $patient->id,
+                    'user_id' => Auth::id(),
+                    'amount' => $amount,
+                    'remarks' => $remarks,
+                    'allocation_date' => $statusDate,
+                    'budget_status' => 'Not Disbursed',
+                ]);
+               
+                PatientStatusLog::create([
+                    'patient_id' => $patient->id,
+                    'user_id' => Auth::id(),
+                    'status' => PatientStatusLog::STATUS_BUDGET_ALLOCATED,
+                    'remarks' => 'Budget allocated: ₱' . number_format($amount, 2),
+                    'status_date' => $statusDate,
+                ]);
+
+                broadcast(new PatientStatusChanged($patient, 'budget_allocated'))->toOthers();
+
+                $allocated[] = $patient->control_number;
+            }
+
+            DB::commit();
+
+            $messages = [];
+            if (count($allocated)) {
+                $messages[] = "✅ " . count($allocated) . " patient" . (count($allocated) > 1 ? "s" : "") . " allocated budget";
+            }
+            if (count($skipped)) {
+                $messages[] = "⚠️ " . count($skipped) . " patient" . (count($skipped) > 1 ? "s" : "") . " skipped (not approved or already has budget)";
+            }
+
+            $toastMessage = implode('<br>', $messages);
+
+            return redirect()->route('admin.process-tracking.index')
+                ->with('toast', [
+                    'type' => 'success',
+                    'title' => 'Mass Budget Allocation',
+                    'message' => $toastMessage,
+                    'time' => now()->diffForHumans(),
+                ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('toast', [
+                'type' => 'danger',
+                'title' => 'Error in Mass Budget Allocation',
+                'message' => 'An error occurred: ' . $e->getMessage(),
+                'time' => now()->diffForHumans(),
+            ]);
+        }
+    }
 
     public function markBudgetAsDisbursed($id)
     {
@@ -301,6 +622,96 @@ class ProcessTrackingController extends Controller
         return redirect()->route('admin.process-tracking.show', $id)
             ->with('status', 'Budget status updated to Disbursed (no OTP).');
     }
+
+    public function massQuickDisburse(Request $request)
+    {
+        abort_if(Gate::denies('treasury_disburse'), 403);
+
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:patient_records,id',
+            'status_date' => 'required|date',
+        ]);
+
+        $disbursed = [];
+        $skipped   = [];
+
+        DB::beginTransaction();
+
+        try {
+            foreach ($request->ids as $id) {
+                $allocation = BudgetAllocation::where('patient_id', $id)->first();
+
+                // Skip if no allocation found
+                if (!$allocation) {
+                    $skipped[] = $id . " (no allocation)";
+                    continue;
+                }
+
+                // Skip if already disbursed
+                if ($allocation->budget_status === 'Disbursed') {
+                    $skipped[] = $id . " (already disbursed)";
+                    continue;
+                }
+
+                // Only allow quick disburse if DV is submitted
+                $hasDv = DisbursementVoucher::where('patient_id', $id)->exists();
+                if (!$hasDv) {
+                    $skipped[] = $id . " (no DV submitted)";
+                    continue;
+                }
+
+                // Update to Disbursed
+                $allocation->update([
+                    'budget_status' => 'Disbursed',
+                ]);
+
+                PatientStatusLog::create([
+                    'patient_id' => $id,
+                    'user_id' => Auth::id(),
+                    'status' => PatientStatusLog::STATUS_DISBURSED,
+                    'remarks' => 'Budget marked as disbursed (mass quick).',
+                    'status_date' => $request->status_date,
+                ]);
+
+                $patient = PatientRecord::with('latestStatusLog')->find($id);
+                if ($patient) {
+                    broadcast(new PatientStatusChanged($patient, 'disbursed'))->toOthers();
+                    $disbursed[] = $patient->control_number ?? $id;
+                }
+            }
+
+            DB::commit();
+
+            // Build messages
+            $messages = [];
+            if (count($disbursed)) {
+                $messages[] = "✅ " . count($disbursed) . " patient" . (count($disbursed) > 1 ? "s" : "") . " disbursed";
+            }
+            if (count($skipped)) {
+                $messages[] = "⚠️ " . count($skipped) . " skipped (no DV submitted or already disbursed)";
+            }
+
+            $toastMessage = implode('<br>', $messages);
+
+            return redirect()->route('admin.process-tracking.index')
+                ->with('toast', [
+                    'type' => 'success',
+                    'title' => 'Mass Quick Disburse',
+                    'message' => $toastMessage,
+                    'time' => now()->diffForHumans(),
+                ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('toast', [
+                'type' => 'danger',
+                'title' => 'Error in Mass Quick Disburse',
+                'message' => 'An error occurred: ' . $e->getMessage(),
+                'time' => now()->diffForHumans(),
+            ]);
+        }
+    }
+
 
 
 

@@ -162,10 +162,7 @@
             <div class="card-body d-flex flex-column justify-content-between">
               <canvas id="deficiencyChart" style="max-height: 260px;"></canvas>
 
-              <p class="text-muted small mt-3 text-center">
-                Most deficiencies are observed in <strong>Medical</strong> and <strong>Education</strong> assistance
-                case types, often due to missing IDs and incomplete certifications.
-              </p>
+              <p id="deficiencySummary" class="text-muted small mt-3 text-center"></p>
             </div>
           </div>
         </div>
@@ -407,49 +404,51 @@
     // Initial fetch
     fetchStats();
 
-    const deficiencyCtx = document.getElementById('deficiencyChart').getContext('2d');
+    document.addEventListener('DOMContentLoaded', function () {
+      fetch("{{ route('admin.statistics.deficiencies') }}")
+        .then(res => res.json())
+        .then(data => {
+          const deficiencyCtx = document.getElementById('deficiencyChart').getContext('2d');
 
-    new Chart(deficiencyCtx, {
-      type: 'bar',
-      data: {
-        labels: ['Missing ID', 'No Signature', 'Invalid Form', 'Lack of Proof', 'Wrong Name'],
-        datasets: [{
-          label: 'Deficiency Count',
-          data: [30, 25, 20, 15, 10],
-          backgroundColor: '#007bff',
-          borderRadius: 6,
-          barThickness: 18
-        }]
-      },
-      options: {
-        indexAxis: 'y', // makes it horizontal
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: ctx => `${ctx.label}: ${ctx.raw} cases`
+          new Chart(deficiencyCtx, {
+            type: 'bar',
+            data: {
+              labels: data.labels,
+              datasets: [{
+                label: 'Deficiency Count',
+                data: data.counts,
+                backgroundColor: '#007bff',
+                borderRadius: 6,
+                barThickness: 18
+              }]
+            },
+            options: {
+              indexAxis: 'y',
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  callbacks: {
+                    label: ctx => `${ctx.label}: ${ctx.raw} cases`
+                  }
+                }
+              },
+              scales: {
+                x: {
+                  beginAtZero: true,
+                  title: { display: true, text: 'Number of Cases' }
+                },
+                y: {
+                  ticks: { autoSkip: false, maxRotation: 0, minRotation: 0 }
+                }
+              }
             }
-          }
-        },
-        scales: {
-          x: {
-            beginAtZero: true,
-            title: {
-              display: true,
-              text: 'Number of Cases'
-            }
-          },
-          y: {
-            ticks: {
-              autoSkip: false,
-              maxRotation: 0,
-              minRotation: 0
-            }
-          }
-        }
-      }
+          });
+
+          // Set the summary text dynamically
+          document.querySelector('#deficiencySummary').innerHTML = data.summary;
+        });
     });
   </script>
 

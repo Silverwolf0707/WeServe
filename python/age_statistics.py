@@ -2,27 +2,38 @@ import pandas as pd
 import json
 import os
 
-# Base path is the parent directory of this script
 base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-
-# CSV input path (single unified export)
 full_csv_path = os.path.join(base_path, 'storage', 'app', 'public', 'full_patient_data.csv')
-
-# JSON output path
 json_path = os.path.join(base_path, 'storage', 'app', 'public', 'age_stats_output.json')
 
-# Load CSV
 df = pd.read_csv(full_csv_path)
 
+# Ensure dates are datetime
+df['date_processed'] = pd.to_datetime(df['month'], errors='coerce')
+df['disbursed_date'] = pd.to_datetime(df['dv_date'], errors='coerce')
+
+# Compute processing_days only for rows with disbursed_date
+df['processing_days'] = (df['disbursed_date'] - df['date_processed']).dt.days
+
+# Compute average processing time
+average_processing_time = round(df['processing_days'].mean(), 2) if not df['processing_days'].dropna().empty else 0
+
+# Add dashboard summary
+top_assistance = df['case_type'].mode().iloc[0] if not df['case_type'].mode().empty else 'N/A'
+most_common_category = df['case_category'].mode().iloc[0] if not df['case_category'].mode().empty else 'N/A'
+total_applicants = len(df)
+
+dashboard_summary = {
+    'top_assistance': top_assistance,
+    'most_common_category': most_common_category,
+    'total_applicants': total_applicants,
+    'average_processing_time': f"{average_processing_time} days"
+}
+
+# Compute stats by category/type
 def compute_stats(df, value_col):
-    """
-    Compute stats grouped by case_category and case_type for a given value column.
-    Returns two dicts: stats by category and stats by type.
-    """
     category_stats = {}
     type_stats = {}
-
-    # Group by case_category
     for cat, group in df.groupby('case_category'):
         values = group[value_col].dropna()
         category_stats[cat] = {
@@ -33,8 +44,6 @@ def compute_stats(df, value_col):
             'std_dev': round(values.std(), 2) if len(values) > 1 else 0,
             'count': len(values),
         }
-
-    # Group by case_type
     for ctype, group in df.groupby('case_type'):
         values = group[value_col].dropna()
         type_stats[ctype] = {
@@ -45,7 +54,6 @@ def compute_stats(df, value_col):
             'std_dev': round(values.std(), 2) if len(values) > 1 else 0,
             'count': len(values),
         }
-
     return category_stats, type_stats
 
 age_stats_by_category, age_stats_by_type = compute_stats(df, 'age')
@@ -62,8 +70,8 @@ output = {
     'application_stats_by_type': app_stats_by_type,
     'total_applications_by_category': total_applications_by_category,
     'total_applications_by_type': total_applications_by_type,
+    'dashboard_summary': dashboard_summary,
 }
 
-# Save JSON output
 with open(json_path, 'w') as f:
     json.dump(output, f, indent=2)

@@ -14,6 +14,7 @@ class CreatePatientStatusLogsTable extends Migration
                 ->constrained('patient_records')
                 ->onDelete('cascade');
             $table->string('status');
+            $table->datetime('status_date');
             $table->unsignedBigInteger('user_id')->nullable();
             $table->text('remarks')->nullable();
             $table->timestamp('created_at')->useCurrent();

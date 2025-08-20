@@ -14,9 +14,9 @@ class StatisticsController extends Controller
         $type = request('type'); // get ?type=cswd, budget, treasury, accounting
 
         $analyticsViews = [
-            'cswd'      => ['permission' => 'CSWD-ANALYTICS'],
-            'budget'    => ['permission' => 'BUDGET-ANALYTICS'],
-            'treasury'  => ['permission' => 'TREASURY-ANALYTICS'],
+            'cswd'       => ['permission' => 'CSWD-ANALYTICS'],
+            'budget'     => ['permission' => 'BUDGET-ANALYTICS'],
+            'treasury'   => ['permission' => 'TREASURY-ANALYTICS'],
             'accounting' => ['permission' => 'ACCOUNTING-ANALYTICS'],
         ];
 
@@ -29,9 +29,64 @@ class StatisticsController extends Controller
         if (!Gate::allows($permission)) {
             abort(403, 'You do not have permission to view this statistics.');
         }
-        $this->runPythonAgeStats();
+
+        // --- Optimization logic ---
+        $csvPath = storage_path('app/public/patient_records_year.csv');
+        $jsonPath = storage_path('app/public/age_stats_output.json');
+        $metaPath = storage_path('app/public/age_stats_meta.json');
+
+        $shouldRunPython = false;
+
+        // Case 1: No JSON yet → must run
+        if (!file_exists($jsonPath)) {
+            $shouldRunPython = true;
+        } else {
+            // Compare row counts (or timestamp)
+            $currentRowCount = $this->getCsvRowCount($csvPath);
+            $lastRowCount = 0;
+
+            if (file_exists($metaPath)) {
+                $meta = json_decode(file_get_contents($metaPath), true);
+                $lastRowCount = $meta['row_count'] ?? 0;
+            }
+
+            if ($currentRowCount > $lastRowCount) {
+                $shouldRunPython = true;
+
+                // Save metadata
+                file_put_contents($metaPath, json_encode([
+                    'row_count' => $currentRowCount,
+                    'updated_at' => now()->toDateTimeString(),
+                ]));
+            }
+        }
+
+        // Only run Python if needed
+        if ($shouldRunPython) {
+            $this->runPythonAgeStats();
+        }
+
         return $this->getPythonJsonOutput();
     }
+
+    private function getCsvRowCount($csvPath)
+    {
+        if (!file_exists($csvPath)) {
+            return 0;
+        }
+
+        $rowCount = 0;
+        if (($handle = fopen($csvPath, "r")) !== false) {
+            while (fgetcsv($handle) !== false) {
+                $rowCount++;
+            }
+            fclose($handle);
+        }
+
+        // Minus 1 for header
+        return max(0, $rowCount - 1);
+    }
+
 
     protected function runPythonAgeStats()
     {
@@ -58,5 +113,29 @@ class StatisticsController extends Controller
         $data = json_decode($json, true);
 
         return response()->json($data);
+    }
+
+    public function getDeficiencyData()
+    {
+        $data = DB::table('rejection_reasons')
+            ->select('reason', DB::raw('COUNT(*) as count'))
+            ->groupBy('reason')
+            ->orderByDesc('count')
+            ->get();
+
+        // Build chart data
+        $labels = $data->pluck('reason');
+        $counts = $data->pluck('count');
+
+        // Generate summary
+        $topReason = $data->first();
+        $summary = "Most deficiencies are caused by <strong>{$topReason->reason}</strong>, 
+                followed by " . $data->skip(1)->pluck('reason')->take(2)->implode(' and ') . ".";
+
+        return response()->json([
+            'labels' => $labels,
+            'counts' => $counts,
+            'summary' => $summary
+        ]);
     }
 }

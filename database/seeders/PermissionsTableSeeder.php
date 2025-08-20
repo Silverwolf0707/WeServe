@@ -130,10 +130,38 @@ class PermissionsTableSeeder extends Seeder
                 'id' => 30,
                 'title' => 'budget_allocate',
             ],
-                        [
-                'id' =>31,
+            [
+                'id' => 32,
                 'title' => 'accounting_input_dv',
-            ]
+            ],
+            [
+                'id' => 33,
+                'title' => 'CSWD-ANALYTICS',
+            ],
+            [
+                'id' => 34,
+                'title' => 'documents_management',
+            ],
+            [
+                'id' => 35,
+                'title' => 'settings',
+            ],
+            [
+                'id' => 36,
+                'title' => 'BUDGET-ANALYTICS',
+            ],
+            [
+                'id' => 37,
+                'title' => 'TREASURY-ANALYTICS',
+            ],
+            [
+                'id' => 38,
+                'title' => 'ACCOUNTING-ANALYTICS',
+            ],
+            [
+                'id' => 39,
+                'title' => 'budget_records',
+            ],
         ];
 
         Permission::insert($permissions);

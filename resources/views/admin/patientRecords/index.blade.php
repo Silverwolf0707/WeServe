@@ -3,107 +3,112 @@
 @section('content')
 
     <div class="card shadow-sm border-0">
-        <div class="card-header bg-primary text-white">
-            <div class="row w-100 align-items-center">
-                <div class="col-md-6">
-                    <h5 class="mb-0">
-                        <i class="fas fa-users me-2"></i> {{ trans('cruds.patientRecord.title') }}
-                    </h5>
-                </div>
-                <div class="col-md-6 text-end">
-                    @can('patient_record_create')
-                        <a class="btn btn-success me-2" href="{{ route('admin.patient-records.create') }}">
-                            <i class="fas fa-plus me-1"></i> {{ trans('global.add') }}
-                            {{ trans('cruds.patientRecord.title_singular') }}
-                        </a>
-                        <button class="btn btn-warning me-2" data-bs-toggle="modal" data-bs-target="#csvImportModal">
+        <!-- Modernized Header -->
+        <div class="card-header custom-header d-flex align-items-center">
+            <h4 class="mb-0 fw-bold d-flex align-items-center text-white">
+                <i class="fas fa-users me-2"></i> {{ trans('cruds.patientRecord.title') }}
+            </h4>
 
-                            <i class="fas fa-file-csv me-1"></i> {{ trans('global.app_csvImport') }}
-                        </button>
-                    @endcan
-                </div>
-            </div>
-        </div>
-
-
-        @can('patient_record_create')
-            @include('csvImport.modal', ['model' => 'PatientRecord', 'route' => 'admin.patient-records.parseCsvImport'])
-        @endcan
-
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered table-striped table-hover datatable datatable-PatientRecord">
-                    <thead class="thead-dark">
-                        <tr>
-                            <th width="10"></th>
-                            <th>{{ trans('cruds.patientRecord.fields.date_processed') }}</th>
-                            <th>{{ trans('cruds.patientRecord.fields.case_type') }}</th>
-                            <th>{{ trans('cruds.patientRecord.fields.control_number') }}</th>
-                            <th>{{ trans('cruds.patientRecord.fields.claimant_name') }}</th>
-                            <th>{{ trans('cruds.patientRecord.fields.case_category') }}</th>
-                            <th>{{ trans('cruds.patientRecord.fields.patient_name') }}</th>
-                            <th>{{ trans('cruds.patientRecord.fields.diagnosis') }}</th>
-                            <th>{{ trans('cruds.patientRecord.fields.age') }}</th>
-                            <th>{{ trans('cruds.patientRecord.fields.address') }}</th>
-                            <th>{{ trans('cruds.patientRecord.fields.contact_number') }}</th>
-                            <th>{{ trans('cruds.patientRecord.fields.case_worker') }}</th>
-                            <th>&nbsp;</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($patientRecords as $key => $patientRecord)
-                            <tr data-entry-id="{{ $patientRecord->id }}">
-                                <td></td>
-                                <td>{{ \Carbon\Carbon::parse($patientRecord->date_processed)->format('F j, Y g:i A') }}</td>
-                                <td>{{ $patientRecord->case_type ?? '' }}</td>
-                                <td>{{ $patientRecord->control_number ?? '' }}</td>
-                                <td>{{ $patientRecord->claimant_name ?? '' }}</td>
-                                <td>{{ App\Models\PatientRecord::CASE_CATEGORY_SELECT[$patientRecord->case_category] ?? '' }}
-                                </td>
-                                <td>{{ $patientRecord->patient_name ?? '' }}</td>
-                                <td class="text-truncate" style="max-width: 200px; overflow: hidden; white-space: nowrap">
-                                    {{ $patientRecord->diagnosis ?? '' }}
-                                </td>
-                                <td>{{ $patientRecord->age ?? '' }}</td>
-                                <td>{{ $patientRecord->address ?? '' }}</td>
-                                <td>{{ $patientRecord->contact_number ?? '' }}</td>
-                                <td>{{ $patientRecord->case_worker ?? '' }}</td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        @can('patient_record_show')
-                                            <a href="{{ route('admin.patient-records.show', $patientRecord->id) }}" class="mr-3"
-                                                title="View">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                        @endcan
-                                        @can('patient_record_edit')
-                                            <a href="{{ route('admin.patient-records.edit', $patientRecord->id) }}" class="mr-3"
-                                                title="Edit">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                        @endcan
-                                        @can('patient_record_delete')
-                                            <form action="{{ route('admin.patient-records.destroy', $patientRecord->id) }}"
-                                                method="POST" class="m-0 p-0 delete-form" style="display: inline;">
-                                                @method('DELETE')
-                                                @csrf
-                                                <button type="submit" class="btn p-0 border-0 bg-transparent mr-3 delete-button"
-                                                    title="Delete">
-                                                    <i class="fas fa-trash-alt text-danger"></i>
-                                                </button>
-                                            </form>
-                                        @endcan
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+            <div class="header-actions d-flex align-items-center ms-auto">
+                @can('patient_record_create')
+                    <a class="btn btn-add me-2" href="{{ route('admin.patient-records.create') }}">
+                        <i class="fas fa-plus me-1"></i>
+                        {{ trans('global.add') }} {{ trans('cruds.patientRecord.title_singular') }}
+                    </a>
+                    <button class="btn btn-import" data-bs-toggle="modal" data-bs-target="#csvImportModal">
+                        <i class="fas fa-file-csv me-1"></i> {{ trans('global.app_csvImport') }}
+                    </button>
+                @endcan
             </div>
         </div>
     </div>
 
-    <!-- Mass Submit Modal -->
+
+
+
+    @can('patient_record_create')
+        @include('csvImport.modal', ['model' => 'PatientRecord', 'route' => 'admin.patient-records.parseCsvImport'])
+    @endcan
+
+    <div class="card-body">
+
+        {{-- Filter Dropdown --}}
+        <div class="mb-3">
+            <label for="statusFilter" class="form-label fw-bold">Filter Status:</label>
+            <select id="statusFilter" class="form-select w-auto d-inline-block">
+                <option value="">All</option>
+                <option value="Submitted">Submitted</option>
+                <option value="Unsubmitted">Unsubmitted</option>
+            </select>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped table-hover datatable datatable-PatientRecord">
+                <thead class="thead-dark">
+                    <tr>
+                        <th width="10"></th>
+                        <th>{{ trans('cruds.patientRecord.fields.date_processed') }}</th>
+                        <th>{{ trans('cruds.patientRecord.fields.case_type') }}</th>
+                        <th>{{ trans('cruds.patientRecord.fields.control_number') }}</th>
+                        <th>{{ trans('cruds.patientRecord.fields.claimant_name') }}</th>
+                        <th>{{ trans('cruds.patientRecord.fields.case_category') }}</th>
+                        <th>{{ trans('cruds.patientRecord.fields.patient_name') }}</th>
+                        <th>{{ trans('cruds.patientRecord.fields.diagnosis') }}</th>
+                        <th>{{ trans('cruds.patientRecord.fields.age') }}</th>
+                        <th>{{ trans('cruds.patientRecord.fields.address') }}</th>
+                        <th>{{ trans('cruds.patientRecord.fields.contact_number') }}</th>
+                        <th>{{ trans('cruds.patientRecord.fields.case_worker') }}</th>
+                        <th>Status</th> {{-- New column for Submitted/Unsubmitted --}}
+                        <th>&nbsp;</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($patientRecords as $patientRecord)
+                        <tr data-entry-id="{{ $patientRecord->id }}">
+                            <td></td>
+                            <td>{{ \Carbon\Carbon::parse($patientRecord->date_processed)->format('F j, Y g:i A') }}</td>
+                            <td>{{ $patientRecord->case_type ?? '' }}</td>
+                            <td>{{ $patientRecord->control_number ?? '' }}</td>
+                            <td>{{ $patientRecord->claimant_name ?? '' }}</td>
+                            <td>{{ App\Models\PatientRecord::CASE_CATEGORY_SELECT[$patientRecord->case_category] ?? '' }}
+                            </td>
+                            <td>{{ $patientRecord->patient_name ?? '' }}</td>
+                            <td class="text-truncate" style="max-width: 200px">{{ $patientRecord->diagnosis ?? '' }}</td>
+                            <td>{{ $patientRecord->age ?? '' }}</td>
+                            <td>{{ $patientRecord->address ?? '' }}</td>
+                            <td>{{ $patientRecord->contact_number ?? '' }}</td>
+                            <td>{{ $patientRecord->case_worker ?? '' }}</td>
+                            <td>{{ $patientRecord->status ? 'submitted' : 'unsubmitted' }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    @can('patient_record_show')
+                                        <a href="{{ route('admin.patient-records.show', $patientRecord->id) }}" class="mr-3"
+                                            title="View"><i class="fas fa-eye"></i></a>
+                                    @endcan
+                                    @can('patient_record_edit')
+                                        <a href="{{ route('admin.patient-records.edit', $patientRecord->id) }}" class="mr-3"
+                                            title="Edit"><i class="fas fa-edit"></i></a>
+                                    @endcan
+                                    @can('patient_record_delete')
+                                        <form action="{{ route('admin.patient-records.destroy', $patientRecord->id) }}"
+                                            method="POST" class="m-0 p-0 delete-form" style="display: inline;">
+                                            @method('DELETE')
+                                            @csrf
+                                            <button type="submit" class="btn p-0 border-0 bg-transparent mr-3 delete-button"
+                                                title="Delete"><i class="fas fa-trash-alt text-danger"></i></button>
+                                        </form>
+                                    @endcan
+                                </div>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+    </div>
+
+    {{-- Mass Submit Modal --}}
     <div class="modal fade" id="massSubmitModal" tabindex="-1" role="dialog" aria-labelledby="massSubmitModalLabel"
         aria-hidden="true">
         <div class="modal-dialog" role="document">
@@ -113,9 +118,12 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">Submit Selected Patients</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
+                        <p>Submitted Date:</p>
+                        <input type="date" class="form-control mb-3" name="submitted_date" id="massSubmitDate"
+                            value="{{ now()->toDateString() }}">
                         <p>Remarks (optional):</p>
                         <textarea class="form-control" name="remarks" id="massSubmitRemarks" rows="3"
                             placeholder="Enter remarks..."></textarea>
@@ -134,23 +142,46 @@
     @parent
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var toastEl = document.getElementById('liveToast');
+            var timerEl = document.getElementById('toast-timer');
+
+            if (toastEl) {
+                var toast = new bootstrap.Toast(toastEl, {
+                    autohide: true,
+                    delay: 5000
+                });
+                toast.show();
+
+                let remaining = 5;
+                const interval = setInterval(() => {
+                    remaining--;
+                    if (timerEl) {
+                        timerEl.textContent = `Closing in ${remaining}s`;
+                    }
+                    if (remaining <= 0) {
+                        clearInterval(interval);
+                    }
+                }, 1000);
+            }
+        });
+
         $(function () {
             let dtButtons = $.extend(true, [], $.fn.dataTable.defaults.buttons)
 
             @can('patient_record_delete')
-                let deleteButtonTrans = '{{ trans('global.datatables.delete') }}'
+                let deleteButtonTrans = '{{ trans('global.datatables.delete') }}';
                 let deleteButton = {
                     text: deleteButtonTrans,
-                    url: "{{ route('admin.patient-records.massDestroy') }}",
                     className: 'btn-danger',
                     action: function (e, dt, node, config) {
                         var ids = $.map(dt.rows({ selected: true }).nodes(), function (entry) {
-                            return $(entry).data('entry-id')
+                            return $(entry).data('entry-id');
                         });
 
                         if (ids.length === 0) {
-                            alert('{{ trans('global.datatables.zero_selected') }}')
-                            return
+                            alert('{{ trans('global.datatables.zero_selected') }}');
+                            return;
                         }
 
                         Swal.fire({
@@ -167,43 +198,27 @@
                             buttonsStyling: false
                         }).then((result) => {
                             if (result.isConfirmed) {
-                                $.ajax({
-                                    headers: { 'x-csrf-token': _token },
+                                // Submit via standard form to allow redirect
+                                let form = $('<form>', {
                                     method: 'POST',
-                                    url: config.url,
-                                    data: { ids: ids, _method: 'DELETE' }
-                                }).done(function () { location.reload() })
+                                    action: "{{ route('admin.patient-records.massDestroy') }}"
+                                })
+                                    .append($('<input>', { type: 'hidden', name: '_token', value: _token }))
+                                    .append($('<input>', { type: 'hidden', name: '_method', value: 'DELETE' }));
+
+                                ids.forEach(function (id) {
+                                    form.append($('<input>', { type: 'hidden', name: 'ids[]', value: id }));
+                                });
+
+                                form.appendTo('body').submit();
                             }
                         });
                     }
-                }
-                dtButtons.push(deleteButton)
-                $('.datatable-PatientRecord').on('click', '.delete-button', function (e) {
-                    e.preventDefault();
-                    const form = $(this).closest('form');
-                    const row = $(this).closest('tr');
-                    const controlNumber = row.find('td').eq(3).text().trim();
+                };
 
-                    Swal.fire({
-                        title: 'Are you sure?',
-                        text: `You are about to delete the record of "${controlNumber}". This action cannot be undone.`,
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonText: 'Yes, delete it!',
-                        cancelButtonText: 'Cancel',
-                        customClass: {
-                            confirmButton: 'btn btn-danger',
-                            cancelButton: 'btn btn-secondary'
-                        },
-                        buttonsStyling: false
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            form.submit();
-                        }
-                    });
-                });
-
+                dtButtons.push(deleteButton);
             @endcan
+
 
 
                 @can('submit_patient_application')
@@ -214,7 +229,7 @@
                         className: 'btn-primary',
                         action: function (e, dt, node, config) {
                             selectedIds = $.map(dt.rows({ selected: true }).nodes(), function (entry) {
-                                return $(entry).data('entry-id')
+                                return $(entry).data('entry-id');
                             });
 
                             if (selectedIds.length === 0) {
@@ -230,28 +245,24 @@
                     $('#massSubmitForm').on('submit', function (e) {
                         e.preventDefault();
 
-                        $.ajax({
-                            headers: { 'x-csrf-token': _token },
+                        let form = $('<form>', {
                             method: 'POST',
-                            url: "{{ route('admin.patient-records.massSubmit') }}",
-                            data: {
-                                ids: selectedIds,
-                                remarks: $('#massSubmitRemarks').val(),
-                                _method: 'POST'
-                            },
-                            success: function (response) {
-                                $('#massSubmitModal').modal('hide');
-                                if (response.toast) {
-                                    showToast(response.toast);
-                                }
-                            },
+                            action: "{{ route('admin.patient-records.massSubmit') }}"
+                        })
+                            .append($('<input>', { type: 'hidden', name: '_token', value: _token }))
+                            .append($('<input>', { type: 'hidden', name: 'remarks', value: $('#massSubmitRemarks').val() }))
+                            .append($('<input>', { type: 'hidden', name: 'submitted_date', value: $('#massSubmitDate').val() })); // 👈 ADD THIS
 
-                            error: function () {
-                                alert('An error occurred while submitting the records.');
-                            }
+                        // Add each selected patient ID
+                        selectedIds.forEach(function (id) {
+                            form.append($('<input>', { type: 'hidden', name: 'ids[]', value: id }));
                         });
+
+                        form.appendTo('body').submit();
                     });
+
                 @endcan
+
 
             $.extend(true, $.fn.dataTable.defaults, {
                 orderCellsTop: true,
@@ -289,7 +300,7 @@
                 }, 1000);
             }
         });
-        
+
         setTimeout(() => {
             Echo.channel('patients')
                 .listen('.patientRecord.changed', function (e) {
@@ -337,22 +348,18 @@
 
             function generateActions(id) {
                 return `
-                <div class="d-flex align-items-center">
-                    <a href="/admin/patient-records/${id}" class="mr-3" title="View"><i class="fas fa-eye"></i></a>
-                    <a href="/admin/patient-records/${id}/edit" class="mr-3" title="Edit"><i class="fas fa-edit"></i></a>
-                    <form method="POST" action="/admin/patient-records/${id}" class="m-0 p-0 delete-form" style="display:inline;">
-                        <input type="hidden" name="_method" value="DELETE">
-                        <input type="hidden" name="_token" value="${_token}">
-                        <button type="submit" class="btn p-0 border-0 bg-transparent mr-3 delete-button" title="Delete">
-                            <i class="fas fa-trash-alt text-danger"></i>
-                        </button>
-                    </form>
-                </div>`;
+                                    <div class="d-flex align-items-center">
+                                        <a href="/admin/patient-records/${id}" class="mr-3" title="View"><i class="fas fa-eye"></i></a>
+                                        <a href="/admin/patient-records/${id}/edit" class="mr-3" title="Edit"><i class="fas fa-edit"></i></a>
+                                        <form method="POST" action="/admin/patient-records/${id}" class="m-0 p-0 delete-form" style="display:inline;">
+                                            <input type="hidden" name="_method" value="DELETE">
+                                            <input type="hidden" name="_token" value="${_token}">
+                                            <button type="submit" class="btn p-0 border-0 bg-transparent mr-3 delete-button" title="Delete">
+                                                <i class="fas fa-trash-alt text-danger"></i>
+                                            </button>
+                                        </form>
+                                    </div>`;
             }
-        }, 200);
-
-
-
-
+        }, 500);
     </script>
 @endsection

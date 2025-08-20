@@ -81,6 +81,16 @@
 
 
 <body class="sidebar-mini layout-fixed" style="height: auto;">
+<!-- Loading Screen -->
+<div id="loading-overlay">
+  <div class="loader-wrapper">
+    <div class="circle"></div>
+    <div class="loader-text">WS</div>
+  </div>
+</div>
+
+
+
   <div class="wrapper">
     <nav class="main-header navbar navbar-expand bg-white navbar-light border-bottom">
 
@@ -93,11 +103,6 @@
         <!-- Notification -->
         <li class="nav-item">
           <a class="nav-link" href="#"><i class="fa fa-bell"></i></a>
-        </li>
-
-        <!-- Chat -->
-        <li class="nav-item">
-          <a class="nav-link" href="#"><i class="fa fa-comments"></i></a>
         </li>
       </ul>
 
@@ -143,6 +148,7 @@
           </ul>
         </div>
     @endif
+
         @yield('content')
       </section>
       <!-- /.content -->
@@ -208,6 +214,10 @@
       });
     });
   </script>
+ <style>
+
+ 
+  </style>
   <script>
     $(function () {
       let copyButtonTrans = '{{ trans('global.datatables.copy') }}'
@@ -285,44 +295,45 @@
             buttons: [
               {
                 extend: 'copy',
-                className: 'dropdown-item',
-                text: '<i class="fas fa-copy me-2"></i> ' + copyButtonTrans,
+                className: 'dt-button dropdown-item d-flex align-items-center gap-2',
+                text: '<i class="fas fa-copy text-primary"></i> ' + copyButtonTrans,
                 exportOptions: {
                   columns: ':visible:not(:first-child):not(:last-child)'
                 }
               },
               {
                 extend: 'csv',
-                className: 'dropdown-item',
-                text: '<i class="fas fa-file-csv me-2"></i> ' + csvButtonTrans,
+                className: 'dt-button dropdown-item d-flex align-items-center gap-2',
+                text: '<i class="fas fa-file-csv text-success"></i> ' + csvButtonTrans,
                 exportOptions: {
                   columns: ':visible:not(:first-child):not(:last-child)'
                 }
               },
               {
                 extend: 'excel',
-                className: 'dropdown-item',
-                text: '<i class="fas fa-file-excel me-2"></i> ' + excelButtonTrans,
+                className: 'dt-button dropdown-item d-flex align-items-center gap-2',
+                text: '<i class="fas fa-file-excel text-success"></i> ' + excelButtonTrans,
                 exportOptions: {
                   columns: ':visible:not(:first-child):not(:last-child)'
                 }
               },
               {
                 extend: 'print',
-                className: 'dropdown-item',
-                text: '<i class="fas fa-print me-2"></i> ' + printButtonTrans,
+                className: 'dt-button dropdown-item d-flex align-items-center gap-2',
+                text: '<i class="fas fa-print text-secondary"></i> ' + printButtonTrans,
                 exportOptions: {
                   columns: ':visible:not(:first-child):not(:last-child)'
                 }
               },
               {
                 extend: 'colvis',
-                className: 'dropdown-item',
-                text: '<i class="fas fa-columns me-2"></i> ' + colvisButtonTrans,
+                className: 'dt-button dropdown-item d-flex align-items-center gap-2',
+                text: '<i class="fas fa-columns text-warning"></i> ' + colvisButtonTrans,
                 exportOptions: {
                   columns: ':visible'
                 }
               }
+
             ]
           }
         ]
@@ -373,6 +384,32 @@
       </div>
     </div>
   </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const loader = document.getElementById("loading-overlay");
+
+  document.querySelectorAll(".nav-link").forEach(item => {
+    item.addEventListener("click", function (e) {
+      const href = this.getAttribute("href");
+
+      // Show loader only if it's a real navigation link
+      if (href && href !== "#" && !this.hasAttribute("data-bs-toggle")) {
+        loader.style.display = "flex";
+        loader.style.opacity = "1";
+      }
+    });
+  });
+
+  // Hide loader after page load
+  window.addEventListener("load", function () {
+    loader.style.opacity = "0";
+    setTimeout(() => loader.style.display = "none", 500);
+  });
+});
+</script>
+
+
 </body>
 
 </html>
