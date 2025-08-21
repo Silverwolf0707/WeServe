@@ -156,8 +156,8 @@
                             </div>
                             <div class="mb-3">
                                 <label for="massDecisionStatusDate" class="form-label">Decision Date</label>
-                                <input type="date" class="form-control" id="massDecisionStatusDate" name="status_date"
-                                    value="{{ now()->toDateString() }}" required>
+                                <input type="datetime-local" class="form-control" id="massDecisionStatusDate" name="status_date"
+                                    value="{{ now()->toDateTimeLocalString() }}" required>
                             </div>
 
 
@@ -211,9 +211,9 @@
                             </div>
                             <div class="form-group">
                                 <label for="massBudgetStatusDate" class="form-label">Status Date</label>
-                                <input type="date" name="status_date" id="massBudgetStatusDate"
+                                <input type="datetime-local" name="status_date" id="massBudgetStatusDate"
                                     class="form-control form-control-lg rounded-3 shadow-sm"
-                                    value="{{ now()->toDateString() }}" required>
+                                    value="{{ now()->toDateTimeLocalString() }}" required>
                             </div>
 
                             <div class="form-group">
@@ -261,8 +261,8 @@
                             </div>
                             <div class="form-group mb-3">
                                 <label for="massDvStatusDate">Status Date <span class="text-danger">*</span></label>
-                                <input type="date" id="massDvStatusDate" name="status_date"
-                                    class="form-control form-control-lg" value="{{ now()->toDateString() }}" required>
+                                <input type="datetime-local" id="massDvStatusDate" name="status_date"
+                                    class="form-control form-control-lg" value="{{ now()->toDateTimeLocalString() }}" required>
                             </div>
 
 
@@ -277,9 +277,40 @@
                 </form>
             </div>
         </div>
-
-
     </div>
+    <div class="modal fade" id="massDisburseModal" tabindex="-1" aria-labelledby="massDisburseModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <form id="massDisburseForm" method="POST" action="{{ route('admin.process-tracking.massQuickDisburse') }}">
+            @csrf
+            <input type="hidden" name="ids[]" id="massDisburseIds">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="massDisburseModalLabel">
+                        <i class="fas fa-money-bill-wave me-2"></i> Quick Disburse Selected Patients
+                    </h5>
+                    <button type="button" class="btn-close text-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to mark the selected patients as <strong>Disbursed</strong>?</p>
+                    <div class="mb-3">
+                        <label for="massDisburseDate" class="form-label">Disbursement Date</label>
+                        <input type="date" class="form-control" id="massDisburseDate" name="status_date" value="{{ now()->toDateString() }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="massDisburseRemarks" class="form-label">Remarks (Optional)</label>
+                        <textarea class="form-control" id="massDisburseRemarks" name="remarks" rows="3" placeholder="Enter any remarks..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer d-flex flex-column gap-2">
+                    <button type="submit" class="btn btn-danger w-100">
+                        <i class="fas fa-check-circle me-1"></i> Confirm Disbursement
+                    </button>
+                    <button type="button" class="btn btn-secondary w-100" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
 @endsection
 
 @section('scripts')
@@ -452,38 +483,52 @@
                         form.appendTo('body').submit();
                     });
                 @endcan
-                @can('treasury_disburse')
-                    let selectedDisburseIds = [];
+                
+               @can('treasury_disburse')
+let selectedDisburseIds = [];
 
-                    dtButtons.push({
-                        text: 'Quick Disburse',
-                        className: 'btn-danger',
-                        action: function (e, dt, node, config) {
-                            selectedDisburseIds = $.map(dt.rows({ selected: true }).nodes(), function (entry) {
-                                return $(entry).data('entry-id');
-                            });
+dtButtons.push({
+    text: 'Quick Disburse',
+    className: 'btn-danger',
+    action: function(e, dt, node, config) {
+        selectedDisburseIds = $.map(dt.rows({ selected: true }).nodes(), function(entry) {
+            return $(entry).data('entry-id');
+        });
 
-                            if (!selectedDisburseIds.length) {
-                                alert('No records selected');
-                                return;
-                            }
+        if (!selectedDisburseIds.length) {
+            alert('No records selected');
+            return;
+        }
 
-                            if (confirm('Are you sure you want to mark selected as Disbursed?')) {
-                                let form = $('<form>', {
-                                    method: 'POST',
-                                    action: "{{ route('admin.process-tracking.massQuickDisburse') }}"
-                                })
-                                    .append($('<input>', { type: 'hidden', name: '_token', value: _token }));
+        // Reset modal fields
+        $('#massDisburseDate').val('{{ now()->toDateString() }}');
+        $('#massDisburseRemarks').val('');
 
-                                selectedDisburseIds.forEach(function (id) {
-                                    form.append($('<input>', { type: 'hidden', name: 'ids[]', value: id }));
-                                });
+        // Show modal
+        $('#massDisburseModal').modal('show');
+    }
+});
 
-                                form.appendTo('body').submit();
-                            }
-                        }
-                    });
-                @endcan
+$('#massDisburseForm').on('submit', function(e) {
+    e.preventDefault();
+
+    let form = $('<form>', {
+        method: 'POST',
+        action: "{{ route('admin.process-tracking.massQuickDisburse') }}"
+    })
+        .append($('<input>', { type: 'hidden', name: '_token', value: _token }))
+        .append($('<input>', { type: 'hidden', name: 'status_date', value: $('#massDisburseDate').val() }))
+        .append($('<input>', { type: 'hidden', name: 'remarks', value: $('#massDisburseRemarks').val() }));
+
+    // Add each selected patient ID
+    selectedDisburseIds.forEach(function(id) {
+        form.append($('<input>', { type: 'hidden', name: 'ids[]', value: id }));
+    });
+
+    form.appendTo('body').submit();
+});
+@endcan
+
 
             setTimeout(() => {
                 Echo.channel('process-tracking')

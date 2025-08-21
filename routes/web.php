@@ -11,16 +11,24 @@ use App\Http\Controllers\Admin\StatisticsController;
 use App\Http\Controllers\Admin\TimeSeriesController;
 use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\Admin\AuditLogsController;
+use App\Http\Controllers\Admin\OnlinePatientApplicationController;
 use App\Http\Controllers\Admin\PatientRecordsController;
 use App\Http\Controllers\Admin\ProcessTrackingController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\ChangePasswordController;
 
-Route::redirect('/', '/login');
-Route::get('/online-application', [OnlineApplicationController::class, 'index'])->name('online-application.index');
 
-Route::get('/home', function () {
+Route::get('/online-application', [OnlineApplicationController::class, 'index'])->name('online-application.index');
+// Show the form
+
+Route::post('/applications/store', [OnlineApplicationController::class, 'store'])
+    ->name('applications.store');
+Route::get('/track', [OnlineApplicationController::class, 'track'])->name('track.application');
+
+
+
+Route::get('/', function () {
     if (session('status')) {
         return redirect()->route('admin.home')->with('status', session('status'));
     }
@@ -33,7 +41,7 @@ Auth::routes(['register' => false]);
 Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], function () {
     // Home route
     Route::get('/', [HomeController::class, 'index'])->name('home');
-
+    Route::redirect('/login', '/login');
     // Permissions
     Route::delete('permissions/destroy', [PermissionsController::class, 'massDestroy'])->name('permissions.massDestroy');
     Route::resource('permissions', PermissionsController::class);
@@ -57,6 +65,10 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     Route::resource('patient-records', PatientRecordsController::class);
     Route::post('patient-records/mass-submit', [PatientRecordsController::class, 'massSubmit'])->name('patient-records.massSubmit');
 
+    Route::resource('online-applications', OnlinePatientApplicationController::class)
+        ->only(['index', 'show']);
+    Route::post('/applications/{application}/confirm', [OnlinePatientApplicationController::class, 'confirmTransfer'])
+        ->name('applications.confirm');
 
 
     //process tracking

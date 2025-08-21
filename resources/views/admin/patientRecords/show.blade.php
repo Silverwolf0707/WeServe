@@ -77,7 +77,7 @@
 
             @php
                 $latestStatusValue = optional($latestStatus)->status;
-                $isLocked = !in_array($latestStatusValue, [null, 'Rejected']);
+                $isLocked = !in_array($latestStatusValue, [null, 'Rejected', 'Processing']);
             @endphp
 
             @can('submit_patient_application')
@@ -93,8 +93,8 @@
 
                             <div class="form-group">
                                 <label for="submitted_date">Submitted Date</label>
-                                <input type="date" name="submitted_date" id="submitted_date" class="form-control mb-3"
-                                    value="{{ now()->toDateString() }}" @if($isLocked) disabled @endif>
+                                <input type="datetime-local" name="submitted_date" id="submitted_date" class="form-control mb-3"
+                                    value="{{ now()->toDateTimeLocalString() }}" @if($isLocked) disabled @endif>
                                 <label for="remarks">Remarks</label>
                                 <textarea name="remarks" id="remarks" rows="4" class="form-control" required @if($isLocked)
                                 disabled @endif></textarea>

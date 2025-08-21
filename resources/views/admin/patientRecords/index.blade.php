@@ -1,7 +1,6 @@
 @extends('layouts.admin')
 
 @section('content')
-
     <div class="card shadow-sm border-0">
         <!-- Modernized Header -->
         <div class="card-header custom-header d-flex align-items-center">
@@ -27,18 +26,21 @@
 
 
     @can('patient_record_create')
-        @include('csvImport.modal', ['model' => 'PatientRecord', 'route' => 'admin.patient-records.parseCsvImport'])
+        @include('csvImport.modal', [
+            'model' => 'PatientRecord',
+            'route' => 'admin.patient-records.parseCsvImport',
+        ])
     @endcan
 
     <div class="card-body">
 
-        {{-- Filter Dropdown --}}
+
         <div class="mb-3">
             <label for="statusFilter" class="form-label fw-bold">Filter Status:</label>
             <select id="statusFilter" class="form-select w-auto d-inline-block">
                 <option value="">All</option>
                 <option value="Submitted">Submitted</option>
-                <option value="Unsubmitted">Unsubmitted</option>
+                <option value="Processing">Processing</option>
             </select>
         </div>
 
@@ -58,13 +60,16 @@
                         <th>{{ trans('cruds.patientRecord.fields.address') }}</th>
                         <th>{{ trans('cruds.patientRecord.fields.contact_number') }}</th>
                         <th>{{ trans('cruds.patientRecord.fields.case_worker') }}</th>
-                        <th>Status</th> {{-- New column for Submitted/Unsubmitted --}}
                         <th>&nbsp;</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($patientRecords as $patientRecord)
-                        <tr data-entry-id="{{ $patientRecord->id }}">
+                    @foreach ($patientRecords as $patientRecord)
+                        @php
+                            $latestStatus = $patientRecord->latestStatusLog; // Make sure you eager load this in the controller
+                            $statusValue = $latestStatus->status ?? 'Processing';
+                        @endphp
+                        <tr data-entry-id="{{ $patientRecord->id }}" data-status="{{ $statusValue }}">
                             <td></td>
                             <td>{{ \Carbon\Carbon::parse($patientRecord->date_processed)->format('F j, Y g:i A') }}</td>
                             <td>{{ $patientRecord->case_type ?? '' }}</td>
@@ -78,7 +83,6 @@
                             <td>{{ $patientRecord->address ?? '' }}</td>
                             <td>{{ $patientRecord->contact_number ?? '' }}</td>
                             <td>{{ $patientRecord->case_worker ?? '' }}</td>
-                            <td>{{ $patientRecord->status ? 'submitted' : 'unsubmitted' }}</td>
                             <td>
                                 <div class="d-flex align-items-center">
                                     @can('patient_record_show')
@@ -122,11 +126,10 @@
                     </div>
                     <div class="modal-body">
                         <p>Submitted Date:</p>
-                        <input type="date" class="form-control mb-3" name="submitted_date" id="massSubmitDate"
-                            value="{{ now()->toDateString() }}">
+                        <input type="datetime-local" class="form-control mb-3" name="submitted_date" id="massSubmitDate"
+                            value="{{ now()->toDateTimeLocalString() }}">
                         <p>Remarks (optional):</p>
-                        <textarea class="form-control" name="remarks" id="massSubmitRemarks" rows="3"
-                            placeholder="Enter remarks..."></textarea>
+                        <textarea class="form-control" name="remarks" id="massSubmitRemarks" rows="3" placeholder="Enter remarks..."></textarea>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -142,7 +145,7 @@
     @parent
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
             var toastEl = document.getElementById('liveToast');
             var timerEl = document.getElementById('toast-timer');
 
@@ -166,16 +169,40 @@
             }
         });
 
-        $(function () {
+        $(function() {
             let dtButtons = $.extend(true, [], $.fn.dataTable.defaults.buttons)
+            // --- Status Filter for DataTable ---
+            $(document).ready(function() {
+                let table = $('.datatable-PatientRecord:not(.ajaxTable)').DataTable();
+
+                // Custom filter for status
+                $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+                    let selectedStatus = $('#statusFilter').val(); // value from dropdown
+                    let rowStatus = $(table.row(dataIndex).node()).data(
+                    'status'); // read data-status
+
+                    // If nothing selected, show all
+                    if (!selectedStatus) return true;
+
+                    return rowStatus === selectedStatus;
+                });
+
+                // Trigger filter when dropdown changes
+                $('#statusFilter').on('change', function() {
+                    table.draw();
+                });
+            });
+
 
             @can('patient_record_delete')
                 let deleteButtonTrans = '{{ trans('global.datatables.delete') }}';
                 let deleteButton = {
                     text: deleteButtonTrans,
                     className: 'btn-danger',
-                    action: function (e, dt, node, config) {
-                        var ids = $.map(dt.rows({ selected: true }).nodes(), function (entry) {
+                    action: function(e, dt, node, config) {
+                        var ids = $.map(dt.rows({
+                            selected: true
+                        }).nodes(), function(entry) {
                             return $(entry).data('entry-id');
                         });
 
@@ -200,14 +227,26 @@
                             if (result.isConfirmed) {
                                 // Submit via standard form to allow redirect
                                 let form = $('<form>', {
-                                    method: 'POST',
-                                    action: "{{ route('admin.patient-records.massDestroy') }}"
-                                })
-                                    .append($('<input>', { type: 'hidden', name: '_token', value: _token }))
-                                    .append($('<input>', { type: 'hidden', name: '_method', value: 'DELETE' }));
+                                        method: 'POST',
+                                        action: "{{ route('admin.patient-records.massDestroy') }}"
+                                    })
+                                    .append($('<input>', {
+                                        type: 'hidden',
+                                        name: '_token',
+                                        value: _token
+                                    }))
+                                    .append($('<input>', {
+                                        type: 'hidden',
+                                        name: '_method',
+                                        value: 'DELETE'
+                                    }));
 
-                                ids.forEach(function (id) {
-                                    form.append($('<input>', { type: 'hidden', name: 'ids[]', value: id }));
+                                ids.forEach(function(id) {
+                                    form.append($('<input>', {
+                                        type: 'hidden',
+                                        name: 'ids[]',
+                                        value: id
+                                    }));
                                 });
 
                                 form.appendTo('body').submit();
@@ -221,62 +260,83 @@
 
 
 
-                @can('submit_patient_application')
-                    let selectedIds = [];
+            @can('submit_patient_application')
+                let selectedIds = [];
 
-                    dtButtons.push({
-                        text: 'Submit Selected',
-                        className: 'btn-primary',
-                        action: function (e, dt, node, config) {
-                            selectedIds = $.map(dt.rows({ selected: true }).nodes(), function (entry) {
-                                return $(entry).data('entry-id');
-                            });
+                dtButtons.push({
+                    text: 'Submit Selected',
+                    className: 'btn-primary',
+                    action: function(e, dt, node, config) {
+                        selectedIds = $.map(dt.rows({
+                            selected: true
+                        }).nodes(), function(entry) {
+                            return $(entry).data('entry-id');
+                        });
 
-                            if (selectedIds.length === 0) {
-                                alert('No records selected');
-                                return;
-                            }
-
-                            $('#massSubmitRemarks').val('');
-                            $('#massSubmitModal').modal('show');
+                        if (selectedIds.length === 0) {
+                            alert('No records selected');
+                            return;
                         }
-                    });
 
-                    $('#massSubmitForm').on('submit', function (e) {
-                        e.preventDefault();
+                        $('#massSubmitRemarks').val('');
+                        $('#massSubmitModal').modal('show');
+                    }
+                });
 
-                        let form = $('<form>', {
+                $('#massSubmitForm').on('submit', function(e) {
+                    e.preventDefault();
+
+                    let form = $('<form>', {
                             method: 'POST',
                             action: "{{ route('admin.patient-records.massSubmit') }}"
                         })
-                            .append($('<input>', { type: 'hidden', name: '_token', value: _token }))
-                            .append($('<input>', { type: 'hidden', name: 'remarks', value: $('#massSubmitRemarks').val() }))
-                            .append($('<input>', { type: 'hidden', name: 'submitted_date', value: $('#massSubmitDate').val() })); // 👈 ADD THIS
+                        .append($('<input>', {
+                            type: 'hidden',
+                            name: '_token',
+                            value: _token
+                        }))
+                        .append($('<input>', {
+                            type: 'hidden',
+                            name: 'remarks',
+                            value: $('#massSubmitRemarks').val()
+                        }))
+                        .append($('<input>', {
+                            type: 'hidden',
+                            name: 'submitted_date',
+                            value: $('#massSubmitDate').val()
+                        })); // 👈 ADD THIS
 
-                        // Add each selected patient ID
-                        selectedIds.forEach(function (id) {
-                            form.append($('<input>', { type: 'hidden', name: 'ids[]', value: id }));
-                        });
-
-                        form.appendTo('body').submit();
+                    // Add each selected patient ID
+                    selectedIds.forEach(function(id) {
+                        form.append($('<input>', {
+                            type: 'hidden',
+                            name: 'ids[]',
+                            value: id
+                        }));
                     });
 
-                @endcan
+                    form.appendTo('body').submit();
+                });
+            @endcan
 
 
             $.extend(true, $.fn.dataTable.defaults, {
                 orderCellsTop: true,
-                order: [[1, 'desc']],
+                order: [
+                    [1, 'desc']
+                ],
                 pageLength: 100,
             });
 
-            let table = $('.datatable-PatientRecord:not(.ajaxTable)').DataTable({ buttons: dtButtons });
+            let table = $('.datatable-PatientRecord:not(.ajaxTable)').DataTable({
+                buttons: dtButtons
+            });
 
-            $('a[data-toggle="tab"]').on('shown.bs.tab click', function () {
+            $('a[data-toggle="tab"]').on('shown.bs.tab click', function() {
                 $($.fn.dataTable.tables(true)).DataTable().columns.adjust();
             });
         });
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
             var toastEl = document.getElementById('liveToast');
             var timerEl = document.getElementById('toast-timer');
 
@@ -301,9 +361,10 @@
             }
         });
 
+
         setTimeout(() => {
             Echo.channel('patients')
-                .listen('.patientRecord.changed', function (e) {
+                .listen('.patientRecord.changed', function(e) {
                     console.log('Patient Record added:', e);
 
                     const table = $('.datatable-PatientRecord').DataTable();
@@ -336,8 +397,12 @@
             function formatDate(input) {
                 const date = new Date(input);
                 return date.toLocaleString('en-PH', {
-                    year: 'numeric', month: 'long', day: 'numeric',
-                    hour: 'numeric', minute: '2-digit', hour12: true
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
                 });
             }
 
@@ -348,17 +413,17 @@
 
             function generateActions(id) {
                 return `
-                                    <div class="d-flex align-items-center">
-                                        <a href="/admin/patient-records/${id}" class="mr-3" title="View"><i class="fas fa-eye"></i></a>
-                                        <a href="/admin/patient-records/${id}/edit" class="mr-3" title="Edit"><i class="fas fa-edit"></i></a>
-                                        <form method="POST" action="/admin/patient-records/${id}" class="m-0 p-0 delete-form" style="display:inline;">
-                                            <input type="hidden" name="_method" value="DELETE">
-                                            <input type="hidden" name="_token" value="${_token}">
-                                            <button type="submit" class="btn p-0 border-0 bg-transparent mr-3 delete-button" title="Delete">
-                                                <i class="fas fa-trash-alt text-danger"></i>
-                                            </button>
-                                        </form>
-                                    </div>`;
+                                        <div class="d-flex align-items-center">
+                                            <a href="/admin/patient-records/${id}" class="mr-3" title="View"><i class="fas fa-eye"></i></a>
+                                            <a href="/admin/patient-records/${id}/edit" class="mr-3" title="Edit"><i class="fas fa-edit"></i></a>
+                                            <form method="POST" action="/admin/patient-records/${id}" class="m-0 p-0 delete-form" style="display:inline;">
+                                                <input type="hidden" name="_method" value="DELETE">
+                                                <input type="hidden" name="_token" value="${_token}">
+                                                <button type="submit" class="btn p-0 border-0 bg-transparent mr-3 delete-button" title="Delete">
+                                                    <i class="fas fa-trash-alt text-danger"></i>
+                                                </button>
+                                            </form>
+                                        </div>`;
             }
         }, 500);
     </script>

@@ -28,7 +28,7 @@ for (cat, ctype), subdf in grouped.groupby(['case_category', 'case_type']):
         continue
 
     try:
-        stl = STL(series, period=12)
+        stl = STL(series, period=3)
         result = stl.fit()
 
         key = f"{cat}_{ctype}"

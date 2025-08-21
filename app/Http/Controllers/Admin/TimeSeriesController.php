@@ -51,7 +51,7 @@ class TimeSeriesController extends Controller
             }
         }
 
-        // Run corresponding Python script if needed
+        
         if ($shouldRunPython) {
             if ($type === 'budget') {
                 $this->runBudgetPython();
@@ -99,83 +99,66 @@ class TimeSeriesController extends Controller
         return max(0, $rowCount - 1); // exclude header row
     }
 
-    public function exportToCsvFile()
-    {
-        $data = DB::table('patient_records as pr')
-            ->join('patient_status_logs as psl', function ($join) {
-                $join->on('psl.patient_id', '=', 'pr.id')
-                    ->where('psl.status', 'Disbursed');
-            })
-            ->leftJoin('budget_allocations as ba', function ($join) {
-                $join->on('ba.patient_id', '=', 'pr.id');
-            })
-            ->leftJoin('disbursement_voucher as dv', function ($join) {
-                $join->on('dv.patient_id', '=', 'pr.id');
-            })
-            ->whereNull('pr.deleted_at')
-            ->selectRaw('
-            DATE_FORMAT(pr.date_processed, "%Y-%m-01") as month,
-            pr.case_type,
+public function exportToCsvFile()
+{
+    // Get disbursed patient data
+    $data = DB::table('patient_records as pr')
+        ->join('patient_status_logs as psl', function ($join) {
+            $join->on('psl.patient_id', '=', 'pr.id')
+                 ->where('psl.status', 'Disbursed');
+        })
+        ->leftJoin('budget_allocations as ba', function ($join) {
+            $join->on('ba.patient_id', '=', 'pr.id');
+        })
+        ->whereNull('pr.deleted_at')
+        ->selectRaw('
+            DATE_FORMAT(psl.status_date, "%Y-%m-01") as month,
             pr.case_category,
-            pr.control_number,
-            pr.claimant_name,
-            pr.patient_name,
-            pr.diagnosis,
-            pr.age,
-            pr.address,
-            pr.contact_number,
-            pr.case_worker,
-            psl.status as patient_status,
-            psl.created_at as disbursed_date,
-            ba.amount as budget_amount,
-            ba.budget_status,
-            dv.dv_code,
-            dv.dv_date
+            COUNT(pr.id) as value,
+            SUM(ba.amount) as total_budget
         ')
-            ->orderBy('month')
-            ->get();
+        ->groupBy('month', 'case_category')
+        ->orderBy('month')
+        ->get();
 
-        // CSV Header
-        $csv = "month,case_type,case_category,control_number,claimant_name,patient_name,diagnosis,age,address,contact_number,case_worker,patient_status,disbursed_date,budget_amount,budget_status,dv_code,dv_date\n";
+    // Build CSV header
+    $csv = "month,case_category,value,total_budget\n";
 
-        foreach ($data as $row) {
-            $csv .= implode(',', [
-                $row->month,
-                $this->escapeCsv($row->case_type),
-                $this->escapeCsv($row->case_category),
-                $this->escapeCsv($row->control_number),
-                $this->escapeCsv($row->claimant_name),
-                $this->escapeCsv($row->patient_name),
-                $this->escapeCsv($row->diagnosis),
-                $row->age,
-                $this->escapeCsv($row->address),
-                $this->escapeCsv($row->contact_number),
-                $this->escapeCsv($row->case_worker),
-                $this->escapeCsv($row->patient_status),
-                $row->disbursed_date,
-                $row->budget_amount,
-                $this->escapeCsv($row->budget_status),
-                $this->escapeCsv($row->dv_code),
-                $row->dv_date
-            ]) . "\n";
+    // Collect all months & categories to fill missing months with 0
+    $allMonths = collect($data)->pluck('month')->unique()->sort()->values();
+    $allCategories = collect($data)->pluck('case_category')->unique();
+
+    $csvData = [];
+
+    foreach ($allMonths as $month) {
+        foreach ($allCategories as $cat) {
+            $row = $data->firstWhere(function ($item) use ($month, $cat) {
+                return $item->month == $month && $item->case_category == $cat;
+            });
+
+            $value = $row ? $row->value : 0;
+            $totalBudget = $row ? $row->total_budget : 0;
+
+            $csvData[] = [
+                'month' => $month,
+                'case_category' => $cat,
+                'value' => $value,
+                'total_budget' => $totalBudget
+            ];
         }
-
-        Storage::disk('public')->put('full_patient_data.csv', $csv);
-
-        return storage_path('app/public/full_patient_data.csv');
     }
 
-    private function escapeCsv($value)
-    {
-        if (is_null($value)) {
-            return '';
-        }
-        $value = str_replace('"', '""', $value); // Escape double quotes
-        if (preg_match('/[",\r\n]/', $value)) {
-            return '"' . $value . '"';
-        }
-        return $value;
+    // Write CSV rows
+    foreach ($csvData as $row) {
+        $csv .= "{$row['month']},{$row['case_category']},{$row['value']},{$row['total_budget']}\n";
     }
+
+    // Save CSV
+    Storage::disk('public')->put('full_patient_data.csv', $csv);
+
+    return storage_path('app/public/full_patient_data.csv');
+}
+
 
     public function runPythonStl()
     {

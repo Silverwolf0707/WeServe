@@ -87,6 +87,15 @@
                         </a>
                     </li>
                 @endcan
+                @can('online_application_access')
+                    <li class="nav-item">
+                        <a href="{{ route('admin.online-applications.index') }}"
+                            class="nav-link {{ request()->is('admin/online-applications*') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-cogs"></i>
+                            <p>Online Application</p>
+                        </a>
+                    </li>
+                @endcan
 
                 @can('process_tracking_access')
                     <li class="nav-item">
@@ -213,7 +222,8 @@
 <style>
     /* ==================== BRAND (Logo + Text) ==================== */
     .brand-link {
-        background: #2c3e50; /* updated background */
+        background: #2c3e50;
+        /* updated background */
         transition: all 0.3s ease;
         display: flex;
         align-items: center;
@@ -267,7 +277,8 @@
 
     /* ==================== MENU ITEMS ==================== */
     .nav-sidebar {
-        background: #2c3e50; /* updated sidebar background */
+        background: #2c3e50;
+        /* updated sidebar background */
     }
 
     .nav-sidebar .nav-link {
@@ -303,8 +314,10 @@
     .main-sidebar {
         width: 250px;
         height: 100vh;
-        background: #2c3e50; /* updated background */
-        overflow-y: auto; /* only scroll here */
+        background: #2c3e50;
+        /* updated background */
+        overflow-y: auto;
+        /* only scroll here */
         overflow-x: hidden;
         transition: all 0.3s ease;
     }
@@ -318,13 +331,15 @@
     /* Collapsed sidebar */
     body.sidebar-collapse .main-sidebar {
         width: 60px;
-        overflow: hidden !important; /* hide scrollbar */
+        overflow: hidden !important;
+        /* hide scrollbar */
     }
 
     /* Collapsed + Hover → expand + enable scrollbar */
     body.sidebar-collapse .main-sidebar:hover {
         width: 250px;
-        overflow-y: auto !important; /* show scrollbar again */
+        overflow-y: auto !important;
+        /* show scrollbar again */
     }
 
     /* ==================== SCROLLBAR STYLE ==================== */

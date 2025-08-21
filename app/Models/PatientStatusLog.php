@@ -48,4 +48,9 @@ class PatientStatusLog extends Model
     {
         return str_replace('[ROLLED BACK]', '', $this->status);
     }
+    public function statusLogs()
+    {
+        return $this->hasMany(\App\Models\PatientStatusLog::class, 'patient_id');
+        // we'll temporarily use patient_id = null or handle via pivot later
+    }
 }

@@ -1,305 +1,498 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
+<html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Financial Assistance Application</title>
-
-    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <title>WeServe - Financial Assistance</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
 </head>
-<style>
-    /* Modal animation */
-#application-modal {
-    transition: opacity 0.3s ease;
-}
 
-#application-modal.hidden {
-    opacity: 0;
-    pointer-events: none;
-}
+<body class="bg-gradient-to-b from-green-100 via-green-50 to-white font-sans antialiased">
 
-#application-modal:not(.hidden) {
-    opacity: 1;
-}
-
-/* Focus styles for accessibility */
-button:focus, input:focus, textarea:focus {
-    outline: 2px solid #3b82f6;
-    outline-offset: 2px;
-}
-
-/* Form validation visual cues */
-input:invalid, textarea:invalid {
-    border-color: #ef4444;
-}
-
-input:valid:not(:placeholder-shown), textarea:valid:not(:placeholder-shown) {
-    border-color: #10b981;
-}
-
-/* Animation for status messages */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-#form-status:not(.hidden) {
-    animation: fadeIn 0.3s ease forwards;
-}
-
-/* Loading spinner */
-.spinner {
-    border: 3px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top: 3px solid white;
-    width: 20px;
-    height: 20px;
-    animation: spin 1s linear infinite;
-    display: inline-block;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* Responsive adjustments */
-@media (max-width: 640px) {
-    .container {
-        padding-left: 1rem;
-        padding-right: 1rem;
-    }
-}
-</style>
-<body class="bg-gray-100 min-h-screen flex flex-col">
     <!-- Header -->
-    <header class="bg-blue-800 text-white shadow-md">
-        <div class="container mx-auto p-4 flex justify-between items-center">
-            <div class="flex items-center">
-                <i class="fas fa-hand-holding-medical text-3xl mr-3"></i>
-                <h1 class="text-2xl md:text-3xl font-bold">Financial Assistance Portal</h1>
+    <header class="bg-green-600 shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <i class="fas fa-hand-holding-medical text-2xl text-white"></i>
+                <h1 class="text-2xl font-bold text-white">WeServe</h1>
             </div>
-            <button id="apply-now-btn" class="bg-white text-blue-800 hover:bg-blue-100 px-4 py-2 rounded font-semibold transition-colors">
-                Apply Now
-            </button>
+            <nav class="flex items-center gap-6">
+                <a href="#home" class="text-white hover:text-gray-200 font-semibold">Home</a>
+                <a href="#about" class="text-white hover:text-gray-200 font-semibold">About Us</a>
+                <a href="#services" class="text-white hover:text-gray-200 font-semibold">Services</a>
+                <a href="#contact" class="text-white hover:text-gray-200 font-semibold">Contact</a>
+            </nav>
         </div>
     </header>
 
-    <!-- Main content -->
-    <main class="flex-grow">
-        <!-- Hero Section -->
-        <section class="bg-gradient-to-r from-blue-900 to-blue-700 text-white py-16">
-            <div class="container mx-auto px-4 text-center">
-                <h2 class="text-3xl md:text-4xl font-bold mb-4">Financial Assistance for Medical Needs</h2>
-                <p class="text-xl mb-8 max-w-3xl mx-auto">We provide financial support to patients and families facing medical challenges. Apply today to see if you qualify.</p>
-                <button id="hero-apply-btn" class="bg-white text-blue-800 hover:bg-blue-100 px-6 py-3 rounded-lg font-bold text-lg transition-colors">
+    <!-- Hero Section -->
+    <section class="py-24 bg-gradient-to-r from-green-200 via-green-100 to-green-50">
+        <div class="container mx-auto px-6 flex flex-col-reverse md:flex-row items-center gap-12">
+
+            <!-- Left: Text -->
+            <div class="flex-1">
+                <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
+                    CSWD Financial Assistance
+                </h1>
+                <p class="text-lg text-gray-700 mb-8 max-w-lg">
+                    The City Social Welfare and Development Office (CSWD) provides financial support to residents facing
+                    emergencies or difficult situations. Apply now to check if you qualify for assistance.
+                </p>
+                <button onclick="openModal('applicationModal')"
+                    class="bg-green-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-green-700 transition">
                     Start Application
                 </button>
             </div>
-        </section>
 
-        <!-- Categories Section -->
-        <section class="py-16 bg-white">
-            <div class="container mx-auto px-4">
-                <h2 class="text-2xl md:text-3xl font-bold text-center mb-12 text-gray-800">Assistance Categories</h2>
-                
-                <div class="flex flex-col md:flex-row gap-8 justify-center">
-                    <!-- Standard Assistance -->
-                    <div class="bg-blue-50 rounded-lg shadow-lg p-6 flex-1 max-w-md mx-auto md:mx-0">
-                        <div class="text-center mb-4">
-                            <div class="bg-blue-100 inline-block p-3 rounded-full mb-4">
-                                <i class="fas fa-dollar-sign text-blue-600 text-3xl"></i>
-                            </div>
-                            <h3 class="text-xl font-bold text-gray-800">Standard Assistance</h3>
-                            <p class="text-gray-600 mt-2">For needs under $5,000</p>
-                        </div>
-                        <ul class="space-y-2 mb-6 text-gray-700">
-                            <li class="flex items-center">
-                                <i class="fas fa-check text-green-500 mr-2"></i>
-                                <span>Faster approval process</span>
-                            </li>
-                            <li class="flex items-center">
-                                <i class="fas fa-check text-green-500 mr-2"></i>
-                                <span>Minimal documentation required</span>
-                            </li>
-                            <li class="flex items-center">
-                                <i class="fas fa-check text-green-500 mr-2"></i>
-                                <span>Covers essential medical expenses</span>
-                            </li>
-                        </ul>
-                        <button data-category="below_5k" class="apply-category-btn w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold transition-colors">
-                            Apply for Standard
-                        </button>
-                    </div>
-                    
-                    <!-- Extended Assistance -->
-                    <div class="bg-blue-50 rounded-lg shadow-lg p-6 flex-1 max-w-md mx-auto md:mx-0">
-                        <div class="text-center mb-4">
-                            <div class="bg-blue-100 inline-block p-3 rounded-full mb-4">
-                                <i class="fas fa-dollar-sign text-blue-600 text-3xl"></i>
-                                <i class="fas fa-plus text-blue-600 text-xl absolute mt-1 ml-1"></i>
-                            </div>
-                            <h3 class="text-xl font-bold text-gray-800">Extended Assistance</h3>
-                            <p class="text-gray-600 mt-2">For needs above $5,000</p>
-                        </div>
-                        <ul class="space-y-2 mb-6 text-gray-700">
-                            <li class="flex items-center">
-                                <i class="fas fa-check text-green-500 mr-2"></i>
-                                <span>Comprehensive coverage options</span>
-                            </li>
-                            <li class="flex items-center">
-                                <i class="fas fa-check text-green-500 mr-2"></i>
-                                <span>Available for major treatments</span>
-                            </li>
-                            <li class="flex items-center">
-                                <i class="fas fa-check text-green-500 mr-2"></i>
-                                <span>Extended payment periods</span>
-                            </li>
-                        </ul>
-                        <button data-category="above_5k" class="apply-category-btn w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold transition-colors">
-                            Apply for Extended
-                        </button>
-                    </div>
-                </div>
+            <!-- Right: Image Only -->
+            <div class="flex-1">
+                <img src="{{ asset('help.png') }}" alt="CSWD Assistance" class="rounded-2xl w-full h-auto object-cover">
             </div>
-        </section>
 
-        <!-- Process Section -->
-        <section class="py-16 bg-gray-50">
-            <div class="container mx-auto px-4">
-                <h2 class="text-2xl md:text-3xl font-bold text-center mb-12 text-gray-800">Application Process</h2>
-                
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <!-- Step 1 -->
-                    <div class="bg-white p-6 rounded-lg shadow-md text-center">
-                        <div class="bg-blue-100 w-16 h-16 flex items-center justify-center rounded-full mx-auto mb-4">
-                            <span class="text-blue-600 text-2xl font-bold">1</span>
-                        </div>
-                        <h3 class="text-xl font-bold mb-3 text-gray-800">Complete Application</h3>
-                        <p class="text-gray-600">Fill out our simple online form with your basic information and financial needs.</p>
-                    </div>
-                    
-                    <!-- Step 2 -->
-                    <div class="bg-white p-6 rounded-lg shadow-md text-center">
-                        <div class="bg-blue-100 w-16 h-16 flex items-center justify-center rounded-full mx-auto mb-4">
-                            <span class="text-blue-600 text-2xl font-bold">2</span>
-                        </div>
-                        <h3 class="text-xl font-bold mb-3 text-gray-800">Review Process</h3>
-                        <p class="text-gray-600">Our team will review your application and may contact you for additional information.</p>
-                    </div>
-                    
-                    <!-- Step 3 -->
-                    <div class="bg-white p-6 rounded-lg shadow-md text-center">
-                        <div class="bg-blue-100 w-16 h-16 flex items-center justify-center rounded-full mx-auto mb-4">
-                            <span class="text-blue-600 text-2xl font-bold">3</span>
-                        </div>
-                        <h3 class="text-xl font-bold mb-3 text-gray-800">Receive Assistance</h3>
-                        <p class="text-gray-600">If approved, you'll receive financial assistance directly to the medical provider.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
+        </div>
+    </section>
 
-    <!-- Footer -->
-    <footer class="bg-gray-800 text-white py-8">
-        <div class="container mx-auto px-4">
-            <div class="flex flex-col md:flex-row justify-between items-center">
-                <div class="mb-4 md:mb-0">
-                    <h2 class="text-xl font-bold mb-2">Financial Assistance Portal</h2>
-                    <p class="text-gray-300">Providing support when it's needed most</p>
-                </div>
-                <div class="flex space-x-4">
-                    <a href="#" class="text-gray-300 hover:text-white transition-colors">
-                        <i class="fab fa-facebook text-2xl"></i>
-                    </a>
-                    <a href="#" class="text-gray-300 hover:text-white transition-colors">
-                        <i class="fab fa-twitter text-2xl"></i>
-                    </a>
-                    <a href="#" class="text-gray-300 hover:text-white transition-colors">
-                        <i class="fab fa-instagram text-2xl"></i>
-                    </a>
-                </div>
+    <!-- About Us Section -->
+    <section id="about" class="py-20 bg-green-50">
+        <div class="container mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+
+            <!-- Left: About Text -->
+            <div>
+                <h2 class="text-3xl font-bold text-gray-800 mb-4">About Us</h2>
+                <p class="text-lg text-gray-700 mb-4 leading-relaxed">
+                    The <b>City Social Welfare and Development (CSWD) Office of San Pedro, Laguna</b> is dedicated to
+                    uplifting vulnerable sectors like children, women, senior citizens, persons with disabilities,
+                    and disadvantaged families.
+                </p>
+                <p class="text-lg text-gray-700 leading-relaxed">
+                    Through financial aid, community development, disaster response, and livelihood support, CSWD works
+                    to ensure that every San Pedronian has access to care and assistance when needed.
+                </p>
             </div>
-            <div class="border-t border-gray-600 mt-6 pt-6 text-center text-gray-400">
-                <p>&copy; 2023 Financial Assistance Portal. All rights reserved.</p>
+
+            <!-- Right: Image Slider -->
+            <div class="relative w-full overflow-hidden rounded-2xl shadow-lg">
+                <div id="aboutSlider" class="flex transition-transform duration-500">
+                    <!-- Slide 1 -->
+                    <img src="https://picsum.photos/600/400?random=1" alt="Community Work"
+                        class="w-full min-w-full object-cover">
+                    <!-- Slide 2 -->
+                    <img src="https://picsum.photos/600/400?random=2" alt="CSWD Office"
+                        class="w-full min-w-full object-cover">
+                    <!-- Slide 3 -->
+                    <img src="https://picsum.photos/600/400?random=3" alt="Support Services"
+                        class="w-full min-w-full object-cover">
+                </div>
+
+                <!-- Navigation -->
+                <button onclick="prevSlide()"
+                    class="absolute top-1/2 left-3 transform -translate-y-1/2 bg-white p-2 rounded-full shadow hover:bg-green-100">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button onclick="nextSlide()"
+                    class="absolute top-1/2 right-3 transform -translate-y-1/2 bg-white p-2 rounded-full shadow hover:bg-green-100">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+
+                <!-- Dots -->
+                <div id="sliderDots" class="absolute bottom-3 left-1/2 transform -translate-x-1/2 flex gap-2"></div>
             </div>
         </div>
-    </footer>
+    </section>
 
-    <!-- Application Modal -->
-    <div id="application-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div class="p-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 id="modal-title" class="text-2xl font-bold text-gray-800">Financial Assistance Application</h2>
-                    <button id="close-modal-btn" class="text-gray-500 hover:text-gray-700">
-                        <i class="fas fa-times text-xl"></i>
+    <!-- Categories Section -->
+    <section id="categories" class="py-20 bg-white">
+        <div class="container mx-auto px-6 text-center">
+            <h2 class="text-3xl font-bold text-gray-800 mb-12">Assistance Categories</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 max-w-6xl mx-auto">
+
+                <!-- Educational Assistance -->
+                <div
+                    class="bg-white shadow-lg rounded-2xl p-6 border border-gray-200 hover:shadow-2xl transition flex flex-col items-center">
+                    <i class="fas fa-graduation-cap text-green-600 text-5xl mb-4"></i>
+                    <h3 class="text-lg font-bold text-gray-800 mb-2">Educational</h3>
+                    <p class="text-gray-500 mb-4 text-sm">Support for school fees, supplies, and scholarships.</p>
+                    <button onclick="openModal('applicationModal')"
+                        class="bg-green-600 text-white py-2 px-4 rounded-xl font-semibold hover:bg-green-700 transition w-full text-sm">
+                        Apply
                     </button>
                 </div>
-                
-                <form id="application-form" class="space-y-4">
-                    <input type="hidden" id="category" name="category" value="">
-                    
-                    <!-- Patient Information -->
-                    <div class="border-b border-gray-200 pb-4">
-                        <h3 class="text-lg font-semibold mb-3 text-gray-700">Patient Information</h3>
-                        
-                        <div class="mb-3">
-                            <label for="patient_name" class="block text-gray-700 mb-1">Full Name <span class="text-red-500">*</span></label>
-                            <input type="text" id="patient_name" name="patient_name" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                            <div class="error-message text-red-500 text-sm mt-1 hidden" id="patient_name_error"></div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="patient_age" class="block text-gray-700 mb-1">Age <span class="text-red-500">*</span></label>
-                            <input type="number" id="patient_age" name="patient_age" min="0" max="120" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                            <div class="error-message text-red-500 text-sm mt-1 hidden" id="patient_age_error"></div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="patient_address" class="block text-gray-700 mb-1">Address <span class="text-red-500">*</span></label>
-                            <textarea id="patient_address" name="patient_address" rows="3" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" required></textarea>
-                            <div class="error-message text-red-500 text-sm mt-1 hidden" id="patient_address_error"></div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="contact_number" class="block text-gray-700 mb-1">Contact Number <span class="text-red-500">*</span></label>
-                            <input type="tel" id="contact_number" name="contact_number" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                            <div class="error-message text-red-500 text-sm mt-1 hidden" id="contact_number_error"></div>
-                        </div>
-                    </div>
-                    
-                    <!-- Medical Information -->
-                    <div class="border-b border-gray-200 pb-4">
-                        <h3 class="text-lg font-semibold mb-3 text-gray-700">Medical Information</h3>
-                        
-                        <div class="mb-3">
-                            <label for="diagnosis" class="block text-gray-700 mb-1">Diagnosis <span class="text-red-500">*</span></label>
-                            <textarea id="diagnosis" name="diagnosis" rows="3" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" required></textarea>
-                            <div class="error-message text-red-500 text-sm mt-1 hidden" id="diagnosis_error"></div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="medical_condition" class="block text-gray-700 mb-1">Medical Condition</label>
-                            <input type="text" id="medical_condition" name="medical_condition" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <div class="error-message text-red-500 text-sm mt-1 hidden" id="medical_condition_error"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="flex justify-end">
-                        <button type="submit" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
-                            Submit Application
-                        </button>
-                    </div>
-                </form>
+
+                <!-- Burial Assistance -->
+                <div
+                    class="bg-white shadow-lg rounded-2xl p-6 border border-gray-200 hover:shadow-2xl transition flex flex-col items-center">
+                    <i class="fas fa-cross text-green-600 text-5xl mb-4"></i>
+                    <h3 class="text-lg font-bold text-gray-800 mb-2">Burial</h3>
+                    <p class="text-gray-500 mb-4 text-sm">Help with funeral and burial expenses.</p>
+                    <button onclick="openModal('applicationModal')"
+                        class="bg-green-600 text-white py-2 px-4 rounded-xl font-semibold hover:bg-green-700 transition w-full text-sm">
+                        Apply
+                    </button>
+                </div>
+
+                <!-- Medical Assistance -->
+                <div
+                    class="bg-white shadow-lg rounded-2xl p-6 border border-gray-200 hover:shadow-2xl transition flex flex-col items-center">
+                    <i class="fas fa-hospital-user text-green-600 text-5xl mb-4"></i>
+                    <h3 class="text-lg font-bold text-gray-800 mb-2">Medical</h3>
+                    <p class="text-gray-500 mb-4 text-sm">Support for treatments, medications, and hospital bills.</p>
+                    <button onclick="openModal('applicationModal')"
+                        class="bg-green-600 text-white py-2 px-4 rounded-xl font-semibold hover:bg-green-700 transition w-full text-sm">
+                        Apply
+                    </button>
+                </div>
+
+                <!-- Emergency Assistance -->
+                <div
+                    class="bg-white shadow-lg rounded-2xl p-6 border border-gray-200 hover:shadow-2xl transition flex flex-col items-center">
+                    <i class="fas fa-bolt text-green-600 text-5xl mb-4"></i>
+                    <h3 class="text-lg font-bold text-gray-800 mb-2">Emergency</h3>
+                    <p class="text-gray-500 mb-4 text-sm">Immediate support during emergencies and disasters.</p>
+                    <button onclick="openModal('applicationModal')"
+                        class="bg-green-600 text-white py-2 px-4 rounded-xl font-semibold hover:bg-green-700 transition w-full text-sm">
+                        Apply
+                    </button>
+                </div>
+
             </div>
+        </div>
+    </section>
+
+
+
+    <!-- Process Section -->
+    <section id="process" class="py-20 bg-green-50">
+        <div class="container mx-auto px-6 text-center">
+            <h2 class="text-3xl font-bold text-gray-800 mb-12">Application Process</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+
+                <!-- Step 1 -->
+                <div class="bg-white shadow-lg rounded-2xl p-8 text-center hover:shadow-2xl transition">
+                    <div
+                        class="bg-green-100 w-16 h-16 flex items-center justify-center rounded-full mx-auto mb-4 text-2xl font-bold text-green-600">
+                        1
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 text-gray-800">Complete Application</h3>
+                    <p class="text-gray-600 mb-4">Fill out our simple online form with your info and financial needs.
+                    </p>
+                    <button onclick="openModal('applicationModal')"
+                        class="bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700 transition">
+                        Start Application
+                    </button>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="bg-white shadow-lg rounded-2xl p-8 text-center hover:shadow-2xl transition">
+                    <div
+                        class="bg-green-100 w-16 h-16 flex items-center justify-center rounded-full mx-auto mb-4 text-2xl font-bold text-green-600">
+                        2
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 text-gray-800">Review Process</h3>
+                    <p class="text-gray-600 mb-4">Our team reviews your application and may contact you for more info.
+                    </p>
+                    <button onclick="openModal('trackModal')"
+                        class="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">
+                        Track Process
+                    </button>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="bg-white shadow-lg rounded-2xl p-8 text-center hover:shadow-2xl transition">
+                    <div
+                        class="bg-green-100 w-16 h-16 flex items-center justify-center rounded-full mx-auto mb-4 text-2xl font-bold text-green-600">
+                        3
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 text-gray-800">Receive Assistance</h3>
+                    <p class="text-gray-600">If approved, assistance is sent directly to your medical provider.</p>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 py-12">
+        <div
+            class="container mx-auto px-6 text-center md:text-left flex flex-col md:flex-row justify-between items-center gap-6">
+            <div>
+                <h2 class="text-xl font-bold text-green-700 mb-2">WeServe</h2>
+                <p class="text-gray-500">Providing support when it's needed most</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="#" class="text-gray-500 hover:text-green-600 transition"><i
+                        class="fab fa-facebook text-2xl"></i></a>
+                <a href="#" class="text-gray-500 hover:text-green-600 transition"><i
+                        class="fab fa-twitter text-2xl"></i></a>
+                <a href="#" class="text-gray-500 hover:text-green-600 transition"><i
+                        class="fab fa-instagram text-2xl"></i></a>
+            </div>
+        </div>
+        <div class="mt-8 text-gray-400 text-center text-sm">&copy; 2023 WeServe. All rights reserved.</div>
+    </footer>
+
+
+    <!-- Application Modal -->
+    <div id="applicationModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-lg w-full max-w-lg p-6 relative">
+            <!-- Close Button -->
+            <button onclick="closeModal('applicationModal')"
+                class="absolute top-3 right-3 text-gray-500 hover:text-gray-800">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Application Form</h2>
+
+            <form id="applicationForm" action="{{ route('applications.store') }}" method="POST" class="space-y-4">
+                @csrf
+                <!-- Name -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700">Applicant Name</label>
+                    <input type="text" name="applicant_name"
+                        class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700">Age</label>
+                    <input type="number" name="age"
+                        class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500" required>
+                </div>
+
+
+                <!-- Address -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700">Address</label>
+                    <input type="text" name="address"
+                        class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700">Contact Number</label>
+                    <input type="text" name="contact_number"
+                        class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500" required>
+                </div>
+                <!-- Claimant Name -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700">Claimant Name</label>
+                    <input type="text" name="claimant_name"
+                        class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700">Diagnosis (Optional)</label>
+                    <input type="text" name="diagnosis"
+                        class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500">
+                </div>
+
+                <!-- Case Type -->
+                <div> <label class="block text-sm font-semibold text-gray-700">Type</label> <select name="case_type"
+                        id="type" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500"
+                        required>
+                        <option value="">-- Select --</option>
+                        <option value="Student">Student</option>
+                        <option value="PWD">PWD</option>
+                        <option value="Senior">Senior</option>
+                        <option value="Solo Parent">Solo Parent</option>
+                    </select> </div>
+
+                <!-- Service Category -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700">Service Category</label>
+                    <select name="case_category" id="serviceCategory"
+                        class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500"
+                        onchange="showRequirements()" required>
+                        <option value="">-- Select --</option>
+                        <option value="Educational Assistance">Educational Assistance</option>
+                        <option value="Medical Assistance">Medical Assistance</option>
+                        <option value="Burial Assistance">Burial Assistance</option>
+                        <option value="Emergency Assistance">Emergency Assistance</option>
+                    </select>
+                </div>
+
+                <!-- Required Documents -->
+                <div id="requirements" class="mt-4 hidden">
+                    <label class="block text-sm font-semibold text-gray-700">Required Documents</label>
+                    <ul id="requirementsList" class="list-disc list-inside text-gray-700 mt-2 space-y-1"></ul>
+                </div>
+
+                <!-- Submit -->
+                <button type="submit"
+                    class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition">
+                    Submit Application
+                </button>
+            </form>
         </div>
     </div>
 
-    <script></script>
+    <!-- Tracking Number Modal -->
+    <div id="trackingNumberModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-lg w-full max-w-md p-6 relative text-center">
+            <!-- Close Button -->
+            <button onclick="closeModal('trackingNumberModal')"
+                class="absolute top-3 right-3 text-gray-500 hover:text-gray-800">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+
+            <!-- Success Icon -->
+            <div class="flex items-center justify-center mb-4">
+                <i class="fas fa-check-circle text-green-600 text-5xl"></i>
+            </div>
+
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">Application Submitted!</h2>
+            <p class="text-gray-600 mb-4">Your tracking number is:</p>
+
+            <!-- Tracking number display with copy button -->
+            <div class="flex items-center justify-center gap-3 mb-6">
+                <div id="trackingNumberDisplay" class="text-2xl font-bold text-green-700"></div>
+                <button onclick="copyTrackingNumber()" class="text-gray-500 hover:text-green-600 transition">
+                    <i class="fas fa-copy text-xl"></i>
+                </button>
+            </div>
+
+        </div>
+    </div>
+    @if(session('tracking_number'))
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                // Insert real tracking number from backend
+                document.getElementById("trackingNumberDisplay").innerText = "{{ session('tracking_number') }}";
+
+                // Open modal automatically
+                openModal("trackingNumberModal");
+            });
+        </script>
+    @endif
+
+
+
+
+
+    <!-- Tracking Modal -->
+    <div id="trackModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-lg w-full max-w-lg p-6 relative">
+            <!-- Close Button -->
+            <button onclick="closeModal('trackModal')" class="absolute top-3 right-3 text-gray-500 hover:text-gray-800">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Track Application</h2>
+
+            <form action="{{ route('track.application') }}" method="GET" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700">Tracking Number</label>
+                    <input type="text" name="tracking_number"
+                        class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div>
+                    <button type="submit"
+                        class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition">
+                        Track Now
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+    <!-- Script -->
+    <script>
+        let currentSlide = 0;
+        const slider = document.getElementById("aboutSlider");
+        const slides = slider.children;
+        const totalSlides = slides.length;
+        const dotsContainer = document.getElementById("sliderDots");
+
+        // Create dots
+        for (let i = 0; i < totalSlides; i++) {
+            const dot = document.createElement("span");
+            dot.className = "w-3 h-3 bg-gray-300 rounded-full cursor-pointer";
+            dot.addEventListener("click", () => goToSlide(i));
+            dotsContainer.appendChild(dot);
+        }
+
+        function updateDots() {
+            [...dotsContainer.children].forEach((dot, idx) => {
+                dot.className = idx === currentSlide
+                    ? "w-3 h-3 bg-green-500 rounded-full"
+                    : "w-3 h-3 bg-gray-300 rounded-full cursor-pointer";
+            });
+        }
+
+        function goToSlide(index) {
+            currentSlide = (index + totalSlides) % totalSlides;
+            slider.style.transform = `translateX(-${currentSlide * 100}%)`;
+            updateDots();
+        }
+
+        function nextSlide() { goToSlide(currentSlide + 1); }
+        function prevSlide() { goToSlide(currentSlide - 1); }
+
+        // Initialize
+        goToSlide(0)
+        function openModal(id) {
+            document.getElementById(id).classList.remove("hidden");
+            document.getElementById(id).classList.add("flex");
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove("flex");
+            document.getElementById(id).classList.add("hidden");
+        }
+
+        function showRequirements() {
+            const category = document.getElementById("serviceCategory").value;
+            const list = document.getElementById("requirementsList");
+            const wrapper = document.getElementById("requirements");
+
+            list.innerHTML = ""; // reset list
+
+            let docs = [];
+
+            if (category === "Medical Assistance") {
+                docs = [
+                    "Letter Request (Original & Receiving Copy)",
+                    "Certificate of Indigency (Original)",
+                    "Voter’s Certification OR COMELEC Verification",
+                    "Valid ID (Photocopy for claimant/patient)",
+                    "Medical Abstract/Certificate (Original or Certified True Copy)",
+                    "Supporting medical documents (Prescription, Lab request, Operation quotation, Hospital bill – Photocopy)"
+                ];
+            } else if (category === "Burial Assistance") {
+                docs = [
+                    "Letter Request (Original & Receiving Copy)",
+                    "Certificate of Indigency (Original)",
+                    "Voter’s Certification OR COMELEC Verification",
+                    "Valid ID (Photocopy for claimant/deceased)",
+                    "Funeral Contract (Original or Certified True Copy)",
+                    "Death Certificate (Original or Certified True Copy)"
+                ];
+            } else if (category === "Educational Assistance") {
+                docs = [
+                    "Letter Request (Original & Receiving Copy)",
+                    "Certificate of Indigency (Original)",
+                    "Valid ID (Photocopy)",
+                    "School Assessment/Registration Form",
+                    "Certificate of Enrollment"
+                ];
+            } else if (category === "Emergency Assistance") {
+                docs = [
+                    "Letter Request (Original & Receiving Copy)",
+                    "Certificate of Indigency (Original)",
+                    "Valid ID (Photocopy)",
+                    "Supporting Emergency Proof (e.g., Police Report, Fire Report, etc.)"
+                ];
+            }
+
+            docs.forEach(doc => {
+                const li = document.createElement("li");
+                li.textContent = doc;
+                list.appendChild(li);
+            });
+
+            wrapper.classList.toggle("hidden", docs.length === 0);
+        }
+
+    </script>
+
 </body>
+
 </html>

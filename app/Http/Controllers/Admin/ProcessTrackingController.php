@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Events\PatientStatusChanged;
+use App\Events\ProcessSummaryUpdated;
 use App\Models\OtpCode;
 use App\Models\RejectionReason;
 use Illuminate\Http\Request;
@@ -99,12 +100,13 @@ class ProcessTrackingController extends Controller
             }
         }
 
-        // Reload patient with latest status log
+        // Reload patient with latest status log and user
         $patient->load('latestStatusLog');
 
-        // Broadcast update
+        // Broadcast updates
         $action = $request->action === 'approve' ? 'approved' : 'rejected';
-        broadcast(new PatientStatusChanged($patient, $action))->toOthers();
+        broadcast(new PatientStatusChanged($patient, $action));
+        broadcast(new \App\Events\PatientProcessUpdated($patient));
 
         return redirect()
             ->route('admin.process-tracking.show', $id)
@@ -186,7 +188,7 @@ class ProcessTrackingController extends Controller
                 }
 
                 $actionEvent = $validated['action'] === 'approve' ? 'approved' : 'rejected';
-                broadcast(new PatientStatusChanged($patient, $actionEvent))->toOthers();
+                broadcast(new PatientStatusChanged($patient, $actionEvent));
             }
 
             DB::commit();
@@ -261,7 +263,7 @@ class ProcessTrackingController extends Controller
 
         $patient->load('latestStatusLog');
 
-        broadcast(new PatientStatusChanged($patient, 'dv_submitted'))->toOthers();
+        broadcast(new PatientStatusChanged($patient, 'dv_submitted'));
 
         return redirect()->route('admin.process-tracking.show', $id)
             ->with('status', 'Disbursement Voucher added successfully.');
@@ -292,7 +294,7 @@ class ProcessTrackingController extends Controller
         ]);
 
         $patient->load('latestStatusLog');
-        broadcast(new PatientStatusChanged($patient, 'dv_submitted'))->toOthers();
+        broadcast(new PatientStatusChanged($patient, 'dv_submitted'));
 
         return back()->with('success', 'DV updated and status progressed.');
     }
@@ -360,7 +362,7 @@ class ProcessTrackingController extends Controller
                 ]);
 
                 $patient->load('latestStatusLog');
-                broadcast(new PatientStatusChanged($patient, 'dv_submitted'))->toOthers();
+                broadcast(new PatientStatusChanged($patient, 'dv_submitted'));
 
                 $submitted[] = $patient->control_number;
             }
@@ -447,7 +449,7 @@ class ProcessTrackingController extends Controller
 
         $patient->load('latestStatusLog');
 
-        broadcast(new PatientStatusChanged($patient, 'budget_allocated'))->toOthers();
+        broadcast(new PatientStatusChanged($patient, 'budget_allocated'));
 
         return redirect()->route('admin.process-tracking.show', $id)
             ->with('status', 'Budget allocated successfully.');
@@ -477,7 +479,7 @@ class ProcessTrackingController extends Controller
         ]);
 
         $patient->load('latestStatusLog');
-        broadcast(new PatientStatusChanged($patient, 'budget_allocated'))->toOthers();
+        broadcast(new PatientStatusChanged($patient, 'budget_allocated'));
 
         return back()->with('success', 'Budget updated and status progressed.');
     }
@@ -525,7 +527,7 @@ class ProcessTrackingController extends Controller
                     'allocation_date' => $statusDate,
                     'budget_status' => 'Not Disbursed',
                 ]);
-               
+
                 PatientStatusLog::create([
                     'patient_id' => $patient->id,
                     'user_id' => Auth::id(),
@@ -534,7 +536,7 @@ class ProcessTrackingController extends Controller
                     'status_date' => $statusDate,
                 ]);
 
-                broadcast(new PatientStatusChanged($patient, 'budget_allocated'))->toOthers();
+                broadcast(new PatientStatusChanged($patient, 'budget_allocated'));
 
                 $allocated[] = $patient->control_number;
             }
@@ -593,12 +595,12 @@ class ProcessTrackingController extends Controller
 
         $patient = PatientRecord::with('latestStatusLog')->findOrFail($id);
 
-        broadcast(new PatientStatusChanged($patient, 'disbursed'))->toOthers();
+        broadcast(new PatientStatusChanged($patient, 'disbursed'));
 
         return redirect()->route('admin.process-tracking.show', $id)
             ->with('status', 'Budget status updated to Disbursed.');
     }
-    public function quickDisburse($id)
+    public function quickDisburse(Request $request, $id)
     {
         abort_if(Gate::denies('treasury_disburse'), 403);
 
@@ -613,11 +615,11 @@ class ProcessTrackingController extends Controller
             'user_id' => Auth::id(),
             'status' => PatientStatusLog::STATUS_DISBURSED,
             'remarks' => 'Budget marked as disbursed (OTP bypassed).',
-            'created_at' => now(),
+            'status_date' => $request->input('status_date'),
         ]);
 
         $patient = PatientRecord::with('latestStatusLog')->findOrFail($id);
-        broadcast(new PatientStatusChanged($patient, 'disbursed'))->toOthers();
+        broadcast(new PatientStatusChanged($patient, 'disbursed'));
 
         return redirect()->route('admin.process-tracking.show', $id)
             ->with('status', 'Budget status updated to Disbursed (no OTP).');
@@ -676,7 +678,7 @@ class ProcessTrackingController extends Controller
 
                 $patient = PatientRecord::with('latestStatusLog')->find($id);
                 if ($patient) {
-                    broadcast(new PatientStatusChanged($patient, 'disbursed'))->toOthers();
+                    broadcast(new PatientStatusChanged($patient, 'disbursed'));
                     $disbursed[] = $patient->control_number ?? $id;
                 }
             }
@@ -805,6 +807,7 @@ class ProcessTrackingController extends Controller
             'user_id' => Auth::id(),
             'status' => PatientStatusLog::STATUS_DISBURSED,
             'remarks' => 'OTP verified. Marked as disbursed.',
+            'status_date' => now(),
         ]);
 
         return redirect()->route('admin.process-tracking.show', $patient->id)
@@ -835,14 +838,14 @@ class ProcessTrackingController extends Controller
             'status' => $rolledBackStatus,
             'remarks' => '[ROLLED BACK] ' . $request->rollback_remarks,
             'user_id' => Auth::id(),
-            'created_at' => now(),
+            'status_date' => now(),
         ]);
 
         // Reload latest status log before broadcasting
         $patient->load('latestStatusLog');
 
         // Broadcast base status only (for UI logic)
-        broadcast(new PatientStatusChanged($patient, strtolower($rollbackTo)))->toOthers();
+        broadcast(new PatientStatusChanged($patient, strtolower($rollbackTo)));
 
         return redirect()->back()->with('success', 'Process rolled back to ' . $rolledBackStatus);
     }
@@ -870,9 +873,10 @@ class ProcessTrackingController extends Controller
             'status'     => $previousLog->status, // no rollback tag
             'user_id'    => Auth::id(),
             'remarks'    => 'Returned to rollbacker: ' . $previousLog->status,
+            'status_date' => now(),
         ]);
 
-        broadcast(new PatientStatusChanged($patient, strtolower($previousLog->status)))->toOthers();
+        broadcast(new PatientStatusChanged($patient, strtolower($previousLog->status)));
 
         return back()->with('status', 'Case returned to previous rollbacker.');
     }

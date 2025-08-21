@@ -103,6 +103,7 @@
             {{-- PROCESS SUMMARY --}}
             @if ($patient->statusLogs->count())
                 <style>
+                    .status-processing,
                     .status-submitted,
                     .status-approved,
                     .status-budget-allocated,
@@ -113,7 +114,8 @@
                         color: #0b3e0b;
                     }
 
-                    .status-rejected {
+                    .status-rejected,
+                    .status-rolled-back {
                         background-color: #f8d7da;
                         color: #721c24;
                     }
@@ -131,12 +133,17 @@
 
                 <div class="mb-4">
                     <h6 class="text-primary">📋 Process Summary</h6>
-                    <ul class="list-group">
+                    <ul class="list-group" id="processSummaryList">
                         @foreach ($patient->statusLogs as $log)
                             @php
                                 $statusKey = strtolower(str_replace(' ', '-', $log->status));
-                                $statusClass = 'status-' . $statusKey;
+                                if (strpos($log->status, '[ROLLED BACK]') !== false) {
+                                    $statusClass = 'status-rolled-back';
+                                } else {
+                                    $statusClass = 'status-' . $statusKey;
+                                }
                             @endphp
+
                             <li class="list-group-item {{ $statusClass }}">
                                 <div>
                                     <strong>{{ ucfirst($log->status) }}:</strong>
@@ -156,10 +163,10 @@
                 </div>
             @endif
 
-
-
-
-            @php $isFinalized = in_array(optional($latestStatus)->status, ['Approved', 'Rejected']); @endphp
+            @php
+                $isFinalized = in_array(optional($latestStatus)->status, ['Approved', 'Rejected']);
+                $latestLog = $patient->statusLogs->last();
+            @endphp
 
             @can('approve_patient')
                 @if ($baseStatus === 'Submitted')
@@ -179,6 +186,15 @@
                                     data-bs-target="#rejectModal">
                                     Reject
                                 </button>
+                                @if ($latestLog && str_contains(strtolower($latestLog->remarks), 'rolled back'))
+                                    <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}"
+                                        method="POST" style="display:inline;">
+                                        @csrf
+                                        <button type="submit" class="btn btn-warning btn-lg px-4 text-white">
+                                            <i class="fas fa-share me-1"></i> Return to Rollbacker
+                                        </button>
+                                    </form>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -198,8 +214,8 @@
                                     <div class="modal-body">
                                         <div class="mb-3">
                                             <label for="statusDate" class="form-label">Status Date</label>
-                                            <input type="date" name="status_date" id="statusDate" class="form-control"
-                                                value="{{ now()->toDateString() }}" required>
+                                            <input type="datetime-local" name="status_date" id="statusDate" class="form-control"
+                                                value="{{ now()->toDateTimeLocalString() }}" required>
                                         </div>
 
                                         <div class="mb-3">
@@ -267,8 +283,9 @@
                                         <div class="mb-3">
                                             <div class="mb-3">
                                                 <label for="statusDate" class="form-label">Status Date</label>
-                                                <input type="date" name="status_date" id="statusDate"
-                                                    class="form-control" value="{{ now()->toDateString() }}" required>
+                                                <input type="datetime-local" name="status_date" id="statusDate"
+                                                    class="form-control" value="{{ now()->toDateTimeLocalString() }}"
+                                                    required>
                                             </div>
 
                                             <label for="rejectRemarks" class="form-label">Remarks</label>
@@ -370,9 +387,9 @@
                                         </div>
                                         <div class="form-group mb-3">
                                             <label for="budget_status_date" class="form-label">Status Date</label>
-                                            <input type="date" name="status_date" id="budget_status_date"
-                                                class="form-control rounded-3 shadow-sm" value="{{ now()->toDateString() }}"
-                                                required>
+                                            <input type="datetime-local" name="status_date" id="budget_status_date"
+                                                class="form-control rounded-3 shadow-sm"
+                                                value="{{ now()->toDateTimeLocalString() }}" required>
                                         </div>
 
                                         <div class="form-group">
@@ -530,7 +547,7 @@
                                         </div>
                                         <div class="form-group mb-3">
                                             <label for="dv_date">DV Date</label>
-                                            <input type="date" name="dv_date" id="dv_date"
+                                            <input type="datetime-local" name="dv_date" id="dv_date"
                                                 class="form-control form-control-lg"
                                                 value="{{ old('dv_date', optional($patient->disbursementVoucher)->dv_date ? \Carbon\Carbon::parse($patient->disbursementVoucher->dv_date)->format('Y-m-d') : '') }}"
                                                 required>
@@ -538,9 +555,9 @@
 
                                         <div class="form-group mb-3">
                                             <label for="status_date">Status Date</label>
-                                            <input type="date" name="status_date" id="status_date"
+                                            <input type="datetime-local" name="status_date" id="status_date"
                                                 class="form-control form-control-lg"
-                                                value="{{ old('status_date', now()->toDateString()) }}" required>
+                                                value="{{ old('status_date', now()->toDateTimeLocalString()) }}" required>
                                         </div>
 
                                         <div class="modal-footer">
@@ -576,13 +593,10 @@
                             <i class="fas fa-undo-alt me-1"></i> Rollback Process
                         </button>
 
-                        {{-- QUICK DISBURSE BUTTON --}}
-                        <form action="{{ route('admin.process-tracking.quickDisburse', $patient->id) }}" method="POST"
-                            class="d-inline-block mt-4"
-                            onsubmit="return confirm('Are you sure you want to disburse without OTP? This action cannot be undone.');">
-                            @csrf
-                            <button class="btn btn-outline-success">Quick Disburse (No OTP)</button>
-                        </form>
+                        <button type="button" class="btn btn-outline-success mt-2" data-bs-toggle="modal"
+                            data-bs-target="#quickDisburseModal">
+                            Quick Disburse (No OTP)
+                        </button>
                     @elseif ($baseStatus === 'Ready for Disbursement')
                         {{-- VERIFY OTP --}}
                         @php
@@ -596,20 +610,53 @@
                             <input type="text" name="otp_code" required class="form-control mt-2 mb-2">
                             <button class="btn btn-success">Confirm & Mark Disbursed</button>
                         </form>
-
-                        {{-- QUICK DISBURSE BUTTON --}}
-                        <form action="{{ route('admin.process-tracking.quickDisburse', $patient->id) }}" method="POST"
-                            class="d-inline-block mt-2"
-                            onsubmit="return confirm('Are you sure you want to disburse without OTP? This action cannot be undone.');">
-                            @csrf
-                            <button class="btn btn-outline-success">Quick Disburse (No OTP)</button>
-                        </form>
                     @endif
                 @elseif ($patient->budgetAllocation && $patient->budgetAllocation->budget_status === 'Disbursed')
                     <div class="alert alert-success mt-4">
                         <strong>Status:</strong> Disbursed
                     </div>
                 @endif
+
+                <div class="modal fade" id="quickDisburseModal" tabindex="-1" aria-labelledby="quickDisburseModalLabel"
+                    aria-hidden="true">
+                    <div class="modal-dialog">
+                        <form action="{{ route('admin.process-tracking.quickDisburse', $patient->id) }}" method="POST">
+                            @csrf
+                            <div class="modal-content border-0 shadow-lg rounded-4">
+                                <div class="modal-header bg-danger text-white">
+                                    <h5 class="modal-title" id="quickDisburseModalLabel">
+                                        <i class="fas fa-money-bill-wave me-2"></i> Quick Disburse
+                                    </h5>
+                                    <button type="button" class="btn-close text-white" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                                </div>
+
+                                <div class="modal-body">
+                                    <div class="form-group mb-3">
+                                        <label for="quickDisburseStatusDate">Status Date</label>
+                                        <input type="datetime-local" name="status_date" id="quickDisburseStatusDate"
+                                            class="form-control form-control-lg" value="{{ now()->toDateTimeLocalString() }}"
+                                            required>
+                                    </div>
+
+                                    <div class="form-group mb-3">
+                                        <label for="quickDisburseRemarks">Remarks (Optional)</label>
+                                        <textarea name="remarks" id="quickDisburseRemarks" class="form-control form-control-lg" rows="3"
+                                            placeholder="Enter any remarks..."></textarea>
+                                    </div>
+                                </div>
+
+                                <div class="modal-footer d-flex flex-column gap-2">
+                                    <button type="submit" class="btn btn-danger w-100">
+                                        <i class="fas fa-check-circle me-1"></i> Confirm Disbursement
+                                    </button>
+                                    <button type="button" class="btn btn-secondary w-100 mt-2"
+                                        data-bs-dismiss="modal">Cancel</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             @endcan
 
             <div class="form-group mt-4">
@@ -622,6 +669,11 @@
 @endsection
 @push('scripts')
     <script>
+Echo.channel('process-tracking')
+    .listen('.patient.process.updated', (e) => {
+        console.log('Received event:', e); // 🔹 Add this for debugging
+    });
+
         document.addEventListener('DOMContentLoaded', function() {
             const amountInput = document.getElementById('amount');
             const buttons = document.querySelectorAll('.suggested-amount');

@@ -72,6 +72,11 @@ class PatientRecord extends Model
     {
         return $this->hasMany(OtpCode::class, 'patient_id');
     }
+    public function trackingNumber()
+    {
+        return $this->hasOne(PatientTrackingNumber::class, 'patient_id');
+    }
+
 
     public function getBarangayAttribute()
     {
@@ -158,5 +163,4 @@ class PatientRecord extends Model
     {
         return $this->hasMany(\App\Models\Document::class, 'patient_id');
     }
-    
 }
