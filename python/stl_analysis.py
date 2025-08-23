@@ -11,31 +11,32 @@ json_path = os.path.join(base_path, 'storage', 'app', 'public', 'stl_output.json
 # Load CSV
 df = pd.read_csv(csv_path, parse_dates=['month'])
 
-# Ensure all months in the year exist
-start_month = pd.Timestamp(df['month'].min().year, 1, 1)   # Jan of earliest year
-end_month = pd.Timestamp(df['month'].max().year, 12, 1)    # Dec of latest year
+# Add a count column for each patient
+df['applications'] = 1
+
+# Aggregate by month and case_category
+agg_df = df.groupby(['month', 'case_category'])['applications'].sum().reset_index()
+
+# Ensure all months in the full range
+start_month = pd.Timestamp(df['month'].min().year, 1, 1)
+end_month = pd.Timestamp(df['month'].max().year, 12, 1)
 all_months = pd.date_range(start=start_month, end=end_month, freq='MS')
 
 categories = df['case_category'].unique()
-
 output = {}
 
 for cat in categories:
-    # Filter category data and reindex with all months
-    cat_df = df[df['case_category'] == cat].set_index('month').sort_index()
+    cat_df = agg_df[agg_df['case_category'] == cat].set_index('month').sort_index()
     
-    # If the 'value' column doesn't exist, create it with 0
-    if 'value' not in cat_df.columns:
-        cat_df['value'] = 0
+    # Reindex to full months, filling missing months with 0
+    cat_series = cat_df['applications'].reindex(all_months, fill_value=0)
 
-    # Reindex to full months, filling missing with 0
-    cat_series = cat_df['value'].reindex(all_months, fill_value=0)
-
-    # Only skip if entire series is 0
+    # Skip entirely empty series
     if cat_series.sum() == 0:
         continue
 
-    stl = STL(cat_series, period=12)
+    # STL decomposition
+    stl = STL(cat_series, period=12, robust=True, seasonal_deg=1, trend_deg=1, low_pass_deg=1)
     result = stl.fit()
 
     output[cat] = {
@@ -48,4 +49,4 @@ for cat in categories:
 
 # Save JSON
 with open(json_path, 'w') as f:
-    json.dump(output, f)
+    json.dump(output, f, indent=2)

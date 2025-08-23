@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Events\PatientProcessUpdated;
 use App\Events\PatientStatusChanged;
 use App\Events\ProcessSummaryUpdated;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Storage;
 use App\Models\OtpCode;
 use App\Models\RejectionReason;
 use Illuminate\Http\Request;
@@ -12,6 +15,7 @@ use App\Models\PatientRecord;
 use App\Models\BudgetAllocation;
 use App\Models\PatientStatusLog;
 use App\Models\DisbursementVoucher;
+use App\Models\Document;
 use App\Services\VonageService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -101,16 +105,21 @@ class ProcessTrackingController extends Controller
         }
 
         // Reload patient with latest status log and user
-        $patient->load('latestStatusLog');
+        $patient->load('latestStatusLog.user');
 
         // Broadcast updates
         $action = $request->action === 'approve' ? 'approved' : 'rejected';
+        broadcast(new PatientProcessUpdated($patient));
         broadcast(new PatientStatusChanged($patient, $action));
-        broadcast(new \App\Events\PatientProcessUpdated($patient));
 
-        return redirect()
-            ->route('admin.process-tracking.show', $id)
-            ->with('status', 'Patient has been ' . strtolower($action) . '.');
+
+
+        return redirect()->route('admin.process-tracking.show', $id)->with('toast', [
+            'type' => 'success',
+            'title' => 'Patient Approved',
+            'message' => 'The patient has been successfully approved.',
+            'time' => now()->diffForHumans(),
+        ]);
     }
 
     public function massDecision(Request $request)
@@ -246,13 +255,14 @@ class ProcessTrackingController extends Controller
             return back()->with('error', 'DV already submitted for this patient.');
         }
 
-        DisbursementVoucher::create([
+        $dv = DisbursementVoucher::create([
             'patient_id' => $patient->id,
             'user_id' => Auth::id(),
             'dv_code' => $request->dv_code,
             'dv_date' => $request->dv_date,
         ]);
 
+        // Log status
         PatientStatusLog::create([
             'patient_id' => $patient->id,
             'user_id' => Auth::id(),
@@ -261,13 +271,36 @@ class ProcessTrackingController extends Controller
             'status_date' => $request->status_date,
         ]);
 
-        $patient->load('latestStatusLog');
+        // ✅ Generate DV PDF
+        $pdf = app('dompdf.wrapper');
+        $pdf->loadView('admin.pdf.dv', [
+            'patient' => $patient,
+            'dv'      => $dv,
+        ]);
 
+        $fileName = 'DV_' . $patient->id . '_' . now()->format('Ymd_His') . '.pdf';
+        $filePath = 'documents/' . $patient->id . '/' . $fileName;
+
+        // Save the PDF in storage
+        Storage::disk('public')->put($filePath, $pdf->output());
+
+        // Save document record
+        Document::create([
+            'patient_id'    => $patient->id,
+            'file_name'     => $fileName,
+            'file_path'     => $filePath,
+            'document_type' => 'DV',
+            'description'   => 'Disbursement Voucher PDF',
+        ]);
+
+        // Refresh patient for broadcasting
+        $patient->load('latestStatusLog');
         broadcast(new PatientStatusChanged($patient, 'dv_submitted'));
 
         return redirect()->route('admin.process-tracking.show', $id)
-            ->with('status', 'Disbursement Voucher added successfully.');
+            ->with('status', 'Disbursement Voucher added successfully, PDF generated.');
     }
+
 
     public function updateDV(Request $request, $id)
     {
@@ -293,10 +326,51 @@ class ProcessTrackingController extends Controller
             'status_date' => $validated['status_date'],
         ]);
 
+        // ✅ Regenerate PDF
+        if ($dv) {
+            $pdf = app('dompdf.wrapper');
+            $pdf->loadView('admin.pdf.dv', [
+                'patient' => $patient,
+                'dv'      => $dv,
+            ]);
+
+            $fileName = 'DV_' . $patient->id . '_' . now()->format('Ymd_His') . '.pdf';
+            $filePath = 'documents/' . $patient->id . '/' . $fileName;
+
+            // Save new PDF
+            Storage::disk('public')->put($filePath, $pdf->output());
+
+            // Update or create Document record
+            $document = Document::where('patient_id', $patient->id)
+                ->where('document_type', 'DV')
+                ->first();
+
+            if ($document) {
+                // Delete old file
+                if (Storage::disk('public')->exists($document->file_path)) {
+                    Storage::disk('public')->delete($document->file_path);
+                }
+                $document->update([
+                    'file_name' => $fileName,
+                    'file_path' => $filePath,
+                    'description' => 'Disbursement Voucher PDF (updated)',
+                ]);
+            } else {
+                Document::create([
+                    'patient_id'    => $patient->id,
+                    'file_name'     => $fileName,
+                    'file_path'     => $filePath,
+                    'document_type' => 'DV',
+                    'description'   => 'Disbursement Voucher PDF',
+                ]);
+            }
+        }
+
+        // Refresh patient for broadcasting
         $patient->load('latestStatusLog');
         broadcast(new PatientStatusChanged($patient, 'dv_submitted'));
 
-        return back()->with('success', 'DV updated and status progressed.');
+        return back()->with('success', 'DV updated, PDF regenerated, and status progressed.');
     }
 
     public function massDVInput(Request $request)
@@ -430,6 +504,7 @@ class ProcessTrackingController extends Controller
             return back()->with('error', 'Budget already allocated for this patient.');
         }
 
+        // ✅ 1. Save Budget Allocation
         BudgetAllocation::create([
             'patient_id' => $patient->id,
             'user_id' => Auth::id(),
@@ -439,6 +514,7 @@ class ProcessTrackingController extends Controller
             'allocation_date' => $request->status_date,
         ]);
 
+        // ✅ 2. Save Status Log
         PatientStatusLog::create([
             'patient_id' => $patient->id,
             'user_id' => Auth::id(),
@@ -447,13 +523,40 @@ class ProcessTrackingController extends Controller
             'status_date' => $request->status_date,
         ]);
 
-        $patient->load('latestStatusLog');
+        // ✅ 3. Auto-generate OBRE PDF
+        $data = [
+            'patient' => $patient,
+            'address' => $patient->address,
+            'amount' => $request->amount,
+            'remarks' => $request->remarks,
+            'status_date' => $request->status_date,
+            'prepared_by' => Auth::user()->name,
+        ];
 
+        $pdf = Pdf::loadView('admin.pdf.obre', $data);
+
+        $fileName = 'OBRE_' . $patient->id . '_' . now()->format('Ymd_His') . '.pdf';
+        $filePath = 'documents/' . $patient->id . '/' . $fileName;
+
+        Storage::disk('public')->put($filePath, $pdf->output());
+
+        // ✅ 4. Save to documents table
+        Document::create([
+            'patient_id' => $patient->id,
+            'file_name' => $fileName,
+            'file_path' => 'storage/' . $filePath,
+            'document_type' => 'OBRE',
+            'description' => 'Obligation Request and Status document',
+        ]);
+
+        // ✅ 5. Broadcast event
+        $patient->load('latestStatusLog');
         broadcast(new PatientStatusChanged($patient, 'budget_allocated'));
 
         return redirect()->route('admin.process-tracking.show', $id)
-            ->with('status', 'Budget allocated successfully.');
+            ->with('status', 'Budget allocated and OBRE generated successfully.');
     }
+
     public function updateBudget(Request $request, $id)
     {
         $patient = PatientRecord::findOrFail($id);
@@ -478,11 +581,47 @@ class ProcessTrackingController extends Controller
             'status_date' => $request->status_date,
         ]);
 
+        // ✅ Re-generate OBRE PDF
+        $pdf = app('dompdf.wrapper');
+        $pdf->loadView('pdf.obre', [
+            'patient' => $patient,
+            'budget'  => $budget,
+        ]);
+
+        $fileName = 'OBRE_' . $patient->id . '_' . now()->format('Ymd_His') . '.pdf';
+        $filePath = 'documents/' . $patient->id . '/' . $fileName;
+
+        // Delete old OBRE if exists
+        $oldDoc = Document::where('patient_id', $patient->id)
+            ->where('document_type', 'OBRE')
+            ->first();
+
+        if ($oldDoc) {
+            Storage::disk('public')->delete($oldDoc->file_path); // remove file
+            $oldDoc->update([
+                'file_name' => $fileName,
+                'file_path' => $filePath,
+                'description' => 'Updated OBRE PDF after budget modification'
+            ]);
+        } else {
+            Document::create([
+                'patient_id' => $patient->id,
+                'file_name' => $fileName,
+                'file_path' => $filePath,
+                'document_type' => 'OBRE',
+                'description' => 'OBRE PDF after budget update',
+            ]);
+        }
+
+        Storage::disk('public')->put($filePath, $pdf->output());
+
+        // Refresh patient for broadcast
         $patient->load('latestStatusLog');
         broadcast(new PatientStatusChanged($patient, 'budget_allocated'));
 
-        return back()->with('success', 'Budget updated and status progressed.');
+        return back()->with('success', 'Budget updated and OBRE PDF regenerated.');
     }
+
 
     public function massBudgetAllocate(Request $request)
     {

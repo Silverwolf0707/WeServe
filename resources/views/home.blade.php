@@ -362,49 +362,40 @@
             <h1 class="welcome-title">
                 Welcome, <span class="user-name">{{ Auth::user()->name }}</span>
             </h1>
-            <p class="datetime-display" id="current-datetime">Loading date & time...</p>
+            <p class="datetime-display" id="current-datetime">.</p>
         </div>
     </div>
 </div>
 
 <!-- Department Cards -->
 <div class="row row-cols-1 row-cols-md-3 row-cols-lg-5 g-4">
-    @php
-        $departments = [
-            ['name' => 'CSWD', 'color' => '#4e73df', 'color-dark' => '#2b59cb', 'icon' => 'fa-users', 'total_users' => 3, 'active_users' => 2],
-            ['name' => 'Mayor\'s Office', 'color' => '#1cc88a', 'color-dark' => '#17a673', 'icon' => 'fa-building', 'total_users' => 2, 'active_users' => 1],
-            ['name' => 'Budget', 'color' => '#f6c23e', 'color-dark' => '#dda20a', 'icon' => 'fa-wallet', 'total_users' => 2, 'active_users' => 1],
-            ['name' => 'Accounting', 'color' => '#36b9cc', 'color-dark' => '#2a96a8', 'icon' => 'fa-calculator', 'total_users' => 2, 'active_users' => 1],
-            ['name' => 'Treasurer\'s', 'color' => '#e74a3b', 'color-dark' => '#c93020', 'icon' => 'fa-coins', 'total_users' => 2, 'active_users' => 2],
-        ];
-    @endphp
-
-    @foreach($departments as $dept)
-    <div class="col">
-        <div class="dashboard-card" style="--card-color: {{ $dept['color'] }}; --card-color-dark: {{ $dept['color-dark'] }}">
-            <div class="card-header-bg">
-                <div class="card-icon">
-                    <i class="fas {{ $dept['icon'] }}"></i>
-                </div>
+@foreach($departments as $dept)
+<div class="col">
+    <div class="dashboard-card" style="--card-color: {{ $dept['color'] }}; --card-color-dark: {{ $dept['color-dark'] }}">
+        <div class="card-header-bg">
+            <div class="card-icon">
+                <i class="fas {{ $dept['icon'] }}"></i>
             </div>
-            <div class="card-body">
-                <div class="card-content">
-                    <h5 class="card-title">{{ $dept['name'] }}</h5>
+        </div>
+        <div class="card-body">
+            <div class="card-content">
+                <h5 class="card-title">{{ $dept['name'] }}</h5>
+            </div>
+            <div class="card-stats">
+                <div class="stats-item total-users">
+                    <div class="stats-value">{{ $dept['total_users'] }}</div>
+                    <div class="stats-label">Total Users</div>
                 </div>
-                <div class="card-stats">
-                    <div class="stats-item total-users">
-                        <div class="stats-value">{{ $dept['total_users'] }}</div>
-                        <div class="stats-label">Total Users</div>
-                    </div>
-                    <div class="stats-item active-users">
-                        <div class="stats-value">{{ $dept['active_users'] }}</div>
-                        <div class="stats-label">Active</div>
-                    </div>
+                <div class="stats-item active-users">
+                    <div class="stats-value">{{ $dept['active_users'] }}</div>
+                    <div class="stats-label">Active</div>
                 </div>
             </div>
         </div>
     </div>
-    @endforeach
+</div>
+@endforeach
+
 </div>
 
 <!-- Recent Activity Table -->

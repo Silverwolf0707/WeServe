@@ -5,44 +5,44 @@ import os
 
 # Paths
 base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-csv_path = os.path.join(base_path, 'storage', 'app', 'public', 'full_patient_data.csv') 
+csv_path = os.path.join(base_path, 'storage', 'app', 'public', 'full_patient_data.csv')
 json_path = os.path.join(base_path, 'storage', 'app', 'public', 'stl_budget_output.json')
 
-df = pd.read_csv(csv_path, parse_dates=['disbursed_date'])
+# Load CSV
+df = pd.read_csv(csv_path, parse_dates=['month'])
 
-df['budget_amount'] = pd.to_numeric(df['budget_amount'], errors='coerce').fillna(0)
+# Ensure all months in the year exist (pad missing months with 0)
+start_month = pd.Timestamp(df['month'].min().year, 1, 1)   # Jan of earliest year
+end_month = pd.Timestamp(df['month'].max().year, 12, 1)    # Dec of latest year
+all_months = pd.date_range(start=start_month, end=end_month, freq='MS')
 
-df['year'] = df['disbursed_date'].dt.year
-df['month'] = df['disbursed_date'].dt.to_period('M').dt.to_timestamp()
-
-grouped = df.groupby(['year', 'month', 'case_category', 'case_type'])['budget_amount'].sum().reset_index()
-
+categories = df['case_category'].unique()
 output = {}
 
-for (cat, ctype), subdf in grouped.groupby(['case_category', 'case_type']):
-   
-    all_months = pd.date_range(start=subdf['month'].min(), end=subdf['month'].max(), freq='MS')
-    series = subdf.set_index('month').reindex(all_months, fill_value=0)['budget_amount'].sort_index()
-
-    if len(series) < 12: 
+for cat in categories:
+    # Sum budget per month
+    cat_df = df[df['case_category'] == cat].groupby('month')['budget_allocated'].sum()
+    
+    # Reindex to all months
+    cat_series = cat_df.reindex(all_months, fill_value=0)
+    
+    # Skip if all zeros
+    if cat_series.sum() == 0:
         continue
+    
+    # STL decomposition
+    stl = STL(cat_series, period=12, robust=True, seasonal_deg=1, trend_deg=1, low_pass_deg=1)
+    result = stl.fit()
+    
+    output[cat] = {
+        'dates': all_months.strftime('%Y-%m').tolist(),
+        'observed': cat_series.round(2).tolist(),
+        'trend': result.trend.round(2).tolist(),
+        'seasonal': result.seasonal.round(2).tolist(),
+        'residual': result.resid.round(2).tolist()
+    }
 
-    try:
-        stl = STL(series, period=3)
-        result = stl.fit()
 
-        key = f"{cat}_{ctype}"
-        output[key] = {
-            'case_category': cat,
-            'case_type': ctype,
-            'dates': all_months.strftime('%Y-%m').tolist(),
-            'observed': series.round(2).tolist(),
-            'trend': result.trend.round(2).tolist(),
-            'seasonal': result.seasonal.round(2).tolist(),
-            'residual': result.resid.round(2).tolist()
-        }
-    except Exception as e:
-        print(f"Error processing {cat}-{ctype}: {e}")
-
+# Save JSON
 with open(json_path, 'w') as f:
-    json.dump(output, f)
+    json.dump(output, f, indent=4)

@@ -92,6 +92,10 @@
               <h6 class="mb-0 fw-semibold">Statistical Summary</h6>
             </div>
             <div class="card-body d-flex flex-column gap-3" style="padding: 1.2rem;">
+                <select id="summaryLabelDropdown" class="form-select form-select-sm mb-3">
+    <!-- Options will be added dynamically via JS -->
+  </select>
+              <!-- Human-friendly descriptions added -->
               <div class="d-flex align-items-start text-dark">
                 <i class="fas fa-calculator text-primary me-3 fs-5 mt-1"></i>
                 <span><strong>Mean:</strong> <span class="text-muted" id="summaryMean">—</span></span>
@@ -117,13 +121,15 @@
                 <span><strong>Variance:</strong> <span class="text-muted" id="summaryVariance">—</span></span>
               </div>
 
-              <div class="d-flex align-items-start text-muted mt-2 small">
-                <i class="fas fa-calendar-alt me-2 mt-1"></i>
-                <span>Date Selected: <span id="summaryTimeLabel">—</span></span>
-              </div>
+
 
               <p class="text-secondary small mt-3 mb-0">
-                This summary provides insights into the dispersion and central tendency of the selected category.
+                This summary interprets the selected category's data for easier understanding. <br>
+                <strong>Mean:</strong> Average value.<br>
+                <strong>Median:</strong> Middle value.<br>
+                <strong>Mode:</strong> Most common value.<br>
+                <strong>Std Dev:</strong> Typical deviation from the mean.<br>
+                <strong>Variance:</strong> How spread out the values are.
               </p>
             </div>
           </div>
@@ -180,26 +186,17 @@
 
     async function fetchStats() {
       try {
-        // Fetch data only once and cache it
         if (!cachedData) {
           const response = await fetch('/admin/statistics/get-age-statistics?type=cswd');
           if (!response.ok) throw new Error('Network response was not ok');
           cachedData = await response.json();
-
-          // Show initial pie chart with category data
           renderPieChart('total_applications_by_category');
         }
 
         const statType = document.getElementById('statDropdown').value;
         const dataType = document.getElementById('typeDropdown').value;
+        if (!statType || !dataType) { clearChartsAndSummary(); return; }
 
-        if (!statType || !dataType) {
-          // Clear charts or do nothing if incomplete selection
-          clearChartsAndSummary();
-          return;
-        }
-
-        // Pick stats group dynamically
         let statsKey = '';
         if (dataType === 'Age') {
           statsKey = statType === 'case_type' ? 'age_stats_by_type' : 'age_stats_by_category';
@@ -208,111 +205,122 @@
         }
 
         const stats = cachedData[statsKey];
-        if (!stats) {
-          clearChartsAndSummary();
-          return;
-        }
+        if (!stats) { clearChartsAndSummary(); return; }
 
         const labels = Object.keys(stats);
-
-        // Extract chart data arrays
         const mean = labels.map(label => stats[label].mean);
         const median = labels.map(label => stats[label].median);
-        const mode = labels.map(label => {
-          let m = stats[label].mode;
-          if (Array.isArray(m)) return m.length ? m[0] : 0;
-          return m || 0;
-        });
+        const mode = labels.map(label => { let m = stats[label].mode; return Array.isArray(m) ? (m.length ? m[0] : 0) : m || 0; });
         const variance = labels.map(label => stats[label].variance);
         const stdDev = labels.map(label => stats[label].std_dev);
 
-        // Update charts and summary
         updateCharts(labels, mean, median, mode, variance, stdDev, dataType);
+        updateSummary(labels, mean, median, mode, variance, stdDev, dataType);
 
-      } catch (error) {
-        console.error('Failed to fetch statistics:', error);
-      }
+      } catch (error) { console.error('Failed to fetch statistics:', error); }
     }
 
     function updateCharts(labels, mean, median, mode, variance, stdDev, dataType) {
       if (meanMedianModeChart) meanMedianModeChart.destroy();
       if (dispersionChart) dispersionChart.destroy();
 
-      meanMedianModeChart = new Chart(
-        document.getElementById('meanMedianModeChart').getContext('2d'),
-        {
-          type: 'bar',
-          data: {
-            labels: labels,
-            datasets: [
-              { label: 'Mean', data: mean, backgroundColor: '#007bff' },
-              { label: 'Median', data: median, backgroundColor: '#28a745' },
-              { label: 'Mode', data: mode, backgroundColor: '#ffc107' },
-            ],
-          },
-          options: {
-            responsive: true,
-            plugins: { legend: { position: 'top' } },
-            scales: {
-              y: {
-                beginAtZero: true,
-                title: { display: true, text: dataType === 'Age' ? 'Age' : 'Application Count' },
-              },
+      meanMedianModeChart = new Chart(document.getElementById('meanMedianModeChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            { label: 'Mean', data: mean, backgroundColor: '#007bff' },
+            { label: 'Median', data: median, backgroundColor: '#28a745' },
+            { label: 'Mode', data: mode, backgroundColor: '#ffc107' },
+          ],
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: 'top' } },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: dataType === 'Age' ? 'Age' : 'Application Count' },
             },
           },
-        }
-      );
+        },
+      });
 
-      dispersionChart = new Chart(
-        document.getElementById('standardDeviationVarianceChart').getContext('2d'),
-        {
-          type: 'line',
-          data: {
-            labels: labels,
-            datasets: [
-              {
-                label: 'Standard Deviation',
-                data: stdDev,
-                borderColor: '#dc3545',
-                backgroundColor: 'rgba(220, 53, 69, 0.3)',
-                fill: true,
-                tension: 0.4,
-                pointRadius: 4,
-              },
-              {
-                label: 'Variance',
-                data: variance,
-                borderColor: '#17a2b8',
-                backgroundColor: 'rgba(23, 162, 184, 0.3)',
-                fill: true,
-                tension: 0.4,
-                pointRadius: 4,
-              },
-            ],
+      dispersionChart = new Chart(document.getElementById('standardDeviationVarianceChart').getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            { label: 'Standard Deviation', data: stdDev, borderColor: '#dc3545', backgroundColor: 'rgba(220, 53, 69, 0.3)', fill: true, tension: 0.4, pointRadius: 4 },
+            { label: 'Variance', data: variance, borderColor: '#17a2b8', backgroundColor: 'rgba(23, 162, 184, 0.3)', fill: true, tension: 0.4, pointRadius: 4 },
+          ],
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: 'top' } },
+          scales: {
+            y: { beginAtZero: true, title: { display: true, text: 'Value' } },
           },
-          options: {
-            responsive: true,
-            plugins: { legend: { position: 'top' } },
-            scales: {
-              y: {
-                beginAtZero: true,
-                title: { display: true, text: 'Value' },
-              },
-            },
-          },
-        }
-      );
-
-      // Update summary (using first label's data)
-      if (labels.length > 0) {
-        document.getElementById('summaryMean').textContent = mean[0].toFixed(2);
-        document.getElementById('summaryMedian').textContent = median[0];
-        document.getElementById('summaryMode').textContent = mode[0];
-        document.getElementById('summaryStdDev').textContent = stdDev[0].toFixed(2);
-        document.getElementById('summaryVariance').textContent = variance[0].toFixed(2);
-        document.getElementById('summaryTimeLabel').textContent = new Date().toLocaleDateString();
-      }
+        },
+      });
     }
+function updateSummary(labels, meanArr, medianArr, modeArr, varianceArr, stdDevArr, dataType) {
+  const typeLabel = dataType === 'Age' ? 'years' : 'applications';
+
+  const dropdown = document.getElementById('summaryLabelDropdown');
+  dropdown.innerHTML = ''; // clear old options
+
+  // Populate dropdown with current labels
+  labels.forEach((label, i) => {
+    const option = document.createElement('option');
+    option.value = i; // use index to reference arrays
+    option.textContent = label;
+    dropdown.appendChild(option);
+  });
+
+  function showSummary(index) {
+    const label = labels[index];
+    const m = meanArr[index];
+    const med = medianArr[index];
+    const mo = modeArr[index];
+    const sd = stdDevArr[index];
+    const variance = varianceArr[index];
+
+    const sdText = dataType === 'Age'
+      ? `Most ages are within ±${Math.round(sd)} ${typeLabel} of the average`
+      : `Typical deviation from the average is ${sd} ${typeLabel}`;
+
+    // Calculate min-max spread for variance
+    let spreadText = 'N/A';
+    const statKey = dataType === 'Age'
+      ? document.getElementById('statDropdown').value === 'case_type' ? 'age_stats_by_type' : 'age_stats_by_category'
+      : document.getElementById('statDropdown').value === 'case_type' ? 'application_stats_by_type' : 'application_stats_by_category';
+
+    const stats = cachedData[statKey];
+    const statObj = stats[label];
+    if (statObj.sample_spread && statObj.sample_spread.length) {
+      const minVal = Math.min(...statObj.sample_spread);
+      const maxVal = Math.max(...statObj.sample_spread);
+      spreadText = `${minVal} – ${maxVal} ${typeLabel} (range of values)`;
+    }
+
+    // Update summary fields
+    document.getElementById('summaryMean').innerHTML = `${m} ${typeLabel} <br><small>Average value across the group</small>`;
+    document.getElementById('summaryMedian').innerHTML = `${med} ${typeLabel} <br><small>Middle value when ordered</small>`;
+    document.getElementById('summaryMode').innerHTML = `${mo} ${typeLabel} <br><small>Most frequently occurring value</small>`;
+    document.getElementById('summaryStdDev').innerHTML = `${sd} ${typeLabel} <br><small>${sdText}</small>`;
+    document.getElementById('summaryVariance').innerHTML = `${spreadText} <br><small>Range of values around the average</small>`;
+  }
+
+  // Show the first label by default
+  showSummary(0);
+
+  // Update summary when dropdown selection changes
+  dropdown.onchange = function () {
+    showSummary(this.value);
+  };
+}
+
 
     function renderPieChart(dataKey) {
       if (!cachedData || !cachedData[dataKey]) return;
@@ -331,13 +339,7 @@
         type: chartType,
         data: {
           labels: labels,
-          datasets: [{
-            data: data,
-            backgroundColor: colors.slice(0, labels.length),
-            borderRadius: 10,
-            borderWidth: 1,
-            borderColor: '#fff'
-          }]
+          datasets: [{ data: data, backgroundColor: colors.slice(0, labels.length), borderRadius: 10, borderWidth: 1, borderColor: '#fff' }]
         },
         options: {
           responsive: true,
@@ -357,7 +359,6 @@
         }
       });
 
-      // Update legend text
       const legend = document.getElementById('customLegend');
       legend.innerHTML = '';
       const total = data.reduce((a, b) => a + b, 0);
@@ -365,10 +366,7 @@
         const val = data[i];
         const pct = ((val / total) * 100).toFixed(1);
         const li = document.createElement('li');
-        li.innerHTML = `
-        <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background-color:${colors[i]};margin-right:6px;"></span>
-        ${label}: <strong>${val}</strong> (${pct}%)
-      `;
+        li.innerHTML = `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background-color:${colors[i]};margin-right:6px;"></span>${label}: <strong>${val}</strong> (${pct}%)`;
         legend.appendChild(li);
       });
 
@@ -392,16 +390,9 @@
       document.getElementById('pieSummary').textContent = '';
     }
 
-    // Event listeners for dropdowns
     document.getElementById('statDropdown').addEventListener('change', fetchStats);
     document.getElementById('typeDropdown').addEventListener('change', fetchStats);
-
-    // When pie chart selector changes, re-render pie chart accordingly
-    document.getElementById('pieChartTypeSelector').addEventListener('change', function () {
-      renderPieChart(this.value);
-    });
-
-    // Initial fetch
+    document.getElementById('pieChartTypeSelector').addEventListener('change', function () { renderPieChart(this.value); });
     fetchStats();
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -412,41 +403,10 @@
 
           new Chart(deficiencyCtx, {
             type: 'bar',
-            data: {
-              labels: data.labels,
-              datasets: [{
-                label: 'Deficiency Count',
-                data: data.counts,
-                backgroundColor: '#007bff',
-                borderRadius: 6,
-                barThickness: 18
-              }]
-            },
-            options: {
-              indexAxis: 'y',
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: { display: false },
-                tooltip: {
-                  callbacks: {
-                    label: ctx => `${ctx.label}: ${ctx.raw} cases`
-                  }
-                }
-              },
-              scales: {
-                x: {
-                  beginAtZero: true,
-                  title: { display: true, text: 'Number of Cases' }
-                },
-                y: {
-                  ticks: { autoSkip: false, maxRotation: 0, minRotation: 0 }
-                }
-              }
-            }
+            data: { labels: data.labels, datasets: [{ label: 'Deficiency Count', data: data.counts, backgroundColor: '#007bff', borderRadius: 6, barThickness: 18 }] },
+            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.raw} cases` } } }, scales: { x: { beginAtZero: true, title: { display: true, text: 'Number of Cases' } }, y: { ticks: { autoSkip: false, maxRotation: 0, minRotation: 0 } } } }
           });
 
-          // Set the summary text dynamically
           document.querySelector('#deficiencySummary').innerHTML = data.summary;
         });
     });

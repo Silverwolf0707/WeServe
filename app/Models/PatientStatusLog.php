@@ -32,6 +32,9 @@ class PatientStatusLog extends Model
         'created_at',
         'remarks',
     ];
+    protected $casts = [
+        'status_date' => 'datetime',
+    ];
 
 
     public function patient()

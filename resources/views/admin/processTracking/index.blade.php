@@ -143,29 +143,30 @@
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" name="reasons[]"
                                                 value="{{ $reason }}" id="massReason{{ $index }}">
-                                            <label class="form-check-label" for="massReason{{ $index }}">{{ $reason }}</label>
+                                            <label class="form-check-label"
+                                                for="massReason{{ $index }}">{{ $reason }}</label>
                                         </div>
                                     @endforeach
                                 </div>
 
                                 <div class="mb-3">
                                     <label for="massDecisionOtherReason" class="form-label">Other Reason (Optional)</label>
-                                    <input type="text" name="other_reason" id="massDecisionOtherReason" class="form-control"
-                                        placeholder="Specify other reason here">
+                                    <input type="text" name="other_reason" id="massDecisionOtherReason"
+                                        class="form-control" placeholder="Specify other reason here">
                                 </div>
                             </div>
                             <div class="mb-3">
                                 <label for="massDecisionStatusDate" class="form-label">Decision Date</label>
-                                <input type="datetime-local" class="form-control" id="massDecisionStatusDate" name="status_date"
-                                    value="{{ now()->toDateTimeLocalString() }}" required>
+                                <input type="datetime-local" class="form-control" id="massDecisionStatusDate"
+                                    name="status_date" value="{{ now()->toDateTimeLocalString() }}" required>
                             </div>
 
 
                             <!-- Remarks -->
                             <div class="mb-3">
                                 <label for="massDecisionRemarks" class="form-label">Remarks</label>
-                                <textarea name="remarks" id="massDecisionRemarks" class="form-control" rows="3"
-                                    placeholder="Enter remarks..." required></textarea>
+                                <textarea name="remarks" id="massDecisionRemarks" class="form-control" rows="3" placeholder="Enter remarks..."
+                                    required></textarea>
                             </div>
                         </div>
 
@@ -218,8 +219,8 @@
 
                             <div class="form-group">
                                 <label for="massBudgetRemarks" class="form-label">Remarks (Optional)</label>
-                                <textarea name="remarks" id="massBudgetRemarks" class="form-control rounded-3 shadow-sm"
-                                    rows="4" placeholder="Enter any remarks here..."></textarea>
+                                <textarea name="remarks" id="massBudgetRemarks" class="form-control rounded-3 shadow-sm" rows="4"
+                                    placeholder="Enter any remarks here..."></textarea>
                             </div>
                         </div>
 
@@ -256,13 +257,14 @@
 
                             <div class="form-group mb-3">
                                 <label for="massDvDate">DV Date <span class="text-danger">*</span></label>
-                                <input type="date" id="massDvDate" name="dv_date" class="form-control form-control-lg"
-                                    required>
+                                <input type="date" id="massDvDate" name="dv_date"
+                                    class="form-control form-control-lg" required>
                             </div>
                             <div class="form-group mb-3">
                                 <label for="massDvStatusDate">Status Date <span class="text-danger">*</span></label>
                                 <input type="datetime-local" id="massDvStatusDate" name="status_date"
-                                    class="form-control form-control-lg" value="{{ now()->toDateTimeLocalString() }}" required>
+                                    class="form-control form-control-lg" value="{{ now()->toDateTimeLocalString() }}"
+                                    required>
                             </div>
 
 
@@ -278,45 +280,49 @@
             </div>
         </div>
     </div>
-    <div class="modal fade" id="massDisburseModal" tabindex="-1" aria-labelledby="massDisburseModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <form id="massDisburseForm" method="POST" action="{{ route('admin.process-tracking.massQuickDisburse') }}">
-            @csrf
-            <input type="hidden" name="ids[]" id="massDisburseIds">
-            <div class="modal-content border-0 shadow-lg rounded-4">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title" id="massDisburseModalLabel">
-                        <i class="fas fa-money-bill-wave me-2"></i> Quick Disburse Selected Patients
-                    </h5>
-                    <button type="button" class="btn-close text-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Are you sure you want to mark the selected patients as <strong>Disbursed</strong>?</p>
-                    <div class="mb-3">
-                        <label for="massDisburseDate" class="form-label">Disbursement Date</label>
-                        <input type="date" class="form-control" id="massDisburseDate" name="status_date" value="{{ now()->toDateString() }}" required>
+    <div class="modal fade" id="massDisburseModal" tabindex="-1" aria-labelledby="massDisburseModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <form id="massDisburseForm" method="POST" action="{{ route('admin.process-tracking.massQuickDisburse') }}">
+                @csrf
+                <input type="hidden" name="ids[]" id="massDisburseIds">
+                <div class="modal-content border-0 shadow-lg rounded-4">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title" id="massDisburseModalLabel">
+                            <i class="fas fa-money-bill-wave me-2"></i> Quick Disburse Selected Patients
+                        </h5>
+                        <button type="button" class="btn-close text-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
                     </div>
-                    <div class="mb-3">
-                        <label for="massDisburseRemarks" class="form-label">Remarks (Optional)</label>
-                        <textarea class="form-control" id="massDisburseRemarks" name="remarks" rows="3" placeholder="Enter any remarks..."></textarea>
+                    <div class="modal-body">
+                        <p>Are you sure you want to mark the selected patients as <strong>Disbursed</strong>?</p>
+                        <div class="mb-3">
+                            <label for="massDisburseDate" class="form-label">Disbursement Date</label>
+                            <input type="date" class="form-control" id="massDisburseDate" name="status_date"
+                                value="{{ now()->toDateString() }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="massDisburseRemarks" class="form-label">Remarks (Optional)</label>
+                            <textarea class="form-control" id="massDisburseRemarks" name="remarks" rows="3"
+                                placeholder="Enter any remarks..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer d-flex flex-column gap-2">
+                        <button type="submit" class="btn btn-danger w-100">
+                            <i class="fas fa-check-circle me-1"></i> Confirm Disbursement
+                        </button>
+                        <button type="button" class="btn btn-secondary w-100" data-bs-dismiss="modal">Cancel</button>
                     </div>
                 </div>
-                <div class="modal-footer d-flex flex-column gap-2">
-                    <button type="submit" class="btn btn-danger w-100">
-                        <i class="fas fa-check-circle me-1"></i> Confirm Disbursement
-                    </button>
-                    <button type="button" class="btn btn-secondary w-100" data-bs-dismiss="modal">Cancel</button>
-                </div>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
-</div>
 @endsection
 
 @section('scripts')
     @parent
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
             var toastEl = document.getElementById('liveToast');
             var timerEl = document.getElementById('toast-timer');
 
@@ -340,7 +346,7 @@
             }
         });
 
-        $(function () {
+        $(function() {
             let dtButtons = $.extend(true, [], $.fn.dataTable.defaults.buttons);
 
             $.extend(true, $.fn.dataTable.defaults, {
@@ -355,7 +361,7 @@
                 buttons: dtButtons
             });
 
-            $('a[data-toggle="tab"]').on('shown.bs.tab click', function () {
+            $('a[data-toggle="tab"]').on('shown.bs.tab click', function() {
                 $($.fn.dataTable.tables(true)).DataTable().columns.adjust();
             });
 
@@ -365,8 +371,10 @@
                 dtButtons.push({
                     text: 'Approve Selected',
                     className: 'btn-success',
-                    action: function (e, dt, node, config) {
-                        selectedIds = $.map(dt.rows({ selected: true }).nodes(), function (entry) {
+                    action: function(e, dt, node, config) {
+                        selectedIds = $.map(dt.rows({
+                            selected: true
+                        }).nodes(), function(entry) {
                             return $(entry).data('entry-id');
                         });
 
@@ -384,8 +392,10 @@
                 dtButtons.push({
                     text: 'Reject Selected',
                     className: 'btn-danger',
-                    action: function (e, dt, node, config) {
-                        selectedIds = $.map(dt.rows({ selected: true }).nodes(), function (entry) {
+                    action: function(e, dt, node, config) {
+                        selectedIds = $.map(dt.rows({
+                            selected: true
+                        }).nodes(), function(entry) {
                             return $(entry).data('entry-id');
                         });
 
@@ -400,28 +410,48 @@
                     }
                 });
 
-                $('#massDecisionForm').on('submit', function (e) {
+                $('#massDecisionForm').on('submit', function(e) {
                     e.preventDefault();
 
                     let form = $('<form>', {
-                        method: 'POST',
-                        action: "{{ route('admin.process-tracking.massDecision') }}"
-                    })
-                        .append($('<input>', { type: 'hidden', name: '_token', value: _token }))
-                        .append($('<input>', { type: 'hidden', name: 'action', value: $('#massDecisionAction').val() }))
-                        .append($('<input>', { type: 'hidden', name: 'remarks', value: $('#massDecisionRemarks').val() }))
-                        .append($('<input>', { type: 'hidden', name: 'status_date', value: $('#massDecisionStatusDate').val() }));
+                            method: 'POST',
+                            action: "{{ route('admin.process-tracking.massDecision') }}"
+                        })
+                        .append($('<input>', {
+                            type: 'hidden',
+                            name: '_token',
+                            value: _token
+                        }))
+                        .append($('<input>', {
+                            type: 'hidden',
+                            name: 'action',
+                            value: $('#massDecisionAction').val()
+                        }))
+                        .append($('<input>', {
+                            type: 'hidden',
+                            name: 'remarks',
+                            value: $('#massDecisionRemarks').val()
+                        }))
+                        .append($('<input>', {
+                            type: 'hidden',
+                            name: 'status_date',
+                            value: $('#massDecisionStatusDate').val()
+                        }));
 
                     // Append selected IDs
-                    selectedIds.forEach(function (id) {
-                        form.append($('<input>', { type: 'hidden', name: 'ids[]', value: id }));
+                    selectedIds.forEach(function(id) {
+                        form.append($('<input>', {
+                            type: 'hidden',
+                            name: 'ids[]',
+                            value: id
+                        }));
                     });
 
                     // Handle reject reasons
                     if ($('#massDecisionAction').val() === 'reject') {
                         let reasons = [];
 
-                        $('input[name="reasons[]"]:checked').each(function () {
+                        $('input[name="reasons[]"]:checked').each(function() {
                             reasons.push($(this).val());
                         });
 
@@ -430,109 +460,148 @@
                             reasons.push(otherReason);
                         }
 
-                        reasons.forEach(function (reason) {
-                            form.append($('<input>', { type: 'hidden', name: 'reasons[]', value: reason }));
+                        reasons.forEach(function(reason) {
+                            form.append($('<input>', {
+                                type: 'hidden',
+                                name: 'reasons[]',
+                                value: reason
+                            }));
                         });
                     }
 
                     form.appendTo('body').submit();
                 });
-
-
             @endcan
-                @can('accounting_dv_input')
-                    let selectedDvIds = [];
+            @can('accounting_dv_input')
+                let selectedDvIds = [];
 
-                    dtButtons.push({
-                        text: 'Mass DV Input',
-                        className: 'btn-primary',
-                        action: function (e, dt, node, config) {
-                            selectedDvIds = $.map(dt.rows({ selected: true }).nodes(), function (entry) {
-                                return $(entry).data('entry-id');
-                            });
+                dtButtons.push({
+                    text: 'Mass DV Input',
+                    className: 'btn-primary',
+                    action: function(e, dt, node, config) {
+                        selectedDvIds = $.map(dt.rows({
+                            selected: true
+                        }).nodes(), function(entry) {
+                            return $(entry).data('entry-id');
+                        });
 
-                            if (!selectedDvIds.length) {
-                                alert('No records selected');
-                                return;
-                            }
-
-                            // Reset modal fields
-                            $('#massDvDate').val('');
-
-                            // Show modal
-                            $('#massDVModal').modal('show');
+                        if (!selectedDvIds.length) {
+                            alert('No records selected');
+                            return;
                         }
-                    });
 
-                    $('#massDVForm').on('submit', function (e) {
-                        e.preventDefault();
+                        // Reset modal fields
+                        $('#massDvDate').val('');
 
-                        let form = $('<form>', {
+                        // Show modal
+                        $('#massDVModal').modal('show');
+                    }
+                });
+
+                $('#massDVForm').on('submit', function(e) {
+                    e.preventDefault();
+
+                    let form = $('<form>', {
                             method: 'POST',
                             action: "{{ route('admin.process-tracking.massDVInput') }}"
                         })
-                            .append($('<input>', { type: 'hidden', name: '_token', value: _token }))
-                            .append($('<input>', { type: 'hidden', name: 'dv_date', value: $('#massDvDate').val() }))
-                            .append($('<input>', { type: 'hidden', name: 'status_date', value: $('#massDvStatusDate').val() }));
+                        .append($('<input>', {
+                            type: 'hidden',
+                            name: '_token',
+                            value: _token
+                        }))
+                        .append($('<input>', {
+                            type: 'hidden',
+                            name: 'dv_date',
+                            value: $('#massDvDate').val()
+                        }))
+                        .append($('<input>', {
+                            type: 'hidden',
+                            name: 'status_date',
+                            value: $('#massDvStatusDate').val()
+                        }));
 
-                        // Add each selected patient ID
-                        selectedDvIds.forEach(function (id) {
-                            form.append($('<input>', { type: 'hidden', name: 'ids[]', value: id }));
+                    // Add each selected patient ID
+                    selectedDvIds.forEach(function(id) {
+                        form.append($('<input>', {
+                            type: 'hidden',
+                            name: 'ids[]',
+                            value: id
+                        }));
+                    });
+
+                    form.appendTo('body').submit();
+                });
+            @endcan
+
+            @can('treasury_disburse')
+                let selectedDisburseIds = [];
+
+                dtButtons.push({
+                    text: 'Quick Disburse',
+                    className: 'btn-danger',
+                    action: function(e, dt, node, config) {
+                        selectedDisburseIds = $.map(dt.rows({
+                            selected: true
+                        }).nodes(), function(entry) {
+                            return $(entry).data('entry-id');
                         });
 
-                        form.appendTo('body').submit();
+                        if (!selectedDisburseIds.length) {
+                            alert('No records selected');
+                            return;
+                        }
+
+                        // Reset modal fields
+                        $('#massDisburseDate').val('{{ now()->toDateString() }}');
+                        $('#massDisburseRemarks').val('');
+
+                        // Show modal
+                        $('#massDisburseModal').modal('show');
+                    }
+                });
+
+                $('#massDisburseForm').on('submit', function(e) {
+                    e.preventDefault();
+
+                    let form = $('<form>', {
+                            method: 'POST',
+                            action: "{{ route('admin.process-tracking.massQuickDisburse') }}"
+                        })
+                        .append($('<input>', {
+                            type: 'hidden',
+                            name: '_token',
+                            value: _token
+                        }))
+                        .append($('<input>', {
+                            type: 'hidden',
+                            name: 'status_date',
+                            value: $('#massDisburseDate').val()
+                        }))
+                        .append($('<input>', {
+                            type: 'hidden',
+                            name: 'remarks',
+                            value: $('#massDisburseRemarks').val()
+                        }));
+
+                    // Add each selected patient ID
+                    selectedDisburseIds.forEach(function(id) {
+                        form.append($('<input>', {
+                            type: 'hidden',
+                            name: 'ids[]',
+                            value: id
+                        }));
                     });
-                @endcan
-                
-               @can('treasury_disburse')
-let selectedDisburseIds = [];
 
-dtButtons.push({
-    text: 'Quick Disburse',
-    className: 'btn-danger',
-    action: function(e, dt, node, config) {
-        selectedDisburseIds = $.map(dt.rows({ selected: true }).nodes(), function(entry) {
-            return $(entry).data('entry-id');
-        });
-
-        if (!selectedDisburseIds.length) {
-            alert('No records selected');
-            return;
-        }
-
-        // Reset modal fields
-        $('#massDisburseDate').val('{{ now()->toDateString() }}');
-        $('#massDisburseRemarks').val('');
-
-        // Show modal
-        $('#massDisburseModal').modal('show');
-    }
-});
-
-$('#massDisburseForm').on('submit', function(e) {
-    e.preventDefault();
-
-    let form = $('<form>', {
-        method: 'POST',
-        action: "{{ route('admin.process-tracking.massQuickDisburse') }}"
-    })
-        .append($('<input>', { type: 'hidden', name: '_token', value: _token }))
-        .append($('<input>', { type: 'hidden', name: 'status_date', value: $('#massDisburseDate').val() }))
-        .append($('<input>', { type: 'hidden', name: 'remarks', value: $('#massDisburseRemarks').val() }));
-
-    // Add each selected patient ID
-    selectedDisburseIds.forEach(function(id) {
-        form.append($('<input>', { type: 'hidden', name: 'ids[]', value: id }));
-    });
-
-    form.appendTo('body').submit();
-});
-@endcan
+                    form.appendTo('body').submit();
+                });
+            @endcan
 
 
             setTimeout(() => {
                 Echo.channel('process-tracking')
-                    .listen('.patient.status.changed', function (e) {
+                    .listen('.patient.status.changed', function(e) {
+                        
                         const table = $('.datatable-ProcessTracking').DataTable();
 
                         const badge = generateBadge(e.status);
@@ -620,8 +689,10 @@ $('#massDisburseForm').on('submit', function(e) {
                 dtButtons.push({
                     text: 'Allocate Budget',
                     className: 'btn-success',
-                    action: function (e, dt, node, config) {
-                        selectedBudgetIds = $.map(dt.rows({ selected: true }).nodes(), function (entry) {
+                    action: function(e, dt, node, config) {
+                        selectedBudgetIds = $.map(dt.rows({
+                            selected: true
+                        }).nodes(), function(entry) {
                             return $(entry).data('entry-id');
                         });
 
@@ -639,30 +710,49 @@ $('#massDisburseForm').on('submit', function(e) {
                     }
                 });
 
-                $('#massBudgetForm').on('submit', function (e) {
+                $('#massBudgetForm').on('submit', function(e) {
                     e.preventDefault();
 
                     let form = $('<form>', {
-                        method: 'POST',
-                        action: "{{ route('admin.process-tracking.massBudgetAllocate') }}"
-                    })
-                        .append($('<input>', { type: 'hidden', name: '_token', value: _token }))
-                        .append($('<input>', { type: 'hidden', name: 'amount', value: $('#massBudgetAmount').val() }))
-                        .append($('<input>', { type: 'hidden', name: 'remarks', value: $('#massBudgetRemarks').val() }))
-                        .append($('<input>', { type: 'hidden', name: 'status_date', value: $('#massBudgetStatusDate').val() }));
+                            method: 'POST',
+                            action: "{{ route('admin.process-tracking.massBudgetAllocate') }}"
+                        })
+                        .append($('<input>', {
+                            type: 'hidden',
+                            name: '_token',
+                            value: _token
+                        }))
+                        .append($('<input>', {
+                            type: 'hidden',
+                            name: 'amount',
+                            value: $('#massBudgetAmount').val()
+                        }))
+                        .append($('<input>', {
+                            type: 'hidden',
+                            name: 'remarks',
+                            value: $('#massBudgetRemarks').val()
+                        }))
+                        .append($('<input>', {
+                            type: 'hidden',
+                            name: 'status_date',
+                            value: $('#massBudgetStatusDate').val()
+                        }));
 
-                    selectedBudgetIds.forEach(function (id) {
-                        form.append($('<input>', { type: 'hidden', name: 'ids[]', value: id }));
+                    selectedBudgetIds.forEach(function(id) {
+                        form.append($('<input>', {
+                            type: 'hidden',
+                            name: 'ids[]',
+                            value: id
+                        }));
                     });
 
                     form.appendTo('body').submit();
                 });
-
             @endcan
 
 
             // Change modal header & toggle reject reasons based on action
-            $('#massDecisionModal').on('show.bs.modal', function () {
+            $('#massDecisionModal').on('show.bs.modal', function() {
                 let action = $('#massDecisionAction').val();
                 let header = $('#massDecisionHeader');
                 let confirmBtn = $('#massDecisionConfirmBtn');
@@ -679,7 +769,7 @@ $('#massDisburseForm').on('submit', function(e) {
                     $('#massDecisionRejectFields').show();
                 }
             });
-            $(document).on('click', '.suggested-amount', function () {
+            $(document).on('click', '.suggested-amount', function() {
                 let value = $(this).data('value');
                 $('#massBudgetAmount').val(value);
             });

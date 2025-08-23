@@ -77,4 +77,12 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Role::class);
     }
+    public function isOnline()
+    {
+        // Assuming you are using the default `sessions` table to track active users
+        return \DB::table('sessions')
+            ->where('user_id', $this->id)
+            ->where('last_activity', '>=', now()->subMinutes(config('session.lifetime'))->timestamp)
+            ->exists();
+    }
 }

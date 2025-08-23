@@ -51,7 +51,7 @@ class OnlinePatientApplicationController extends Controller
                 'age'            => $application->age,
                 'address'        => $application->address,
                 'contact_number' => $application->contact_number,
-                'case_category'  => ucfirst($application->case_category) . ' Assistance',
+                'case_category'  => ucfirst($application->case_category),
                 'date_processed' => now(),
                 'case_worker'    => Auth::user()->name,
             ]);

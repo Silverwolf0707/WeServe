@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
@@ -51,7 +52,7 @@ class TimeSeriesController extends Controller
             }
         }
 
-        
+
         if ($shouldRunPython) {
             if ($type === 'budget') {
                 $this->runBudgetPython();
@@ -99,65 +100,39 @@ class TimeSeriesController extends Controller
         return max(0, $rowCount - 1); // exclude header row
     }
 
-public function exportToCsvFile()
-{
-    // Get disbursed patient data
-    $data = DB::table('patient_records as pr')
-        ->join('patient_status_logs as psl', function ($join) {
-            $join->on('psl.patient_id', '=', 'pr.id')
-                 ->where('psl.status', 'Disbursed');
-        })
-        ->leftJoin('budget_allocations as ba', function ($join) {
-            $join->on('ba.patient_id', '=', 'pr.id');
-        })
-        ->whereNull('pr.deleted_at')
-        ->selectRaw('
-            DATE_FORMAT(psl.status_date, "%Y-%m-01") as month,
-            pr.case_category,
-            COUNT(pr.id) as value,
-            SUM(ba.amount) as total_budget
-        ')
-        ->groupBy('month', 'case_category')
-        ->orderBy('month')
-        ->get();
+    public function exportToCsvFile()
+    {
+        // Fetch patient-level data
+        $data = DB::table('patient_records as pr')
+            ->join('patient_status_logs as psl', function ($join) {
+                $join->on('psl.patient_id', '=', 'pr.id')
+                    ->where('psl.status', 'Disbursed');
+            })
+            ->leftJoin('budget_allocations as ba', 'ba.patient_id', '=', 'pr.id')
+            ->whereNull('pr.deleted_at')
+            ->select(
+                DB::raw('DATE_FORMAT(psl.status_date, "%Y-%m-01") as month'),
+                'pr.case_category',
+                'pr.case_type',
+                'pr.age',
+                'pr.date_processed',
+                DB::raw('IFNULL(ba.amount, 0) as budget_allocated')
+            )
+            ->orderBy('month')
+            ->get();
 
-    // Build CSV header
-    $csv = "month,case_category,value,total_budget\n";
+        // CSV header
+        $csv = "month,case_category,case_type,age,date_processed,budget_allocated\n";
 
-    // Collect all months & categories to fill missing months with 0
-    $allMonths = collect($data)->pluck('month')->unique()->sort()->values();
-    $allCategories = collect($data)->pluck('case_category')->unique();
-
-    $csvData = [];
-
-    foreach ($allMonths as $month) {
-        foreach ($allCategories as $cat) {
-            $row = $data->firstWhere(function ($item) use ($month, $cat) {
-                return $item->month == $month && $item->case_category == $cat;
-            });
-
-            $value = $row ? $row->value : 0;
-            $totalBudget = $row ? $row->total_budget : 0;
-
-            $csvData[] = [
-                'month' => $month,
-                'case_category' => $cat,
-                'value' => $value,
-                'total_budget' => $totalBudget
-            ];
+        foreach ($data as $row) {
+            $csv .= "{$row->month},{$row->case_category},{$row->case_type},{$row->age},{$row->date_processed},{$row->budget_allocated}\n";
         }
+
+        // Save CSV
+        Storage::disk('public')->put('full_patient_data.csv', $csv);
+
+        return storage_path('app/public/full_patient_data.csv');
     }
-
-    // Write CSV rows
-    foreach ($csvData as $row) {
-        $csv .= "{$row['month']},{$row['case_category']},{$row['value']},{$row['total_budget']}\n";
-    }
-
-    // Save CSV
-    Storage::disk('public')->put('full_patient_data.csv', $csv);
-
-    return storage_path('app/public/full_patient_data.csv');
-}
 
 
     public function runPythonStl()
@@ -184,33 +159,21 @@ public function exportToCsvFile()
         }
     }
 
-    public function getStlJson()
+    public function getStlJson(Request $request)
     {
-        $type = request('type', 'cswd');
+        $type = $request->query('type');
 
-        $jsonFiles = [
-            'cswd'   => 'stl_output.json',
-            'budget' => 'budget_stl_output.json',
-        ];
-
-        $jsonPath = storage_path('app/public/' . ($jsonFiles[$type] ?? 'stl_output.json'));
-
-        if (!file_exists($jsonPath)) {
-            // Run Python based on type
-            if ($type === 'budget') {
-                $this->runBudgetPython();
-            } else {
-                $this->runPythonStl();
-            }
-
-            if (!file_exists($jsonPath)) {
-                return response()->json(['error' => 'No STL data found'], 404);
-            }
+        if ($type === 'budget') {
+            $file = storage_path('app/public/stl_budget_output.json');
+        } else {
+            $file = storage_path('app/public/stl_output.json');
         }
 
-        $json = file_get_contents($jsonPath);
-        $data = json_decode($json, true);
+        if (!file_exists($file)) {
+            return response()->json(['error' => 'STL output not found'], 404);
+        }
 
+        $data = json_decode(file_get_contents($file), true);
         return response()->json($data);
     }
 }

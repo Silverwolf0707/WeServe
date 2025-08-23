@@ -33,10 +33,13 @@ class PatientProcessUpdated implements ShouldBroadcast
 
     public function broadcastWith()
     {
+
         return [
             'id' => $this->patient->id,
             'status' => $this->latestLog->status ?? 'Submitted',
-            'status_date' => optional($this->latestLog->status_date)->format('Y-m-d H:i:s'),
+            'status_date' => $this->latestLog->status_date
+                ? $this->latestLog->status_date->format('Y-m-d H:i:s')
+                : null,
             'remarks' => $this->latestLog->remarks ?? '-',
             'updated_by' => $this->latestLog->user->name ?? 'System',
         ];

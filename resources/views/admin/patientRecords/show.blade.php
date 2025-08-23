@@ -115,6 +115,9 @@
                 <a class="btn btn-secondary" href="{{ route('admin.patient-records.index') }}">
                     <i class="fas fa-arrow-left me-1"></i> Back to List
                 </a>
+                <a class="btn btn-secondary" href="{{ route('admin.document-management.show', $patientRecord->id) }}">
+                    <i class="fas fa-file-alt me-1"></i> View Documents
+                </a>
                 <a class="btn btn-info {{ !$hasProcessTracking ? 'disabled' : '' }}"
                     href="{{ $hasProcessTracking ? route('admin.process-tracking.show', $patientRecord->id) : '#' }}"
                     @if(!$hasProcessTracking) aria-disabled="true" tabindex="-1" @endif>
