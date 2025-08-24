@@ -14,24 +14,23 @@ class TimeSeriesController extends Controller
     {
         $type = request('type');
 
-        // Export CSV first (shared for all analytics)
+        // Export CSV for all analytics
         $csvPath = $this->exportToCsvFile();
 
-        // Determine JSON path based on type
+        // Determine JSON file based on type
         $jsonFiles = [
             'cswd'   => 'stl_output.json',
-            'budget' => 'budget_stl_output.json',
+            'budget' => 'stl_budget_output.json',
         ];
 
         $jsonPath = storage_path('app/public/' . ($jsonFiles[$type] ?? 'stl_output.json'));
 
         $shouldRunPython = false;
 
-        // If JSON does not exist → must run Python
+        // Run Python if JSON doesn't exist or CSV row count increased
         if (!file_exists($jsonPath)) {
             $shouldRunPython = true;
         } else {
-            // Compare row count of CSV vs last run
             $metaPath = str_replace('.json', '_meta.json', $jsonPath);
             $currentRowCount = $this->getCsvRowCount($csvPath);
 
@@ -46,13 +45,13 @@ class TimeSeriesController extends Controller
 
                 // Save metadata
                 file_put_contents($metaPath, json_encode([
-                    'row_count' => $currentRowCount,
+                    'row_count'  => $currentRowCount,
                     'updated_at' => now()->toDateTimeString(),
                 ]));
             }
         }
 
-
+        // Run the appropriate Python script
         if ($shouldRunPython) {
             if ($type === 'budget') {
                 $this->runBudgetPython();
@@ -61,7 +60,7 @@ class TimeSeriesController extends Controller
             }
         }
 
-        // --- Permissions and view mapping ---
+        // --- Permissions & view mapping ---
         $analyticsViews = [
             'cswd'       => ['permission' => 'CSWD-ANALYTICS',     'view' => 'admin.timeseries.cswd.index'],
             'budget'     => ['permission' => 'BUDGET-ANALYTICS',   'view' => 'admin.timeseries.budget.index'],
@@ -85,28 +84,23 @@ class TimeSeriesController extends Controller
 
     private function getCsvRowCount($csvPath)
     {
-        if (!file_exists($csvPath)) {
-            return 0;
-        }
+        if (!file_exists($csvPath)) return 0;
 
         $rowCount = 0;
         if (($handle = fopen($csvPath, "r")) !== false) {
-            while (fgetcsv($handle) !== false) {
-                $rowCount++;
-            }
+            while (fgetcsv($handle) !== false) $rowCount++;
             fclose($handle);
         }
 
-        return max(0, $rowCount - 1); // exclude header row
+        return max(0, $rowCount - 1); // exclude header
     }
 
     public function exportToCsvFile()
     {
-        // Fetch patient-level data
         $data = DB::table('patient_records as pr')
             ->join('patient_status_logs as psl', function ($join) {
                 $join->on('psl.patient_id', '=', 'pr.id')
-                    ->where('psl.status', 'Disbursed');
+                     ->where('psl.status', 'Disbursed');
             })
             ->leftJoin('budget_allocations as ba', 'ba.patient_id', '=', 'pr.id')
             ->whereNull('pr.deleted_at')
@@ -121,19 +115,14 @@ class TimeSeriesController extends Controller
             ->orderBy('month')
             ->get();
 
-        // CSV header
         $csv = "month,case_category,case_type,age,date_processed,budget_allocated\n";
-
         foreach ($data as $row) {
             $csv .= "{$row->month},{$row->case_category},{$row->case_type},{$row->age},{$row->date_processed},{$row->budget_allocated}\n";
         }
 
-        // Save CSV
         Storage::disk('public')->put('full_patient_data.csv', $csv);
-
         return storage_path('app/public/full_patient_data.csv');
     }
-
 
     public function runPythonStl()
     {
@@ -163,17 +152,14 @@ class TimeSeriesController extends Controller
     {
         $type = $request->query('type');
 
-        if ($type === 'budget') {
-            $file = storage_path('app/public/stl_budget_output.json');
-        } else {
-            $file = storage_path('app/public/stl_output.json');
-        }
+        $file = $type === 'budget' 
+            ? storage_path('app/public/stl_budget_output.json') 
+            : storage_path('app/public/stl_output.json');
 
         if (!file_exists($file)) {
             return response()->json(['error' => 'STL output not found'], 404);
         }
 
-        $data = json_decode(file_get_contents($file), true);
-        return response()->json($data);
+        return response()->json(json_decode(file_get_contents($file), true));
     }
 }

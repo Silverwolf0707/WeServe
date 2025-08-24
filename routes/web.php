@@ -77,8 +77,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     Route::post('process-tracking/mass-decision', [ProcessTrackingController::class, 'massDecision'])->name('process-tracking.massDecision');
 
     Route::post('process-tracking/{id}/store-budget', [ProcessTrackingController::class, 'storeBudget'])->name('process-tracking.storeBudget');
-    Route::post('process-tracking/{id}/budget/preview', [ProcessTrackingController::class, 'previewBudgetAllocation'])
-    ->name('process-tracking.previewBudget');
+   
 
     Route::put('process-tracking/{id}/update-budget', [ProcessTrackingController::class, 'updateBudget'])->name('process-tracking.updateBudget');
     Route::post('process-tracking/massBudgetAllocate', [ProcessTrackingController::class, 'massBudgetAllocate'])->name('process-tracking.massBudgetAllocate');
@@ -112,7 +111,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     //time series
     Route::get('time-series', [TimeSeriesController::class, 'index'])->name('time-series.index');
     Route::get('timeseries/get-stl-json', [TimeSeriesController::class, 'getStlJson']);
-    Route::get('statistics/get-age-statistics', [StatisticsController::class, 'index'])->name('statistics.getAgeStatistics');
+    Route::get('statistics/get-statistics', [StatisticsController::class, 'index'])->name('statistics.getStatistics');
 
     Route::get('statistics/deficiencies', [StatisticsController::class, 'getDeficiencyData'])->name('statistics.deficiencies');
 });

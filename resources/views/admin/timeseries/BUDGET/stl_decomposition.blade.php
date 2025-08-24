@@ -142,7 +142,7 @@
         <div class="card shadow-sm bg-light-blue border-blue-500">
           <div class="card-body d-flex justify-content-between align-items-center">
             <div>
-              <div class="text-muted small">Top Spending Category</div>
+              <div class="text-muted small">Top Allocated Category</div>
               <div class="fw-semibold fs-5" id="topBudgetCategory">Loading...</div>
             </div>
             <div class="icon-circle bg-blue text-white">
@@ -155,7 +155,7 @@
         <div class="card shadow-sm bg-light-green border-green-500">
           <div class="card-body d-flex justify-content-between align-items-center">
             <div>
-              <div class="text-muted small">Highest Allocation</div>
+              <div class="text-muted small">Top Allocated Type</div>
               <div class="fw-semibold fs-5" id="highestAllocation">Loading...</div>
             </div>
             <div class="icon-circle bg-green text-white">
@@ -168,7 +168,7 @@
         <div class="card shadow-sm bg-light-yellow border-yellow-500">
           <div class="card-body d-flex justify-content-between align-items-center">
             <div>
-              <div class="text-muted small">Total Budget</div>
+              <div class="text-muted small">Total Budget Disbursed</div>
               <div class="fw-semibold fs-5" id="totalBudget">Loading...</div>
             </div>
             <div class="icon-circle bg-yellow text-white">
@@ -181,7 +181,7 @@
         <div class="card shadow-sm bg-light-red border-red-500">
           <div class="card-body d-flex justify-content-between align-items-center">
             <div>
-              <div class="text-muted small">Unused Funds</div>
+              <div class="text-muted small">Monthly Average Allocation</div>
               <div class="fw-semibold fs-5" id="unusedFunds">Loading...</div>
             </div>
             <div class="icon-circle bg-red text-white">
@@ -257,19 +257,32 @@
       }
       if (!category) category = caseSelector.value || Object.keys(json)[0];
 
-      // Populate years (last 5)
+      // Populate years dynamically from JSON
       const yearSelector = document.getElementById('yearSelector');
       if (yearSelector.options.length <= 1) {
-        const currentYear = new Date().getFullYear();
         yearSelector.innerHTML = '';
-        for (let y = currentYear; y >= currentYear - 4; y--) {
+
+        let allDates = [];
+        if (category === 'ALL') {
+          const cats = Object.keys(json);
+          allDates = json[cats[0]].dates; // assume all categories share same dates
+        } else {
+          allDates = json[category].dates;
+        }
+
+        // Extract unique years
+        const years = [...new Set(allDates.map(d => d.split('-')[0]))].sort((a, b) => b - a);
+
+        years.forEach(y => {
           const opt = document.createElement('option');
           opt.value = y;
           opt.textContent = y;
           yearSelector.appendChild(opt);
-        }
+        });
       }
+
       if (!year) year = yearSelector.value || new Date().getFullYear().toString();
+
 
       // Process data
       let labels = [];
@@ -345,25 +358,38 @@
         `;
       }
       else if (component === 'trend') {
-        // Use observed data for trend summary instead of flat STL trend
         const startObserved = data[0] || 0;
         const endObserved = data[data.length - 1] || 0;
         const diffObserved = endObserved - startObserved;
         const diffPctObserved = startObserved ? (diffObserved / startObserved) * 100 : 0;
 
         let trendText = 'stable';
-        if (diffPctObserved > 5) trendText = 'increasing';
-        else if (diffPctObserved < -5) trendText = 'decreasing';
+        let explanation = 'remained stable';
+
+        if (diffPctObserved >= 5) {
+          trendText = 'increasing steadily';
+          explanation = 'rose significantly';
+        } else if (diffPctObserved > 1) {
+          trendText = 'slightly increasing';
+          explanation = 'rose slightly';
+        } else if (diffPctObserved <= -5) {
+          trendText = 'decreasing steadily';
+          explanation = 'fell significantly';
+        } else if (diffPctObserved < -1) {
+          trendText = 'slightly decreasing';
+          explanation = 'fell slightly';
+        }
 
         html = `
-        <h6>📈 Spending Trend Summary (${year})</h6>
-        <p>
-            At the beginning of the year, the budget was ₱${startObserved.toLocaleString()}.<br>
-            By the end of the year, it reached ₱${endObserved.toLocaleString()}.<br>
-            Overall, the amount disbursed trend is <b>${trendText}</b>, meaning that allocation generally ${trendText === 'increasing' ? 'rose' : trendText === 'decreasing' ? 'fell' : 'remained stable'} over the months.
-        </p>
-    `;
+    <h6>📈 Spending Trend Summary (${year})</h6>
+    <p>
+      <b>Trend Baseline:</b> From start, the trend budget disbursed calculation was <b>₱${startObserved.toLocaleString()}</b>.<br>
+      By the end, it reached <b>₱${endObserved.toLocaleString()}</b>.<br>
+      Overall, the budget disbursed trend is <b>${trendText}</b>, meaning that allocation generally ${explanation} over the months.
+    </p>
+  `;
       }
+
 
       else if (component === 'seasonal') {
         const maxVal = Math.max(...data);
@@ -407,20 +433,53 @@
     document.getElementById('caseTypeSelector').addEventListener('change', () =>
       loadStlData(document.getElementById('caseTypeSelector').value, document.getElementById('chartSelector').value, document.getElementById('yearSelector').value));
 
-    async function loadBudgetSummary() {
-      try {
-        const res = await fetch('/admin/statistics/get-age-statistics?type=budget');
-        const json = await res.json();
-        const summary = json.dashboard_summary || {};
-        document.getElementById('topBudgetCategory').textContent = summary.top_budget_category || 'N/A';
-        document.getElementById('highestAllocation').textContent = summary.highest_allocation || 'N/A';
-        document.getElementById('totalBudget').textContent = summary.total_budget ? `₱${summary.total_budget.toLocaleString()}` : '₱0';
-        document.getElementById('unusedFunds').textContent = summary.unused_funds ? `₱${summary.unused_funds.toLocaleString()}` : '₱0';
-      } catch (e) { console.error(e); }
-    }
+    // Fetch Budget Dashboard Summary
+  async function loadBudgetSummary() {
+  try {
+    const res = await fetch('/admin/statistics/get-statistics?type=budget');
+    const json = await res.json();
 
-    // Init
+    // Updated for your new JSON structure
+    const summary = (json.overall && json.overall.dashboard_summary) || {};
+
+    document.getElementById('topBudgetCategory').textContent = summary.highest_allocation_category || 'N/A';
+    document.getElementById('highestAllocation').textContent = summary.highest_allocation_type || 'N/A';
+    document.getElementById('totalBudget').textContent = summary.total_budget_disbursed
+      ? `₱${Number(summary.total_budget_disbursed).toLocaleString()}`
+      : '₱0';
+    document.getElementById('unusedFunds').textContent = summary.monthly_average_budget_allocation
+      ? `₱${Number(summary.monthly_average_budget_allocation).toLocaleString()}`
+      : '₱0';
+
+  } catch (err) {
+    console.error('Error fetching budget summary:', err);
+    // fallback defaults
+    document.getElementById('topBudgetCategory').textContent = 'N/A';
+    document.getElementById('highestAllocation').textContent = 'N/A';
+    document.getElementById('totalBudget').textContent = '₱0';
+    document.getElementById('unusedFunds').textContent = '₱0';
+  }
+}
+document.addEventListener('DOMContentLoaded', function () {
+      fetch("{{ route('admin.statistics.deficiencies') }}")
+        .then(res => res.json())
+        .then(data => {
+          const deficiencyCtx = document.getElementById('deficiencyChart').getContext('2d');
+
+          new Chart(deficiencyCtx, {
+            type: 'bar',
+            data: { labels: data.labels, datasets: [{ label: 'Deficiency Count', data: data.counts, backgroundColor: '#007bff', borderRadius: 6, barThickness: 18 }] },
+            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.raw} cases` } } }, scales: { x: { beginAtZero: true, title: { display: true, text: 'Number of Cases' } }, y: { ticks: { autoSkip: false, maxRotation: 0, minRotation: 0 } } } }
+          });
+
+          document.querySelector('#deficiencySummary').innerHTML = data.summary;
+        });
+    });
+
+
+    // Call immediately on page load
     loadBudgetSummary();
+
     loadStlData();
   </script>
 </body>

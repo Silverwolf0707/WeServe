@@ -2,10 +2,12 @@ import pandas as pd
 import json
 import os
 
+# --------------------------
 # Paths
+# --------------------------
 base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 full_csv_path = os.path.join(base_path, 'storage', 'app', 'public', 'full_patient_data.csv')
-json_path = os.path.join(base_path, 'storage', 'app', 'public', 'age_stats_output.json')
+json_path = os.path.join(base_path, 'storage', 'app', 'public', 'budget_stats_output.json')
 
 # Load CSV
 df = pd.read_csv(full_csv_path, parse_dates=['month', 'date_processed'])
@@ -13,26 +15,24 @@ df = pd.read_csv(full_csv_path, parse_dates=['month', 'date_processed'])
 # Add Year column for grouping
 df['year'] = df['month'].dt.year
 
-# Compute processing_days as difference between disbursed month and processed date
-df['disbursed_month'] = df['month']
-df['processing_days'] = (df['disbursed_month'] - df['date_processed']).dt.days
-
-# Compute average processing time
-average_processing_time = round(df['processing_days'].mean(), 2) if not df['processing_days'].dropna().empty else 0
-
-# Dashboard summary (overall)
-top_assistance = df['case_type'].mode().iloc[0] if not df['case_type'].mode().empty else 'N/A'
-most_common_category = df['case_category'].mode().iloc[0] if not df['case_category'].mode().empty else 'N/A'
-total_applicants = len(df)
+# --------------------------
+# Dashboard Summary (Overall)
+# --------------------------
+highest_category = df.groupby('case_category')['budget_allocated'].sum().idxmax()
+highest_type = df.groupby('case_type')['budget_allocated'].sum().idxmax()
+total_budget_disbursed = df['budget_allocated'].sum()
+monthly_avg_budget = df.groupby(df['month'].dt.to_period('M'))['budget_allocated'].sum().mean()
 
 dashboard_summary = {
-    'top_assistance': top_assistance,
-    'most_common_category': most_common_category,
-    'total_applicants': total_applicants,
-    'average_processing_time': f"{average_processing_time} days"
+    'highest_allocation_category': highest_category,
+    'highest_allocation_type': highest_type,
+    'total_budget_disbursed': round(total_budget_disbursed, 2),
+    'monthly_average_budget_allocation': round(monthly_avg_budget, 2)
 }
 
-# Helper function to summarize spread
+# --------------------------
+# Helper Functions
+# --------------------------
 def summarize_spread(values):
     if not values:
         return []
@@ -41,7 +41,6 @@ def summarize_spread(values):
     sample_spread = sorted_vals[:3] + [median_val] + sorted_vals[-3:]
     return sorted(set(sample_spread), key=lambda x: values.index(x) if x in values else x)
 
-# Compute stats
 def compute_stats_summary(df, value_col):
     category_stats = {}
     type_stats = {}
@@ -69,33 +68,30 @@ def compute_stats_summary(df, value_col):
         }
     return category_stats, type_stats
 
-# 🔹 Compute per-year stats
+# --------------------------
+# Yearly Stats
+# --------------------------
 yearly_stats = {}
 
 for year, year_df in df.groupby('year'):
-    age_stats_by_category, age_stats_by_type = compute_stats_summary(year_df, 'age')
-
-    application_counts = year_df.groupby(['case_category', 'case_type']).size().reset_index(name='application_count')
-    app_stats_by_category, app_stats_by_type = compute_stats_summary(
-        application_counts.rename(columns={'application_count': 'value'}), 'value'
-    )
+    budget_stats_by_category, budget_stats_by_type = compute_stats_summary(year_df, 'budget_allocated')
 
     total_applications_by_category = year_df.groupby('case_category').size().to_dict()
     total_applications_by_type = year_df.groupby('case_type').size().to_dict()
 
     yearly_stats[year] = {
-        'age_stats_by_category': age_stats_by_category,
-        'age_stats_by_type': age_stats_by_type,
-        'application_stats_by_category': app_stats_by_category,
-        'application_stats_by_type': app_stats_by_type,
+        'budget_stats_by_category': budget_stats_by_category,
+        'budget_stats_by_type': budget_stats_by_type,
         'total_applications_by_category': total_applications_by_category,
-        'total_applications_by_type': total_applications_by_type,
+        'total_applications_by_type': total_applications_by_type
     }
 
-# Final JSON output
+# --------------------------
+# Final Output JSON
+# --------------------------
 output = {
     'overall': {
-        'dashboard_summary': dashboard_summary,
+        'dashboard_summary': dashboard_summary
     },
     'yearly': yearly_stats
 }
@@ -103,4 +99,3 @@ output = {
 # Save JSON
 with open(json_path, 'w') as f:
     json.dump(output, f, indent=2)
-

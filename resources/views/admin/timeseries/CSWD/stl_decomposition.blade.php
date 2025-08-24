@@ -275,18 +275,27 @@
                         category = categorySelector.value || Object.keys(json)[0];
                     }
 
-                    // Populate year selector dynamically (current year to current year - 4)
+                    // Populate year selector dynamically from JSON data
                     const yearSelector = document.getElementById('yearSelector');
                     if (yearSelector.options.length <= 1) {
-                        const currentYear = new Date().getFullYear();
                         yearSelector.innerHTML = '';
-                        for (let y = currentYear; y >= currentYear - 4; y--) {
-                            const opt = document.createElement('option');
-                            opt.value = y.toString();
-                            opt.textContent = y.toString();
-                            yearSelector.appendChild(opt);
+
+                        // Get all years from any category (use first available one)
+                        const sampleCategory = Object.keys(json)[0];
+                        if (sampleCategory) {
+                            const allYears = [...new Set(
+                                json[sampleCategory].dates.map(d => d.split('-')[0])
+                            )].sort((a, b) => b - a); // sort descending
+
+                            allYears.forEach(y => {
+                                const opt = document.createElement('option');
+                                opt.value = y;
+                                opt.textContent = y;
+                                yearSelector.appendChild(opt);
+                            });
                         }
                     }
+
 
                     if (!year) {
                         year = yearSelector.value || new Date().getFullYear().toString();
@@ -433,20 +442,32 @@
                             break;
 
                         case 'trend':
+                            const startVal = data[0] || 0;
+                            const endVal = data[data.length - 1] || 0;
+                            const diff = endVal - startVal;
+                            const diffPercent = startVal ? (diff / startVal) * 100 : 0;
+
                             let trendConclusion = 'The demand appears stable over the year.';
-                            if (diffPercent > 5) {
+
+                            if (diffPercent >= 5) {
                                 trendConclusion = 'The demand is increasing steadily over the year.';
-                            } else if (diffPercent < -5) {
-                                trendConclusion = 'The demand is decreasing over the year.';
+                            } else if (diffPercent > 1) {
+                                trendConclusion = 'The demand is slightly increasing over the year.';
+                            } else if (diffPercent <= -5) {
+                                trendConclusion = 'The demand is decreasing steadily over the year.';
+                            } else if (diffPercent < -1) {
+                                trendConclusion = 'The demand is slightly decreasing over the year.';
                             }
+
                             summaryHTML = `
         <h6 class="fw-bold mb-2">📈 Trend Data Summary (${year})</h6>
         <p>The trend component shows the general direction of applications for <strong>${categoryText}</strong>.</p>
-        <p>The count started at about <strong>${startVal.toFixed(2)}</strong> and ended at <strong>${endVal.toFixed(2)}</strong>.</p>
+        <p>The trend count started at about <strong>${startVal.toFixed(2)}</strong> and ended at <strong>${endVal.toFixed(2)}</strong>.</p>
         <p><strong>Conclusion:</strong> ${trendConclusion}</p>
         <p>This helps you plan resources for the coming months accordingly.</p>
-      `;
+    `;
                             break;
+
 
                         case 'seasonal':
                             // Find peak and trough values and their months
@@ -541,27 +562,30 @@
                         document.getElementById('yearSelector').value
                     );
                 });
-
                 async function loadDashboardSummary() {
                     try {
-                        const res = await fetch('/admin/statistics/get-age-statistics?type=cswd');
+                        const res = await fetch('/admin/statistics/get-statistics?type=cswd');
                         const json = await res.json();
-                        const summary = json.dashboard_summary;
+
+                        // Drill down into overall -> dashboard_summary
+                        const summary = json.overall?.dashboard_summary;
                         if (!summary) return;
 
                         document.getElementById('topAssistance').textContent = summary.top_assistance || 'N/A';
                         document.getElementById('mostCommonCategory').textContent = summary.most_common_category || 'N/A';
-                        document.getElementById('totalApplicants').textContent = summary.total_applicants || 0;
-                        document.getElementById('averageProcessingTime').textContent = summary.average_processing_time || '0 days';
+                        document.getElementById('totalApplicants').textContent = summary.total_applicants?.toLocaleString() ||
+                        0;
+                        document.getElementById('averageProcessingTime').textContent = summary.average_processing_time ||
+                            '0 days';
                     } catch (err) {
-                        console.error(err);
+                        console.error('Error loading dashboard summary:', err);
                     }
                 }
 
-                // call it immediately
+               
                 loadDashboardSummary();
-                loadStlData();
 
+                loadStlData();
             </script>
 
 
