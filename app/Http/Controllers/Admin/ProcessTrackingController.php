@@ -583,7 +583,7 @@ class ProcessTrackingController extends Controller
 
         // ✅ Re-generate OBRE PDF
         $pdf = app('dompdf.wrapper');
-        $pdf->loadView('pdf.obre', [
+        $pdf->loadView('admin.pdf.obre', [
             'patient' => $patient,
             'budget'  => $budget,
         ]);

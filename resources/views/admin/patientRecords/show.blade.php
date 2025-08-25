@@ -87,7 +87,7 @@
                     </div>
 
                     <div class="card-body">
-                        <form action="{{ route('admin.patient-records.submit', $patientRecord->id) }}" method="POST">
+                        <form method="POST">
                             @csrf
                             <input type="hidden" name="status" value="Submitted">
 
@@ -95,11 +95,27 @@
                                 <label for="submitted_date">Submitted Date</label>
                                 <input type="datetime-local" name="submitted_date" id="submitted_date" class="form-control mb-3"
                                     value="{{ now()->toDateTimeLocalString() }}" @if($isLocked) disabled @endif>
+
                                 <label for="remarks">Remarks</label>
                                 <textarea name="remarks" id="remarks" rows="4" class="form-control" required @if($isLocked)
                                 disabled @endif></textarea>
                             </div>
-                            <button type="submit" class="btn btn-primary" @if($isLocked) disabled @endif>Submit</button>
+
+                            <div class="d-flex justify-content-between">
+                                {{-- Normal submit --}}
+                                <button type="submit"
+                                    formaction="{{ route('admin.patient-records.submit', $patientRecord->id) }}"
+                                    class="btn btn-primary" @if($isLocked) disabled @endif>
+                                    Submit
+                                </button>
+
+                                {{-- Emergency submit --}}
+                                <button type="submit"
+                                    formaction="{{ route('admin.patient-records.submit-emergency', $patientRecord->id) }}"
+                                    class="btn btn-danger" @if($isLocked) disabled @endif>
+                                    Submit [Emergency]
+                                </button>
+                            </div>
 
                             @if($isLocked)
                                 <div class="alert alert-info mt-3">
@@ -110,6 +126,7 @@
                     </div>
                 </div>
             @endcan
+
 
             <div class="d-flex justify-content-between">
                 <a class="btn btn-secondary" href="{{ route('admin.patient-records.index') }}">
@@ -137,14 +154,14 @@
 
                 </div>
                 <div class="modal-body" style="
-              white-space: pre-wrap;
-              word-wrap: break-word;
-              overflow-y: auto;
-              max-height: 400px;
-              font-size: 16px;
-              line-height: 1.6;
-              padding-right: 10px;
-            ">
+                      white-space: pre-wrap;
+                      word-wrap: break-word;
+                      overflow-y: auto;
+                      max-height: 400px;
+                      font-size: 16px;
+                      line-height: 1.6;
+                      padding-right: 10px;
+                    ">
                     {{ $patientRecord->diagnosis }}
                 </div>
                 <div class="modal-footer">

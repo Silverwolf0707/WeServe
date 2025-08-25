@@ -214,7 +214,7 @@ class PatientRecordsController extends Controller
             'patient_id' => $id,
             'status' => $status,
             'user_id' => Auth::id(),
-            'status_date' => $statusDate, 
+            'status_date' => $statusDate,
             'remarks' => $request->remarks,
             'created_at' => now(),
         ]);
@@ -294,5 +294,34 @@ class PatientRecordsController extends Controller
                     'time' => now()->diffForHumans(),
                 ]);
         }
+    }
+    public function submitEmergency(Request $request, $id)
+    {
+        abort_if(Gate::denies('submit_patient_application'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $request->validate([
+            'remarks' => 'required|string|max:1000',
+            'submitted_date' => 'required|date'
+        ]);
+
+        $statusDate = $request->input('submitted_date');
+
+        // Create status log with emergency flag
+        PatientStatusLog::create([
+            'patient_id'  => $id,
+            'status'      => 'Submitted[Emergency]',
+            'user_id'     => Auth::id(),
+            'status_date' => $statusDate,
+            'remarks'     => $request->remarks,
+            'created_at'  => now(),
+        ]);
+
+        $patientRecord = PatientRecord::with('latestStatusLog')->findOrFail($id);
+
+        broadcast(new PatientStatusChanged($patientRecord, 'submitted-emergency'))->toOthers();
+
+        return redirect()
+            ->route('admin.patient-records.show', $id)
+            ->with('success', 'Emergency application submitted successfully with remarks.');
     }
 }

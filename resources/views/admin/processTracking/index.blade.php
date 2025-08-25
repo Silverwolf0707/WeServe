@@ -89,6 +89,12 @@
                                             <i class="fas fa-paper-plane" style="margin-right: 5px"></i>
                                             Ready for Disbursement{!! $isRollback ? ' <small>[ROLLED BACK]</small>' : '' !!}
                                         </span>
+                                    @elseif ($baseStatus === 'Submitted[Emergency]')
+                                        <span class="badge d-inline-flex align-items-center"
+                                            style="background-color: #dc3545; padding: 6px 12px; border-radius: 50px; color: white;">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            Submitted [Emergency]{!! $isRollback ? ' <small>[ROLLED BACK]</small>' : '' !!}
+                                        </span>
                                     @else
                                         <span class="badge bg-secondary d-inline-flex align-items-center"
                                             style="padding: 6px 12px; border-radius: 50px;">
@@ -165,8 +171,8 @@
                             <!-- Remarks -->
                             <div class="mb-3">
                                 <label for="massDecisionRemarks" class="form-label">Remarks</label>
-                                <textarea name="remarks" id="massDecisionRemarks" class="form-control" rows="3" placeholder="Enter remarks..."
-                                    required></textarea>
+                                <textarea name="remarks" id="massDecisionRemarks" class="form-control" rows="3"
+                                    placeholder="Enter remarks..." required></textarea>
                             </div>
                         </div>
 
@@ -601,7 +607,7 @@
             setTimeout(() => {
                 Echo.channel('process-tracking')
                     .listen('.patient.status.changed', function(e) {
-                        
+
                         const table = $('.datatable-ProcessTracking').DataTable();
 
                         const badge = generateBadge(e.status);
@@ -649,6 +655,7 @@
                 function generateBadge(status) {
                     const icons = {
                         'Submitted': 'fa-paper-plane',
+                        'Submitted[Emergency]': 'fa-exclamation-triangle',
                         'Approved': 'fa-thumbs-up',
                         'Rejected': 'fa-ban',
                         'Budget Allocated': 'fa-money-bill-wave',
@@ -659,6 +666,7 @@
 
                     const colors = {
                         'Submitted': '#007BFF',
+                        'Submitted[Emergency]': '#dc3545',
                         'Approved': '#2e7d32',
                         'Rejected': '#c62828',
                         'Budget Allocated': '#ffc107',
