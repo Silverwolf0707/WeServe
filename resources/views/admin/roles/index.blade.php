@@ -1,26 +1,25 @@
 @extends('layouts.admin')
 @section('content')
-    
-    <style>
-        .btn-warning {
-            color: black !important;
-        }
-    </style>
 
-    <div class="card-header d-flex justify-content-between align-items-center"
-        style="background-color: green; color: white;">
-        <div>
-            <h5 class="mb-0">
-                <i class="fas fa-users-cog me-2"></i> {{ trans('cruds.role.title') }}
-            </h5>
+
+<div class="card shadow-sm border-0">
+    <!-- Modernized Header -->
+    <div class="card-header custom-header d-flex align-items-center"
+        style="background-color: green; color: white; min-height: 80px; padding: 1.5rem;">
+        <h4 class="mb-0 fw-bold d-flex align-items-center">
+            <i class="fas fa-users-cog me-2"></i> {{ trans('cruds.role.title') }}
+        </h4>
+
+        <div class="header-actions d-flex align-items-center ms-auto">
+            @can('role_create')
+                <a class="btn btn-add" href="{{ route('admin.roles.create') }}">
+                    <i class="fas fa-plus"></i> {{ trans('global.add') }} {{ trans('cruds.role.title_singular') }}
+                </a>
+            @endcan
         </div>
-
-        @can('role_create')
-            <a class="btn btn-warning ms-auto" href="{{ route('admin.roles.create') }}">
-                <i class="fas fa-plus me-1"></i> {{ trans('global.add') }} {{ trans('cruds.role.title_singular') }}
-            </a>
-        @endcan
     </div>
+</div>
+
 
 
 

@@ -1,18 +1,20 @@
 @extends('layouts.admin')
 @section('content')
-
-<div class="card">
-    <div class="card-header">
-        {{ trans('global.show') }} {{ trans('cruds.user.title') }}
+    <div class="card shadow-sm border-0">
+        <!-- Modernized Header -->
+        <div class="card-header custom-header d-flex align-items-center bg-primary text-white"
+            style="min-height: 80px; padding: 1.5rem;">
+            <h4 class="mb-0 fw-bold d-flex align-items-center">
+                <i class="fas fa-users me-2"></i> {{ trans('global.show') }} {{ trans('cruds.user.title') }}
+            </h4>
+            <div class="header-actions d-flex align-items-center ms-auto">
+            </div>
+        </div>
     </div>
+
 
     <div class="card-body">
         <div class="form-group">
-            <div class="form-group">
-                <a class="btn btn-default" href="{{ route('admin.users.index') }}">
-                    {{ trans('global.back_to_list') }}
-                </a>
-            </div>
             <table class="table table-bordered table-striped">
                 <tbody>
                     <tr>
@@ -60,13 +62,15 @@
                 </tbody>
             </table>
             <div class="form-group">
-                <a class="btn btn-default" href="{{ route('admin.users.index') }}">
-                    {{ trans('global.back_to_list') }}
+                <a class="btn btn-default" href="{{ route('admin.users.index') }}"
+                    style="background-color: #28a745; color: white;">
+                    <i class="fas fa-arrow-left me-1"></i> {{ trans('global.back_to_list') }}
                 </a>
             </div>
+
         </div>
     </div>
-</div>
+    </div>
 
 
 

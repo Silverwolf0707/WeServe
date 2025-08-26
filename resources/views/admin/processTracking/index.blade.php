@@ -1,290 +1,316 @@
 @extends('layouts.admin')
 @section('content')
     <div class="card shadow-sm border-0">
-        <div class="card-header bg-primary text-white py-2 d-flex justify-content-between align-items-center">
-            <div>
-                <h5 class="mb-1"><i class="fas fa-tasks me-2"></i> Process Tracking</h5>
+        <!-- Modernized Header -->
+        <div class="card-header custom-header d-flex align-items-center bg-primary text-white"
+            style="min-height: 70px; padding: 1.5rem;">
+            <h4 class="mb-0 fw-bold d-flex align-items-center">
+                <i class="fas fa-tasks me-2"></i> Process Tracking
+            </h4>
+
+            <div class="header-actions d-flex align-items-center ms-auto">
             </div>
         </div>
+    </div>
 
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered table-striped table-hover datatable datatable-ProcessTracking">
-                    <thead class="thead-dark">
-                        <tr>
-                            <th width="10"></th>
-                            <th>{{ __('Control Number') }}</th>
-                            <th>{{ __('Date Processed') }}</th>
-                            <th>{{ __('Claimant Name') }}</th>
-                            <th>{{ __('Case Worker') }}</th>
-                            <th>{{ __('Status') }}</th>
-                            <th class="text-center" width="50">{{ __('Actions') }}</th>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped table-hover datatable datatable-ProcessTracking">
+                <thead class="thead-dark">
+                    <tr>
+                        <th width="10"></th>
+                        <th>{{ __('Control Number') }}</th>
+                        <th>{{ __('Date Processed') }}</th>
+                        <th>{{ __('Claimant Name') }}</th>
+                        <th>{{ __('Case Worker') }}</th>
+                        <th>{{ __('Status') }}</th>
+                        <th>{{ __('Department Responsible') }}</th>
+                        <th class="text-center" width="50">{{ __('Actions') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($patients as $patient)
+                        <tr data-entry-id="{{ $patient->id }}">
+                            <td></td>
+                            <td>{{ $patient->control_number }}</td>
+                            <td>{{ \Carbon\Carbon::parse($patient->date_processed)->format('F j, Y g:i A') }}</td>
+                            <td>{{ $patient->claimant_name }}</td>
+                            <td>{{ $patient->case_worker }}</td>
+                            <td>
+                                @php
+                                    $currentStatus = $patient->latestStatusLog->status ?? 'Submitted';
+                                    $isRollback = str_contains($currentStatus, '[ROLLED BACK]');
+                                    $baseStatus = $isRollback
+                                        ? trim(str_replace('[ROLLED BACK]', '', $currentStatus))
+                                        : $currentStatus;
+                                @endphp
+
+
+                                @php
+                                    // Extract [ROLLED BACK] if it exists
+                                    $isRollback = str_contains($currentStatus, '[ROLLED BACK]');
+                                    $baseStatus = $isRollback
+                                        ? trim(str_replace('[ROLLED BACK]', '', $currentStatus))
+                                        : $currentStatus;
+                                @endphp
+
+                                @if ($baseStatus === 'Submitted')
+                                    <span class="badge d-inline-flex align-items-center"
+                                        style="background-color: #007BFF; padding: 6px 12px; border-radius: 50px; color: white;">
+                                        <i class="fas fa-paper-plane" style="margin-right: 5px"></i>
+                                        Submitted{!! $isRollback ? ' <small>[ROLLED BACK]</small>' : '' !!}
+                                    </span>
+                                @elseif ($baseStatus === 'Approved')
+                                    <span class="badge d-inline-flex align-items-center"
+                                        style="background-color: #2e7d32; padding: 6px 12px; border-radius: 50px; color: white;">
+                                        <i class="fas fa-thumbs-up" style="margin-right: 5px"></i>
+                                        Approved{!! $isRollback ? ' <small>[ROLLED BACK]</small>' : '' !!}
+                                    </span>
+                                @elseif ($baseStatus === 'Rejected')
+                                    <span class="badge d-inline-flex align-items-center"
+                                        style="background-color: #c62828; padding: 6px 12px; border-radius: 50px; color: white;">
+                                        <i class="fas fa-ban" style="margin-right: 5px"></i>
+                                        Rejected{!! $isRollback ? ' <small>[ROLLED BACK]</small>' : '' !!}
+                                    </span>
+                                @elseif ($baseStatus === 'Budget Allocated')
+                                    <span class="badge d-inline-flex align-items-center"
+                                        style="background-color: #ffc107; padding: 6px 12px; border-radius: 50px; color: black;">
+                                        <i class="fas fa-money-bill-wave" style="margin-right: 5px"></i>
+                                        Budget Allocated{!! $isRollback ? ' <small>[ROLLED BACK]</small>' : '' !!}
+                                    </span>
+                                @elseif ($baseStatus === 'DV Submitted')
+                                    <span class="badge d-inline-flex align-items-center"
+                                        style="background-color: #17a2b8; padding: 6px 12px; border-radius: 50px; color: white;">
+                                        <i class="fas fa-file" style="margin-right: 5px"></i>
+                                        DV Submitted{!! $isRollback ? ' <small>[ROLLED BACK]</small>' : '' !!}
+                                    </span>
+                                @elseif ($baseStatus === 'Disbursed')
+                                    <span class="badge d-inline-flex align-items-center"
+                                        style="background-color: #6f42c1; padding: 6px 12px; border-radius: 50px; color: white;">
+                                        <i class="fas fa-money-bill-wave" style="margin-right: 5px"></i>
+                                        Disbursed{!! $isRollback ? ' <small>[ROLLED BACK]</small>' : '' !!}
+                                    </span>
+                                @elseif ($baseStatus === 'Ready for Disbursement')
+                                    <span class="badge d-inline-flex align-items-center"
+                                        style="background-color: #6f42c1; padding: 6px 12px; border-radius: 50px; color: white;">
+                                        <i class="fas fa-paper-plane" style="margin-right: 5px"></i>
+                                        Ready for Disbursement{!! $isRollback ? ' <small>[ROLLED BACK]</small>' : '' !!}
+                                    </span>
+                                @elseif ($baseStatus === 'Submitted[Emergency]')
+                                    <span class="badge d-inline-flex align-items-center"
+                                        style="background-color: #dc3545; padding: 6px 12px; border-radius: 50px; color: white;">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        Submitted [Emergency]{!! $isRollback ? ' <small>[ROLLED BACK]</small>' : '' !!}
+                                    </span>
+                                @else
+                                    <span class="badge bg-secondary d-inline-flex align-items-center"
+                                        style="padding: 6px 12px; border-radius: 50px;">
+                                        <i class="fas fa-question-circle" style="margin-right: 5px"></i>
+                                        {{ $currentStatus }}
+                                    </span>
+                                @endif
+
+                            </td>
+                            <td>
+                                @php
+                                    $statusMap = [
+                                        'Submitted' => "Mayor's Office",
+                                        'Submitted[Emergency]' => "Mayor's Office",
+                                        'Approved' => 'Budget Office',
+                                        'Rejected' => 'CSWD Office',
+                                        'Budget Allocated' => 'Accounting Office',
+                                        'DV Submitted' => 'Treasury Office',
+                                        'Disbursed' => 'Completed',
+                                        'Ready for Disbursement' => 'Treasury Office',
+                                    ];
+
+                                    $cleanStatus = str_replace('[ROLLED BACK]', '', $baseStatus);
+                                    $department = $statusMap[$cleanStatus] ?? 'N/A';
+                                @endphp
+                                {{ $department }}
+                            </td>
+
+                            <td class="text-center">
+                                <a href="{{ route('admin.process-tracking.show', ['process_tracking' => $patient->id]) }}"
+                                    title="View">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($patients as $patient)
-                            <tr data-entry-id="{{ $patient->id }}">
-                                <td></td>
-                                <td>{{ $patient->control_number }}</td>
-                                <td>{{ \Carbon\Carbon::parse($patient->date_processed)->format('F j, Y g:i A') }}</td>
-                                <td>{{ $patient->claimant_name }}</td>
-                                <td>{{ $patient->case_worker }}</td>
-                                <td>
-                                    @php
-                                        $currentStatus = $patient->latestStatusLog->status ?? 'Submitted';
-                                        $isRollback = str_contains($currentStatus, '[ROLLED BACK]');
-                                        $baseStatus = $isRollback
-                                            ? trim(str_replace('[ROLLED BACK]', '', $currentStatus))
-                                            : $currentStatus;
-                                    @endphp
-
-
-                                    @php
-                                        // Extract [ROLLED BACK] if it exists
-                                        $isRollback = str_contains($currentStatus, '[ROLLED BACK]');
-                                        $baseStatus = $isRollback
-                                            ? trim(str_replace('[ROLLED BACK]', '', $currentStatus))
-                                            : $currentStatus;
-                                    @endphp
-
-                                    @if ($baseStatus === 'Submitted')
-                                        <span class="badge d-inline-flex align-items-center"
-                                            style="background-color: #007BFF; padding: 6px 12px; border-radius: 50px; color: white;">
-                                            <i class="fas fa-paper-plane" style="margin-right: 5px"></i>
-                                            Submitted{!! $isRollback ? ' <small>[ROLLED BACK]</small>' : '' !!}
-                                        </span>
-                                    @elseif ($baseStatus === 'Approved')
-                                        <span class="badge d-inline-flex align-items-center"
-                                            style="background-color: #2e7d32; padding: 6px 12px; border-radius: 50px; color: white;">
-                                            <i class="fas fa-thumbs-up" style="margin-right: 5px"></i>
-                                            Approved{!! $isRollback ? ' <small>[ROLLED BACK]</small>' : '' !!}
-                                        </span>
-                                    @elseif ($baseStatus === 'Rejected')
-                                        <span class="badge d-inline-flex align-items-center"
-                                            style="background-color: #c62828; padding: 6px 12px; border-radius: 50px; color: white;">
-                                            <i class="fas fa-ban" style="margin-right: 5px"></i>
-                                            Rejected{!! $isRollback ? ' <small>[ROLLED BACK]</small>' : '' !!}
-                                        </span>
-                                    @elseif ($baseStatus === 'Budget Allocated')
-                                        <span class="badge d-inline-flex align-items-center"
-                                            style="background-color: #ffc107; padding: 6px 12px; border-radius: 50px; color: black;">
-                                            <i class="fas fa-money-bill-wave" style="margin-right: 5px"></i>
-                                            Budget Allocated{!! $isRollback ? ' <small>[ROLLED BACK]</small>' : '' !!}
-                                        </span>
-                                    @elseif ($baseStatus === 'DV Submitted')
-                                        <span class="badge d-inline-flex align-items-center"
-                                            style="background-color: #17a2b8; padding: 6px 12px; border-radius: 50px; color: white;">
-                                            <i class="fas fa-file" style="margin-right: 5px"></i>
-                                            DV Submitted{!! $isRollback ? ' <small>[ROLLED BACK]</small>' : '' !!}
-                                        </span>
-                                    @elseif ($baseStatus === 'Disbursed')
-                                        <span class="badge d-inline-flex align-items-center"
-                                            style="background-color: #6f42c1; padding: 6px 12px; border-radius: 50px; color: white;">
-                                            <i class="fas fa-money-bill-wave" style="margin-right: 5px"></i>
-                                            Disbursed{!! $isRollback ? ' <small>[ROLLED BACK]</small>' : '' !!}
-                                        </span>
-                                    @elseif ($baseStatus === 'Ready for Disbursement')
-                                        <span class="badge d-inline-flex align-items-center"
-                                            style="background-color: #6f42c1; padding: 6px 12px; border-radius: 50px; color: white;">
-                                            <i class="fas fa-paper-plane" style="margin-right: 5px"></i>
-                                            Ready for Disbursement{!! $isRollback ? ' <small>[ROLLED BACK]</small>' : '' !!}
-                                        </span>
-                                    @elseif ($baseStatus === 'Submitted[Emergency]')
-                                        <span class="badge d-inline-flex align-items-center"
-                                            style="background-color: #dc3545; padding: 6px 12px; border-radius: 50px; color: white;">
-                                            <i class="fas fa-exclamation-triangle me-2"></i>
-                                            Submitted [Emergency]{!! $isRollback ? ' <small>[ROLLED BACK]</small>' : '' !!}
-                                        </span>
-                                    @else
-                                        <span class="badge bg-secondary d-inline-flex align-items-center"
-                                            style="padding: 6px 12px; border-radius: 50px;">
-                                            <i class="fas fa-question-circle" style="margin-right: 5px"></i>
-                                            {{ $currentStatus }}
-                                        </span>
-                                    @endif
-
-                                </td>
-                                <td class="text-center">
-                                    <a href="{{ route('admin.process-tracking.show', ['process_tracking' => $patient->id]) }}"
-                                        title="View">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
+                    @endforeach
+                </tbody>
+            </table>
         </div>
+    </div>
 
-        <!-- Mass Decision Modal -->
-        <div class="modal fade" id="massDecisionModal" tabindex="-1" aria-labelledby="massDecisionModalLabel"
-            aria-hidden="true">
-            <div class="modal-dialog">
-                <form id="massDecisionForm">
-                    @csrf
-                    <input type="hidden" name="action" id="massDecisionAction">
+    <!-- Mass Decision Modal -->
+    <div class="modal fade" id="massDecisionModal" tabindex="-1" aria-labelledby="massDecisionModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <form id="massDecisionForm">
+                @csrf
+                <input type="hidden" name="action" id="massDecisionAction">
 
-                    <div class="modal-content">
-                        <div class="modal-header" id="massDecisionHeader">
-                            <h5 class="modal-title" id="massDecisionModalLabel">Mass Decision</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
+                <div class="modal-content">
+                    <div class="modal-header" id="massDecisionHeader">
+                        <h5 class="modal-title" id="massDecisionModalLabel">Mass Decision</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
 
-                        <div class="modal-body">
-                            <!-- Reject Reasons (shown only if action is reject) -->
-                            <div id="massDecisionRejectFields" style="display:none;">
-                                <div class="mb-3">
-                                    <label class="form-label">Reason(s) for Rejection</label>
-                                    @php
-                                        $reasonsList = [
-                                            'Missing ID',
-                                            'No signature',
-                                            'Expired documents',
-                                            'Wrong name',
-                                            'Missing document',
-                                        ];
-                                    @endphp
-                                    @foreach ($reasonsList as $index => $reason)
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="reasons[]"
-                                                value="{{ $reason }}" id="massReason{{ $index }}">
-                                            <label class="form-check-label"
-                                                for="massReason{{ $index }}">{{ $reason }}</label>
-                                        </div>
-                                    @endforeach
-                                </div>
-
-                                <div class="mb-3">
-                                    <label for="massDecisionOtherReason" class="form-label">Other Reason (Optional)</label>
-                                    <input type="text" name="other_reason" id="massDecisionOtherReason"
-                                        class="form-control" placeholder="Specify other reason here">
-                                </div>
-                            </div>
+                    <div class="modal-body">
+                        <!-- Reject Reasons (shown only if action is reject) -->
+                        <div id="massDecisionRejectFields" style="display:none;">
                             <div class="mb-3">
-                                <label for="massDecisionStatusDate" class="form-label">Decision Date</label>
-                                <input type="datetime-local" class="form-control" id="massDecisionStatusDate"
-                                    name="status_date" value="{{ now()->toDateTimeLocalString() }}" required>
+                                <label class="form-label">Reason(s) for Rejection</label>
+                                @php
+                                    $reasonsList = [
+                                        'Missing ID',
+                                        'No signature',
+                                        'Expired documents',
+                                        'Wrong name',
+                                        'Missing document',
+                                    ];
+                                @endphp
+                                @foreach ($reasonsList as $index => $reason)
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="reasons[]"
+                                            value="{{ $reason }}" id="massReason{{ $index }}">
+                                        <label class="form-check-label"
+                                            for="massReason{{ $index }}">{{ $reason }}</label>
+                                    </div>
+                                @endforeach
                             </div>
 
-
-                            <!-- Remarks -->
                             <div class="mb-3">
-                                <label for="massDecisionRemarks" class="form-label">Remarks</label>
-                                <textarea name="remarks" id="massDecisionRemarks" class="form-control" rows="3"
-                                    placeholder="Enter remarks..." required></textarea>
+                                <label for="massDecisionOtherReason" class="form-label">Other Reason (Optional)</label>
+                                <input type="text" name="other_reason" id="massDecisionOtherReason" class="form-control"
+                                    placeholder="Specify other reason here">
                             </div>
                         </div>
+                        <div class="mb-3">
+                            <label for="massDecisionStatusDate" class="form-label">Decision Date</label>
+                            <input type="datetime-local" class="form-control" id="massDecisionStatusDate" name="status_date"
+                                value="{{ now()->toDateTimeLocalString() }}" required>
+                        </div>
 
-                        <div class="modal-footer">
-                            <button type="submit" id="massDecisionConfirmBtn" class="btn btn-primary">Confirm</button>
+
+                        <!-- Remarks -->
+                        <div class="mb-3">
+                            <label for="massDecisionRemarks" class="form-label">Remarks</label>
+                            <textarea name="remarks" id="massDecisionRemarks" class="form-control" rows="3"
+                                placeholder="Enter remarks..." required></textarea>
                         </div>
                     </div>
-                </form>
-            </div>
+
+                    <div class="modal-footer">
+                        <button type="submit" id="massDecisionConfirmBtn" class="btn btn-primary">Confirm</button>
+                    </div>
+                </div>
+            </form>
         </div>
+    </div>
 
-        <!-- Mass Budget Allocation Modal -->
-        <div class="modal fade" id="massBudgetModal" tabindex="-1" aria-labelledby="massBudgetModalLabel"
-            aria-hidden="true">
-            <div class="modal-dialog">
-                <form id="massBudgetForm">
-                    @csrf
-                    <input type="hidden" name="ids[]" id="massBudgetIds">
+    <!-- Mass Budget Allocation Modal -->
+    <div class="modal fade" id="massBudgetModal" tabindex="-1" aria-labelledby="massBudgetModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <form id="massBudgetForm">
+                @csrf
+                <input type="hidden" name="ids[]" id="massBudgetIds">
 
-                    <div class="modal-content border-0 shadow-lg rounded-4" style="overflow: hidden;">
-                        <div class="modal-header bg-primary text-white">
-                            <h5 class="modal-title" id="massBudgetModalLabel">
-                                <i class="fas fa-wallet me-2"></i>
-                                Allocate Budget to Selected Patients
-                            </h5>
-                            <button type="button" class="btn-close text-white" data-bs-dismiss="modal"
-                                aria-label="Close"></button>
-                        </div>
+                <div class="modal-content border-0 shadow-lg rounded-4" style="overflow: hidden;">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="massBudgetModalLabel">
+                            <i class="fas fa-wallet me-2"></i>
+                            Allocate Budget to Selected Patients
+                        </h5>
+                        <button type="button" class="btn-close text-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
 
-                        <div class="modal-body p-4">
-                            <div class="form-group mb-4">
-                                <label for="massBudgetAmount" class="form-label">Amount (₱)</label>
-                                <input type="number" step="0.01" name="amount" id="massBudgetAmount"
-                                    class="form-control form-control-lg rounded-3 shadow-sm" required>
+                    <div class="modal-body p-4">
+                        <div class="form-group mb-4">
+                            <label for="massBudgetAmount" class="form-label">Amount (₱)</label>
+                            <input type="number" step="0.01" name="amount" id="massBudgetAmount"
+                                class="form-control form-control-lg rounded-3 shadow-sm" required>
 
-                                <div class="d-flex flex-wrap gap-2 mt-3">
-                                    @foreach ([1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000] as $suggested)
-                                        <button type="button"
-                                            class="btn btn-outline-primary btn-sm suggested-amount rounded-pill px-3"
-                                            data-value="{{ $suggested }}">₱{{ number_format($suggested) }}</button>
-                                    @endforeach
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="massBudgetStatusDate" class="form-label">Status Date</label>
-                                <input type="datetime-local" name="status_date" id="massBudgetStatusDate"
-                                    class="form-control form-control-lg rounded-3 shadow-sm"
-                                    value="{{ now()->toDateTimeLocalString() }}" required>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="massBudgetRemarks" class="form-label">Remarks (Optional)</label>
-                                <textarea name="remarks" id="massBudgetRemarks" class="form-control rounded-3 shadow-sm" rows="4"
-                                    placeholder="Enter any remarks here..."></textarea>
+                            <div class="d-flex flex-wrap gap-2 mt-3">
+                                @foreach ([1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000] as $suggested)
+                                    <button type="button"
+                                        class="btn btn-outline-primary btn-sm suggested-amount rounded-pill px-3"
+                                        data-value="{{ $suggested }}">₱{{ number_format($suggested) }}</button>
+                                @endforeach
                             </div>
                         </div>
+                        <div class="form-group">
+                            <label for="massBudgetStatusDate" class="form-label">Status Date</label>
+                            <input type="datetime-local" name="status_date" id="massBudgetStatusDate"
+                                class="form-control form-control-lg rounded-3 shadow-sm"
+                                value="{{ now()->toDateTimeLocalString() }}" required>
+                        </div>
 
-                        <div class="modal-footer d-flex flex-column gap-2 p-4 pt-0">
-                            <button type="submit" class="btn btn-success w-100 rounded-pill py-2">
-                                <i class="fas fa-check-circle me-1"></i> Confirm Allocation
+                        <div class="form-group">
+                            <label for="massBudgetRemarks" class="form-label">Remarks (Optional)</label>
+                            <textarea name="remarks" id="massBudgetRemarks" class="form-control rounded-3 shadow-sm" rows="4"
+                                placeholder="Enter any remarks here..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer d-flex flex-column gap-2 p-4 pt-0">
+                        <button type="submit" class="btn btn-success w-100 rounded-pill py-2">
+                            <i class="fas fa-check-circle me-1"></i> Confirm Allocation
+                        </button>
+                        <button type="button" class="btn btn-secondary w-100 rounded-pill py-2"
+                            data-bs-dismiss="modal">Cancel</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="modal fade" id="massDVModal" tabindex="-1" role="dialog" aria-labelledby="massDVModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <form id="massDVForm" method="POST">
+                @csrf
+                <div class="modal-content border-0">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="massDVModalLabel">
+                            <i class="fas fa-file-invoice me-2"></i> Mass DV Input
+                        </h5>
+                        <button type="button" class="close text-white" data-bs-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+
+                    <div class="modal-body">
+                        <p class="text-muted">
+                            Selected patients will be automatically assigned a <b>unique DV Code</b>.
+                        </p>
+
+                        <div class="form-group mb-3">
+                            <label for="massDvDate">DV Date <span class="text-danger">*</span></label>
+                            <input type="date" id="massDvDate" name="dv_date" class="form-control form-control-lg"
+                                required>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="massDvStatusDate">Status Date <span class="text-danger">*</span></label>
+                            <input type="datetime-local" id="massDvStatusDate" name="status_date"
+                                class="form-control form-control-lg" value="{{ now()->toDateTimeLocalString() }}"
+                                required>
+                        </div>
+
+
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="fas fa-check-circle me-1"></i> Submit DV for Selected
                             </button>
-                            <button type="button" class="btn btn-secondary w-100 rounded-pill py-2"
+                            <button type="button" class="btn btn-secondary w-100 mt-2"
                                 data-bs-dismiss="modal">Cancel</button>
                         </div>
                     </div>
-                </form>
-            </div>
+            </form>
         </div>
-        <div class="modal fade" id="massDVModal" tabindex="-1" role="dialog" aria-labelledby="massDVModalLabel"
-            aria-hidden="true">
-            <div class="modal-dialog" role="document">
-                <form id="massDVForm" method="POST">
-                    @csrf
-                    <div class="modal-content border-0">
-                        <div class="modal-header bg-primary text-white">
-                            <h5 class="modal-title" id="massDVModalLabel">
-                                <i class="fas fa-file-invoice me-2"></i> Mass DV Input
-                            </h5>
-                            <button type="button" class="close text-white" data-bs-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-
-                        <div class="modal-body">
-                            <p class="text-muted">
-                                Selected patients will be automatically assigned a <b>unique DV Code</b>.
-                            </p>
-
-                            <div class="form-group mb-3">
-                                <label for="massDvDate">DV Date <span class="text-danger">*</span></label>
-                                <input type="date" id="massDvDate" name="dv_date"
-                                    class="form-control form-control-lg" required>
-                            </div>
-                            <div class="form-group mb-3">
-                                <label for="massDvStatusDate">Status Date <span class="text-danger">*</span></label>
-                                <input type="datetime-local" id="massDvStatusDate" name="status_date"
-                                    class="form-control form-control-lg" value="{{ now()->toDateTimeLocalString() }}"
-                                    required>
-                            </div>
-
-
-                            <div class="modal-footer">
-                                <button type="submit" class="btn btn-success w-100">
-                                    <i class="fas fa-check-circle me-1"></i> Submit DV for Selected
-                                </button>
-                                <button type="button" class="btn btn-secondary w-100 mt-2"
-                                    data-bs-dismiss="modal">Cancel</button>
-                            </div>
-                        </div>
-                </form>
-            </div>
-        </div>
+    </div>
     </div>
     <div class="modal fade" id="massDisburseModal" tabindex="-1" aria-labelledby="massDisburseModalLabel"
         aria-hidden="true">
@@ -607,16 +633,18 @@
             setTimeout(() => {
                 Echo.channel('process-tracking')
                     .listen('.patient.status.changed', function(e) {
+                        console.log('Patient status changed:', e);
 
                         const table = $('.datatable-ProcessTracking').DataTable();
 
                         const badge = generateBadge(e.status);
+                        const department = getDepartment(e.status); // new helper
 
                         const rowSelector = `tr[data-entry-id="${e.id}"]`;
                         const existingRow = $(rowSelector);
 
                         if (e.action === 'submitted' && existingRow.length === 0) {
-                            // Only add a row if the action is 'submitted' and no existing row
+                            // Add new row
                             const newRow = table.row.add([
                                 '',
                                 e.control_number,
@@ -624,6 +652,7 @@
                                 e.claimant_name,
                                 e.case_worker,
                                 badge,
+                                department,
                                 generateActionLink(e.id),
                             ]).draw(false).node();
 
@@ -631,10 +660,28 @@
                             $(newRow).addClass('table-success');
                             setTimeout(() => $(newRow).removeClass('table-success'), 3000);
                         } else if (existingRow.length > 0) {
-                            // For updates or rollbacks: update the existing row’s status badge
+                            // Update status badge
                             existingRow.find('td').eq(5).html(badge);
+
+                            // Update department responsible
+                            existingRow.find('td').eq(6).html(department);
                         }
                     });
+
+                function getDepartment(status) {
+                    const cleanStatus = status.replace('[ROLLED BACK]', '').trim();
+                    const statusMap = {
+                        'Submitted': "Mayor's Office",
+                        'Submitted[Emergency]': "Mayor's Office",
+                        'Approved': 'Budget Office',
+                        'Rejected': 'CSWD Office',
+                        'Budget Allocated': 'Accounting Office',
+                        'DV Submitted': 'Treasury Office',
+                        'Disbursed': 'Completed',
+                        'Ready for Disbursement': 'Treasury Office',
+                    };
+                    return statusMap[cleanStatus] || 'N/A';
+                }
 
                 function formatDate(input) {
                     const date = new Date(input);

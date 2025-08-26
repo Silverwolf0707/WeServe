@@ -132,7 +132,7 @@ class PermissionsTableSeeder extends Seeder
             ],
             [
                 'id' => 32,
-                'title' => 'accounting_input_dv',
+                'title' => 'accounting_dv_input',
             ],
             [
                 'id' => 33,
@@ -161,6 +161,18 @@ class PermissionsTableSeeder extends Seeder
             [
                 'id' => 39,
                 'title' => 'budget_records',
+            ],
+            [
+                'id' => 40,
+                'title' => 'disbursed_message_automation',
+            ],
+            [
+                'id'    => 41,
+                'title' => 'online_application_access',
+            ],
+            [
+                'id' => 42,
+                'title' => 'treasury_disburse',
             ],
         ];
 

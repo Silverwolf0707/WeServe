@@ -1,11 +1,17 @@
 @extends('layouts.admin')
 
 @section('content')
-    <div class="card">
-        <div class="card-header d-flex align-items-center" style="background-color: green; color: white;">
+<div class="card shadow-sm border-0">
+    <!-- Modernized Header -->
+    <div class="card-header custom-header d-flex align-items-center" style="background-color: green; color: white; min-height: 80px; padding: 1.5rem;">
+        <h4 class="mb-0 fw-bold d-flex align-items-center">
             <i class="fas fa-file-alt me-2"></i> {{-- You can change this icon to any you prefer --}}
             {{ trans('cruds.auditLog.title_singular') }} {{ trans('global.list') }}
+        </h4>
+        <div class="header-actions d-flex align-items-center ms-auto">                   
         </div>
+    </div>
+</div>
 
 
         <div class="card-body">

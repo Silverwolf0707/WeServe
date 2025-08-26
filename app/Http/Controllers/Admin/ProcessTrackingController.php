@@ -105,11 +105,11 @@ class ProcessTrackingController extends Controller
         }
 
         // Reload patient with latest status log and user
-        $patient->load('latestStatusLog.user');
+        $patient->load('latestStatusLog');
 
         // Broadcast updates
         $action = $request->action === 'approve' ? 'approved' : 'rejected';
-        broadcast(new PatientProcessUpdated($patient));
+
         broadcast(new PatientStatusChanged($patient, $action));
 
 
@@ -1018,5 +1018,37 @@ class ProcessTrackingController extends Controller
         broadcast(new PatientStatusChanged($patient, strtolower($previousLog->status)));
 
         return back()->with('status', 'Case returned to previous rollbacker.');
+    }
+    public function submit(Request $request, $id)
+    {
+        abort_if(Gate::denies('submit_patient_application'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $request->validate([
+            'remarks' => 'required|string|max:1000',
+            'status' => 'required|string',
+            'submitted_date' => 'required|date'
+        ]);
+
+        $status = $request->input('status');
+        $statusDate = $request->input('submitted_date');
+
+        // Create status log
+        PatientStatusLog::create([
+            'patient_id' => $id,
+            'status' => $status,
+            'user_id' => Auth::id(),
+            'status_date' => $statusDate,
+            'remarks' => $request->remarks,
+            'created_at' => now(),
+        ]);
+
+        $patient = PatientRecord::with('latestStatusLog')->findOrFail($id);
+
+        $action = $status === 'Submitted' ? 'submitted' : 'updated';
+        broadcast(new PatientStatusChanged($patient, $action))->toOthers();
+
+        return redirect()
+            ->route('admin.process-tracking.show', $id)
+            ->with('success', 'Application submitted successfully with remarks.');
     }
 }

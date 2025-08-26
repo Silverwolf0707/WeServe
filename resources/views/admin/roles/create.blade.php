@@ -2,10 +2,17 @@
 @section('content')
 
 <div class="card shadow-lg border-0 rounded-3">
-    <div class="card-header bg-success text-white d-flex align-items-center">
-        <i class="fas fa-user-shield me-2"></i>
-        <h5 class="mb-0">{{ trans('global.create') }} {{ trans('cruds.role.title_singular') }}</h5>
+    <!-- Modernized Header -->
+    <div class="card-header custom-header d-flex align-items-center bg-success text-white" style="min-height: 80px; padding: 1.5rem;">
+        <h4 class="mb-0 fw-bold d-flex align-items-center">
+            <i class="fas fa-user-shield me-2"></i>
+            {{ trans('global.create') }} {{ trans('cruds.role.title_singular') }}
+        </h4>
+        <div class="header-actions d-flex align-items-center ms-auto">
+        </div>
     </div>
+</div>
+
 
     <div class="card-body p-4">
         <form method="POST" action="{{ route('admin.roles.store') }}" enctype="multipart/form-data">

@@ -1,23 +1,20 @@
 @extends('layouts.admin')
 @section('content')
-
-    <style>
-        .btn-warning {
-            color: black !important;
-        }
-    </style>
-
     <div class="card shadow-sm border-0">
-        <div class="card-header text-white d-flex align-items-center" style="background-color: green;">
-            <h5 class="mb-0">
+        <!-- Modernized Header -->
+        <div class="card-header custom-header d-flex align-items-center"
+            style="background-color: green; color: white; min-height: 80px; padding: 1.5rem;">
+            <h4 class="mb-0 fw-bold d-flex align-items-center">
                 <i class="fas fa-users me-2"></i> {{ trans('cruds.user.title') }}
-            </h5>
+            </h4>
 
-            @can('user_create')
-                <a class="btn btn-warning ms-auto" href="{{ route('admin.users.create') }}" style="color: black !important;">
-                    <i class="fas fa-user-plus me-1"></i> {{ trans('global.add') }} {{ trans('cruds.user.title_singular') }}
-                </a>
-            @endcan
+            <div class="header-actions d-flex align-items-center ms-auto">
+                @can('user_create')
+                    <a class="btn btn-add" href="{{ route('admin.users.create') }}">
+                        <i class="fas fa-user-plus"></i> {{ trans('global.add') }} {{ trans('cruds.user.title_singular') }}
+                    </a>
+                @endcan
+            </div>
         </div>
     </div>
 

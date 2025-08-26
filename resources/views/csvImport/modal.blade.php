@@ -11,8 +11,6 @@
             <div class="modal-body">
                 <form method="POST" action="{{ route($route, ['model' => $model]) }}" enctype="multipart/form-data">
                     @csrf
-
-                    <!-- File Upload -->
                     <div class="mb-3">
                         <label for="csv_file" class="form-label">
                             {{ trans('global.app_csv_file_to_import') }}
@@ -39,15 +37,12 @@
                             <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
                     </div>
-
-                    <!-- Action Buttons -->
                     <div class="d-flex justify-content-between">
             
                          <a class="btn btn-secondary" href="{{ route('admin.patient-records.index') }}">
                             <i class="fas fa-arrow-left me-1"></i> Back to List
                         </a>
 
-                        <!-- Submit -->
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-file-import me-1"></i> {{ trans('global.app_parse_csv') }}
                         </button>

@@ -1,9 +1,17 @@
 @extends('layouts.admin')
 @section('content')
 
-<div class="card">
-    <div class="card-header bg-primary text-white font-weight-bold">
-        <i class="fas fa-file-alt me-2"></i> {{ __('Documents List') }}
+
+    <div class="card shadow-sm border-0">
+        <!-- Modernized Header -->
+        <div class="card-header custom-header d-flex align-items-center bg-primary text-white"
+            style="min-height: 80px; padding: 1.5rem;">
+            <h4 class="mb-0 fw-bold d-flex align-items-center">
+                <i class="fas fa-file-alt me-2"></i> {{ __('Documents List') }}
+            </h4>
+            <div class="header-actions d-flex align-items-center ms-auto">
+            </div>
+        </div>
     </div>
 
     <div class="card-body">

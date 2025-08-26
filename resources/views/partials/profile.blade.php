@@ -1,46 +1,70 @@
 <div class="modal fade" id="profileModal" tabindex="-1" aria-labelledby="profileModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-        <div class="modal-content shadow rounded-4 border-0 overflow-hidden">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
 
-            <!-- Profile Image -->
-            <div class="position-relative text-center pt-3"
+            <!-- Profile Header -->
+            <div class="position-relative text-center py-4"
                 style="background: linear-gradient(135deg, #4e73df, #1cc88a);">
-                <div class="rounded-circle border border-3 border-white shadow-sm mx-auto"
-                    style="width: 90px; height: 90px; background-color: #ffffff; overflow: hidden;">
-                    @if(Auth::user()->profile_image)
-                        <img src="{{ asset('storage/' . Auth::user()->profile_image) }}" alt="Profile"
-                            class="rounded-circle w-100 h-100 object-fit-cover">
-                    @else
-                        <i class="fas fa-user text-secondary" style="font-size: 90px; line-height: 90px;"></i>
-                    @endif
+
+                <div class="position-relative mx-auto mb-2" style="width: 120px; height: 120px;">
+                    <div class="rounded-circle border border-4 border-white shadow w-100 h-100 overflow-hidden" id="profilePreview">
+                        @if(Auth::user()->profile_image)
+                            <img src="{{ asset('storage/' . Auth::user()->profile_image) }}" alt="Profile"
+                                class="rounded-circle w-100 h-100 object-fit-cover">
+                        @else
+                            <i class="fas fa-user text-secondary" style="font-size: 80px; line-height: 120px;"></i>
+                        @endif
+                    </div>
+
+                    <label for="profileImageInput" class="position-absolute bottom-0 end-0 bg-white rounded-circle p-1 shadow" style="cursor: pointer;">
+                        <i class="fas fa-camera text-primary"></i>
+                    </label>
+                    <input type="file" id="profileImageInput" class="d-none" accept="image/*">
                 </div>
+
+                <h5 class="text-white fw-bold mb-0">{{ Auth::user()->name }}</h5>
+                <small class="text-white-50">{{ Auth::user()->roles->pluck('title')->first() ?? 'User' }}</small>
             </div>
 
-
-            <div class="modal-body px-3 py-2">
-                <ul class="list-group list-group-flush list-unstyled">
+            <div class="modal-body px-4 py-3">
+                <ul class="list-group list-group-flush">
                     <li class="list-group-item d-flex align-items-center border-0 px-0 py-2">
-                        <i class="fas fa-user text-primary me-2 fa-sm"></i>
-                        <span class="text-dark"><strong>Name:</strong> {{ Auth::user()->name }}</span>
+                        <i class="fas fa-envelope text-info me-3 fa-lg"></i>
+                        <div>
+                            <strong>Email</strong>
+                            <div class="text-muted">{{ Auth::user()->email }}</div>
+                        </div>
                     </li>
                     <li class="list-group-item d-flex align-items-center border-0 px-0 py-2">
-                        <i class="fas fa-envelope text-info me-2 fa-sm"></i>
-                        <span class="text-dark"><strong>Email:</strong> {{ Auth::user()->email }}</span>
-                    </li>
-                    <li class="list-group-item d-flex align-items-center border-0 px-0 py-2">
-                        <i class="fas fa-user-tag text-warning me-2 fa-sm"></i>
-                        <span class="text-dark"><strong>Role:</strong>
-                            {{ Auth::user()->roles->pluck('title')->first() ?? 'User' }}</span>
+                        <i class="fas fa-user-tag text-warning me-3 fa-lg"></i>
+                        <div>
+                            <strong>Role</strong>
+                            <div class="text-muted">{{ Auth::user()->roles->pluck('title')->first() ?? 'User' }}</div>
+                        </div>
                     </li>
                 </ul>
             </div>
 
-
-            <!-- Footer -->
-            <div class="modal-footer px-3 py-2 d-flex justify-content-between" style="background-color: #f8f9fc;">
-                <button type="button" class="btn btn-success btn-sm" data-bs-dismiss="modal">Close</button>
+            <div class="modal-footer border-0 justify-content-center py-3"
+                 style="background-color: #f1f3f7;">
+                <button type="button" class="btn btn-primary btn-lg" data-bs-dismiss="modal">Close</button>
             </div>
-
         </div>
     </div>
 </div>
+
+<script>
+    const profileInput = document.getElementById('profileImageInput');
+    const profilePreview = document.getElementById('profilePreview');
+
+    profileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if(file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                profilePreview.innerHTML = `<img src="${event.target.result}" class="rounded-circle w-100 h-100 object-fit-cover">`;
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+</script>

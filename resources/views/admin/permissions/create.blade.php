@@ -2,14 +2,18 @@
 
 @section('content')
 <div class="card shadow-sm border-0">
-    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+    <!-- Modernized Header -->
+    <div class="card-header custom-header d-flex justify-content-between align-items-center bg-success text-white" style="min-height: 80px; padding: 1.5rem;">
         <div>
-            <h5 class="mb-0">
+            <h4 class="mb-1 fw-bold d-flex align-items-center">
                 <i class="fas fa-key me-2"></i> {{ trans('global.create') }} {{ trans('cruds.permission.title_singular') }}
-            </h5>
+            </h4>
             <small class="text-white-50">{{ trans('cruds.permission.fields.title_helper') }}</small>
         </div>
+        <div class="header-actions d-flex align-items-center ms-auto">
+        </div>
     </div>
+</div>
 
     <div class="card-body">
         <form method="POST" action="{{ route('admin.permissions.store') }}" enctype="multipart/form-data">

@@ -80,8 +80,8 @@
             <div class="stepper">
                 @foreach ($steps as $index => $step)
                     <div class="stepper-step
-                        {{ $baseStatus !== 'Rejected' && $index < $currentIndex ? 'completed' : '' }} 
-                        {{ $baseStatus !== 'Rejected' && $index === $currentIndex ? 'active' : '' }}">
+                                {{ $baseStatus !== 'Rejected' && $index < $currentIndex ? 'completed' : '' }} 
+                                {{ $baseStatus !== 'Rejected' && $index === $currentIndex ? 'active' : '' }}">
 
                         <div class="stepper-circle">
                             @if ($baseStatus !== 'Rejected' && $index <= $currentIndex)
@@ -150,11 +150,7 @@
                                     {{ \Carbon\Carbon::parse($log->status_date)->format('F j, Y g:i A') }}<br>
                                     <em>Remarks:</em> {{ $log->remarks ?? '-' }}
                                 </div>
-                                <div>
-                                    <a href="#" data-bs-toggle="modal" data-bs-target="#processModal" title="View Action">
-                                        <i class="fas fa-eye text-primary"></i>
-                                    </a>
-                                </div>
+                                
                             </li>
                         @endforeach
                     </ul>
@@ -576,20 +572,24 @@
                     )
                     @if ($baseStatus === 'DV Submitted' && $patient->budgetAllocation->budget_status === 'Not Disbursed')
                         {{-- READY FOR DISBURSEMENT --}}
-                        <form action="{{ route('admin.process-tracking.sendOtp', $patient->id) }}" method="POST" class="d-inline-block">
-                            @csrf
-                            <button class="btn btn-warning mt-4">Ready for Disbursement</button>
-                        </form>
+                        @can('disbursed_message_automation')
+                            <form action="{{ route('admin.process-tracking.sendOtp', $patient->id) }}" method="POST" class="d-inline-block">
+                                @csrf
+                                <button class="btn btn-warning btn-lg px-4 text-white mt-4">
+                                    <i class="fas fa-exclamation-circle me-1"></i> Ready for Disbursement</button>
+                            </form>
+                        @endcan
+                        <button type="button" class="btn btn-success btn-lg px-4 text-white mt-4" data-bs-toggle="modal"
+                            data-bs-target="#quickDisburseModal">
+                            <i class="fas fa-check-circle me-1"></i> Quick Disburse
+                        </button>
 
                         <button type="button" class="btn btn-danger btn-lg px-4 text-white mt-4" data-bs-toggle="modal"
                             data-bs-target="#rollbackModal">
                             <i class="fas fa-undo-alt me-1"></i> Rollback Process
                         </button>
 
-                        <button type="button" class="btn btn-outline-success mt-2" data-bs-toggle="modal"
-                            data-bs-target="#quickDisburseModal">
-                            Quick Disburse (No OTP)
-                        </button>
+
                     @elseif ($baseStatus === 'Ready for Disbursement')
                         {{-- VERIFY OTP --}}
                         @php
@@ -646,6 +646,57 @@
                                         data-bs-dismiss="modal">Cancel</button>
                                 </div>
                             </div>
+                        </form>
+                    </div>
+                </div>
+            @endcan
+            @php
+                $latestStatusValue = optional($latestStatus)->status;
+                $isLocked = !in_array($latestStatusValue, [null, 'Rejected', 'Processing']);
+            @endphp
+
+            @can('submit_patient_application')
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <i class="fas fa-paper-plane mr-2"></i> Submit Application
+                    </div>
+
+                    <div class="card-body">
+                        <form method="POST">
+                            @csrf
+                            <input type="hidden" name="status" value="Submitted">
+
+                            <div class="form-group">
+                                <label for="submitted_date">Submitted Date</label>
+                                <input type="datetime-local" name="submitted_date" id="submitted_date" class="form-control mb-3"
+                                    value="{{ now()->toDateTimeLocalString() }}" @if($isLocked) disabled @endif>
+
+                                <label for="remarks">Remarks</label>
+                                <textarea name="remarks" id="remarks" rows="4" class="form-control" required @if($isLocked)
+                                disabled @endif></textarea>
+                            </div>
+
+                            <div class="d-flex justify-content-between">
+                                {{-- Normal submit --}}
+                                <button type="submit"
+                                    formaction="{{ route('admin.process-tracking.submit', $patient->id) }}"
+                                    class="btn btn-primary" @if($isLocked) disabled @endif>
+                                    Submit
+                                </button>
+
+                                {{-- Emergency submit --}}
+                                <button type="submit"
+                                    formaction="{{ route('admin.patient-records.submit-emergency', $patient->id) }}"
+                                    class="btn btn-danger" @if($isLocked) disabled @endif>
+                                    Submit [Emergency]
+                                </button>
+                            </div>
+
+                            @if($isLocked)
+                                <div class="alert alert-info mt-3">
+                                    This application has already been submitted and is currently in process.
+                                </div>
+                            @endif
                         </form>
                     </div>
                 </div>

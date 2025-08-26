@@ -3,12 +3,18 @@
 @section('content')
 <div class="container-fluid" style="background-color: #f8f9fa; padding: 20px;">
     <div class="card shadow-sm">
-        <div class="card-header bg-dark text-white d-flex align-items-center">
-            <h5 class="mb-0">
+        <!-- Modernized Header -->
+        <div class="card-header custom-header d-flex align-items-center bg-dark text-white" style="min-height: 80px; padding: 1.5rem;">
+            <h4 class="mb-0 fw-bold d-flex align-items-center">
                 <i class="fas fa-user-edit me-2"></i>
                 {{ trans('global.edit') }} {{ trans('cruds.user.title_singular') }}
-            </h5>
+            </h4>
+            <div class="header-actions d-flex align-items-center ms-auto">
+            </div>
         </div>
+    </div>
+</div>
+
 
         <div class="card-body bg-white">
             <form method="POST" action="{{ route('admin.users.update', [$user->id]) }}" enctype="multipart/form-data">

@@ -2,56 +2,96 @@
 
 @section('content')
     <div class="content">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h4 class="fw-bold">Welcome {{ Auth::user()->name }}</h4>
-            <form method="GET" action="{{ route('admin.home') }}" class="d-flex align-items-center">
-                <label for="year" class="me-2 mb-0 text-muted">Select Year:</label>
-                <select name="year" id="year" class="form-select" onchange="this.form.submit()">
-                    <option value="">All</option>
-                    @foreach($availableYears as $year)
-                        <option value="{{ $year }}" {{ request('year') == $year ? 'selected' : '' }}>{{ $year }}</option>
-                    @endforeach
-                </select>
-            </form>
-        </div>
-
-        @if(session('status'))
-            <div class="alert alert-success rounded shadow-sm">
-                {{ session('status') }}
+        <div class="dashboard-header position-relative mb-4">
+            <div class="bubbles">
+                <div class="bubble" style="left:10%; width:20px; height:20px; animation-duration:12s;"></div>
+                <div class="bubble" style="left:30%; width:30px; height:30px; animation-duration:18s;"></div>
+                <div class="bubble" style="left:50%; width:25px; height:25px; animation-duration:15s;"></div>
+                <div class="bubble" style="left:70%; width:35px; height:35px; animation-duration:20s;"></div>
+                <div class="bubble" style="left:90%; width:20px; height:20px; animation-duration:17s;"></div>
             </div>
-        @endif
 
-        {{-- STAT CARDS --}}
-        <div class="row g-4 mb-4">
-            @php
-                $cards = [
-                    ['label' => 'Total Patients', 'value' => $totalPatients, 'icon' => 'users', 'color' => 'primary'],
-                    ['label' => 'Burial Aid Case', 'value' => $totalBurialPatient, 'icon' => 'dove', 'color' => 'success'],
-                    ['label' => 'Educational Aid Case', 'value' => $totalEducationalPatient, 'icon' => 'book', 'color' => 'warning'],
-                    ['label' => 'Medical Aid', 'value' => $totalMedicalPatient, 'icon' => 'hospital', 'color' => 'danger']
-                ];
-            @endphp
+            <div class="header-flex container-fluid d-flex flex-column flex-md-row align-items-center gap-3">
+                <div class="profile-circle d-flex align-items-center justify-content-center">
+                    <i class="fas fa-user profile-icon"></i>
+                </div>
 
-            @foreach($cards as $card)
-                <div class="col-sm-6 col-xl-3">
-                    <div class="card shadow-sm border-0 h-100 bg-{{ $card['color'] }} text-white">
-                        <div class="card-body d-flex justify-content-between align-items-center">
-                            <div>
-                                <h2 class="fw-bold mb-1">{{ number_format($card['value']) }}</h2>
-                                <p class="mb-0">{{ $card['label'] }}</p>
-                            </div>
-                            <div>
-                                <i class="fas fa-{{ $card['icon'] }} fa-2x"></i>
-                            </div>
+                <div class="welcome-content flex-grow-1">
+                    <h2 class="welcome-title">
+                        Welcome, <span class="user-name">{{ Auth::user()->name }}</span>!
+                    </h2>
+                    <p class="datetime-display" id="current-datetime">Loading date & time...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    @if (session('status'))
+        <div class="alert alert-success rounded shadow-sm">
+            {{ session('status') }}
+        </div>
+    @endif
+
+    <div class="row g-4 mb-4">
+        @php
+            $cards = [
+                [
+                    'label' => 'Total Patients',
+                    'value' => $totalPatients,
+                    'icon' => 'users',
+                    'color' => '#4e73df',
+                    'colorDark' => '#2e59d9',
+                ],
+                [
+                    'label' => 'Burial Aid Case',
+                    'value' => $totalBurialPatient,
+                    'icon' => 'dove',
+                    'color' => '#38a169',
+                    'colorDark' => '#2f855a',
+                ],
+                [
+                    'label' => 'Educational Aid Case',
+                    'value' => $totalEducationalPatient,
+                    'icon' => 'book',
+                    'color' => '#f6c23e',
+                    'colorDark' => '#d69e2e',
+                ],
+                [
+                    'label' => 'Medical Aid',
+                    'value' => $totalMedicalPatient,
+                    'icon' => 'hospital',
+                    'color' => '#e74a3b',
+                    'colorDark' => '#c5302c',
+                ],
+            ];
+        @endphp
+
+        @foreach ($cards as $card)
+            <div class="col-sm-6 col-xl-3">
+                <div class="dashboard-card"
+                    style="--card-color: {{ $card['color'] }}; --card-color-dark: {{ $card['colorDark'] }};">
+                    {{-- Card Header --}}
+                    <div class="card-header-bg">
+                        <div class="card-icon">
+                            <i class="fas fa-{{ $card['icon'] }}"></i>
+                        </div>
+                    </div>
+
+                    {{-- Card Body --}}
+                    <div class="card-body">
+                        <div class="card-content">
+                            <h3 class="card-title">{{ $card['label'] }}</h3>
+                            <p class="stats-value">{{ number_format($card['value']) }}</p>
                         </div>
                     </div>
                 </div>
-            @endforeach
-        </div>
+            </div>
+        @endforeach
+    </div>
 
-        {{-- MAIN CONTENT --}}
-        <div class="row g-4">
-            {{-- LEFT: RECENTLY SUBMITTED APPLICATIONS --}}
+    <div class="row g-4">
+        @can('submit_patient_application')
             <div class="col-lg-6">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-header bg-white fw-semibold">
@@ -67,113 +107,215 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td>APP001</td>
-                                    <td>Juan Dela Cruz</td>
-                                    <td>Medical</td>
-                                </tr>
-                                <tr>
-                                    <td>APP002</td>
-                                    <td>Maria Santos</td>
-                                    <td>Education</td>
-                                </tr>
-                                <tr>
-                                    <td>APP003</td>
-                                    <td>Pedro Reyes</td>
-                                    <td>Burial</td>
-                                </tr>
-                                <tr>
-                                    <td>APP004</td>
-                                    <td>Anna Lopez</td>
-                                    <td>Emergency</td>
-                                </tr>
-                                <tr>
-                                    <td>APP005</td>
-                                    <td>Carlos Garcia</td>
-                                    <td>Medical</td>
-                                </tr>
-                                <tr>
-                                    <td>APP006</td>
-                                    <td>Liza Ramos</td>
-                                    <td>Education</td>
-                                </tr>
-                                <tr>
-                                    <td>APP007</td>
-                                    <td>Michael Cruz</td>
-                                    <td>Burial</td>
-                                </tr>
-                                <tr>
-                                    <td>APP008</td>
-                                    <td>Sofia Navarro</td>
-                                    <td>Emergency</td>
-                                </tr>
-                                <tr>
-                                    <td>APP009</td>
-                                    <td>Jose Fernandez</td>
-                                    <td>Medical</td>
-                                </tr>
-                                <tr>
-                                    <td>APP010</td>
-                                    <td>Angela Dizon</td>
-                                    <td>Education</td>
-                                </tr>
+                                @forelse($recentlySubmitted as $log)
+                                    <tr>
+                                        <td>{{ $log->patient->control_number ?? 'N/A' }}</td>
+                                        <td>{{ $log->patient->claimant_name ?? 'Unknown' }}</td>
+                                        <td>{{ $log->patient->case_category ?? 'N/A' }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">
+                                            No recent submissions.
+                                        </td>
+                                    </tr>
+                                @endforelse
                             </tbody>
-
                         </table>
                     </div>
                 </div>
             </div>
-
-            {{-- RIGHT: STACKED CHARTS --}}
-            <div class="col-lg-6 d-flex flex-column gap-4">
-                {{-- BARANGAY CHART --}}
-                <div class="card border-0 shadow-sm">
+        @endcan
+        @can('approve_patient')
+            <div class="col-lg-6">
+                <div class="card border-0 shadow-sm h-100">
                     <div class="card-header bg-white fw-semibold">
-                        Patients per Barangay
+                        Recently Approved or Rejected Applications
                     </div>
-                    <div class="card-body">
-                        <div class="chart-container" style="position: relative; height: 250px;">
-                            <canvas id="barangayChart"></canvas>
-                        </div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Code</th>
+                                    <th>Name</th>
+                                    <th>Category</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($recentlyApprovedRejected as $log)
+                                    <tr>
+                                        <td>{{ $log->patient->control_number ?? 'N/A' }}</td>
+                                        <td>{{ $log->patient->claimant_name ?? 'Unknown' }}</td>
+                                        <td>{{ $log->patient->case_category ?? 'N/A' }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">
+                                            No recent submissions.
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
                     </div>
                 </div>
+            </div>
+        @endcan
 
-                {{-- MONTHLY CHART --}}
-                <div class="card border-0 shadow-sm">
+        @can('accounting_dv_input')
+            <div class="col-lg-6">
+                <div class="card border-0 shadow-sm h-100">
                     <div class="card-header bg-white fw-semibold">
-                        Patients Per Month
+                        Recently DV Inputted Applications
                     </div>
-                    <div class="card-body">
-                        <div class="chart-container" style="position: relative; height: 250px;">
-                            <canvas id="monthlyChart"></canvas>
-                        </div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Code</th>
+                                    <th>Name</th>
+                                    <th>Category</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($recentlyDVSubmitted as $log)
+                                    <tr>
+                                        <td>{{ $log->patient->control_number ?? 'N/A' }}</td>
+                                        <td>{{ $log->patient->claimant_name ?? 'Unknown' }}</td>
+                                        <td>{{ $log->patient->case_category ?? 'N/A' }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">
+                                            No recent submissions.
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        @endcan
+        @can('budget_allocate')
+            <div class="col-lg-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white fw-semibold">
+                        Recently Budget Allocated Applications
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Code</th>
+                                    <th>Name</th>
+                                    <th>Category</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($recentlyBudgetAllocated as $log)
+                                    <tr>
+                                        <td>{{ $log->patient->control_number ?? 'N/A' }}</td>
+                                        <td>{{ $log->patient->claimant_name ?? 'Unknown' }}</td>
+                                        <td>{{ $log->patient->case_category ?? 'N/A' }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">
+                                            No recent submissions.
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        @endcan
+        @can('treasury_disburse')
+            <div class="col-lg-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white fw-semibold">
+                        Recently Disbursed Applications
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Code</th>
+                                    <th>Name</th>
+                                    <th>Category</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($recentlyDisbursed as $log)
+                                    <tr>
+                                        <td>{{ $log->patient->control_number ?? 'N/A' }}</td>
+                                        <td>{{ $log->patient->claimant_name ?? 'Unknown' }}</td>
+                                        <td>{{ $log->patient->case_category ?? 'N/A' }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">
+                                            No recent submissions.
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        @endcan
+
+        <div class="col-lg-6 d-flex flex-column gap-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white fw-semibold">
+                    Patients per Barangay
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="position: relative; height: 250px;">
+                        <canvas id="barangayChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white fw-semibold">
+                    Patients Per Month
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="position: relative; height: 250px;">
+                        <canvas id="monthlyChart"></canvas>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+    </div>
 @endsection
 
 @section('scripts')
     @parent
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // Dummy data - replace with dynamic values from Blade if needed
-        const barangayLabels = ['Barangay 1', 'Barangay 2', 'Barangay 3', 'Barangay 4'];
-        const barangayData = [45, 30, 25, 10];
+        const barangayLabels = @json($barangayLabels);
+        const barangayData = @json($barangayData);
 
-        const monthLabels = ['January', 'February', 'March', 'April', 'May'];
-        const monthData = [10, 20, 15, 25, 30];
+        const monthLabels = @json($monthlyLabels);
+        const monthData = @json($monthlyData);
 
-        // Patients per Barangay (Doughnut)
         new Chart(document.getElementById('barangayChart'), {
             type: 'doughnut',
             data: {
                 labels: barangayLabels,
                 datasets: [{
-                    label: 'Patients',
                     data: barangayData,
-                    backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e'],
+                    backgroundColor: [
+                        '#4e73df', '#1cc88a', '#36b9cc',
+                        '#f6c23e', '#e74a3b', '#858796',
+                        '#20c997', '#6610f2', '#6f42c1',
+                        '#fd7e14', '#e83e8c', '#198754'
+                    ],
                     borderWidth: 1
                 }]
             },
@@ -188,7 +330,6 @@
             }
         });
 
-        // Patients Per Month (Line)
         new Chart(document.getElementById('monthlyChart'), {
             type: 'line',
             data: {
@@ -197,7 +338,7 @@
                     label: 'Patients',
                     data: monthData,
                     borderColor: '#4e73df',
-                    backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                    backgroundColor: 'rgba(78,115,223,0.1)',
                     tension: 0.4,
                     fill: true,
                     pointRadius: 3,
@@ -214,5 +355,22 @@
                 }
             }
         });
+    </script>
+
+    <script>
+        function updateDateTime() {
+            const now = new Date();
+            const options = {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            };
+            const dateStr = now.toLocaleDateString(undefined, options);
+            const timeStr = now.toLocaleTimeString();
+            document.getElementById('current-datetime').textContent = `${dateStr} | ${timeStr}`;
+        }
+        setInterval(updateDateTime, 1000);
+        updateDateTime();
     </script>
 @endsection

@@ -1,20 +1,22 @@
 @extends('layouts.admin')
 @section('content')
 
-    <div class="card-header d-flex justify-content-between align-items-center"
-        style="background-color: green; color: white;">
-        <div>
-            <h5 class="mb-0">
+    <div class="card shadow-sm border-0">
+        <!-- Modernized Header -->
+        <div class="card-header custom-header d-flex align-items-center">
+            <h4 class="mb-0 fw-bold d-flex align-items-center text-white">
                 <i class="fas fa-lock me-2"></i> {{ trans('cruds.permission.title') }}
-            </h5>
+            </h4>
+
+            <div class="header-actions d-flex align-items-center ms-auto">
+                @can('permission_create')
+                    <a class="btn btn-add me-2" href="{{ route('admin.permissions.create') }}">
+                        <i class="fas fa-plus me-1"></i>
+                        {{ trans('global.add') }} {{ trans('cruds.permission.title_singular') }}
+                    </a>
+                @endcan
+            </div>
         </div>
-
-        @can('permission_create')
-            <a class="btn btn-warning ms-auto" href="{{ route('admin.permissions.create') }}">
-                <i class="fas fa-plus me-1"></i> {{ trans('global.add') }} {{ trans('cruds.permission.title_singular') }}
-            </a>
-
-        @endcan
     </div>
 
 
@@ -108,7 +110,6 @@
                 orderCellsTop: true,
                 order: [[1, 'desc']],
                 pageLength: 100
-                // dom removed here — will use global from layouts.admin
             });
 
             let table = $('.datatable-Permission:not(.ajaxTable)').DataTable({
@@ -122,7 +123,6 @@
     </script>
 
     <style>
-        /* Extra spacing between buttons */
         .dt-buttons .btn {
             margin-right: 5px;
         }

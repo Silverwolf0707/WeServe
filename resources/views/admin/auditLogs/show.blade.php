@@ -3,12 +3,18 @@
 @section('content')
 <div class="container-fluid" style="background-color: #f8f9fa; padding: 20px;">
     <div class="card shadow-sm">
-        <div class="card-header bg-dark text-white d-flex align-items-center">
-            <h5 class="mb-0">
-                <i class="fas fa-clipboard-list mr-2"></i>
+        <!-- Modernized Header -->
+        <div class="card-header custom-header d-flex align-items-center bg-dark text-white" style="min-height: 70; padding: 1.5rem;">
+            <h4 class="mb-0 fw-bold d-flex align-items-center">
+                <i class="fas fa-clipboard-list me-2"></i>
                 {{ trans('global.show') }} {{ trans('cruds.auditLog.title') }}
-            </h5>
+            </h4>
+            <div class="header-actions d-flex align-items-center ms-auto">
+            </div>
         </div>
+    </div>
+</div>
+
 
         <div class="card-body bg-white">
             <table class="table table-bordered table-striped">

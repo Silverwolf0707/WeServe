@@ -75,6 +75,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
 
     //process tracking
     Route::resource('process-tracking', ProcessTrackingController::class)->only(['index', 'show']);
+    Route::post('process-tracking/{id}/submit', [ProcessTrackingController::class, 'submit'])->name('process-tracking.submit');
     Route::post('process-tracking/{id}/decision', [ProcessTrackingController::class, 'decision'])->name('process-tracking.decision');
     Route::post('process-tracking/mass-decision', [ProcessTrackingController::class, 'massDecision'])->name('process-tracking.massDecision');
 
@@ -116,11 +117,11 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     Route::get('statistics/get-statistics', [StatisticsController::class, 'index'])->name('statistics.getStatistics');
 
     Route::get('statistics/deficiencies', [StatisticsController::class, 'getDeficiencyData'])->name('statistics.deficiencies');
+    Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
+    Route::delete('settings/delete-all', [SettingsController::class, 'deleteAll'])->name('settings.deleteAll');
 });
 
-Route::group(['prefix' => 'settings', 'as' => 'settings.', 'middleware' => ['auth']], function () {
-    Route::get('/', [SettingsController::class, 'index'])->name('index');
-});
+
 
 
 Route::group(['prefix' => 'profile', 'as' => 'profile.', 'middleware' => ['auth']], function () {

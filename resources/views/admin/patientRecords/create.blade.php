@@ -151,14 +151,12 @@
         var timerEl = document.getElementById('toast-timer');
 
         if (toastEl) {
-            // Show toast with 5s delay
             var toast = new bootstrap.Toast(toastEl, {
                 autohide: true,
                 delay: 5000
             });
             toast.show();
 
-            // Countdown timer for display
             let remaining = 5;
             const interval = setInterval(() => {
                 remaining--;
