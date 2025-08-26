@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\Traits;
 
+use App\Models\PatientStatusLog;
+use App\Models\BudgetAllocation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use SpreadsheetReader;
@@ -21,7 +24,6 @@ trait CsvImportTrait
             $modelClass = "App\\Models\\" . $modelName;
 
             $reader = new SpreadsheetReader($path);
-            // Auto-detect header row
             $reader->rewind();
             $firstRow = $reader->current();
             $matchCount = 0;
@@ -32,10 +34,10 @@ trait CsvImportTrait
             }
             $skipHeader = $matchCount > 0;
 
-            $insert = [];
+            $insert   = [];
+            $rowsData = [];
 
             foreach ($reader as $index => $row) {
-                // Skip detected header
                 if ($skipHeader && $index === 0) {
                     continue;
                 }
@@ -44,10 +46,9 @@ trait CsvImportTrait
                 foreach ($fields as $header => $colIndex) {
                     if (isset($row[$colIndex]) && $row[$colIndex] !== '') {
                         $value = $row[$colIndex];
-                        if (in_array($header, ['date_processed', 'created_at', 'updated_at'])) {
+                        if (in_array($header, ['date_processed', 'created_at', 'updated_at', 'disbursed_date', 'allocation_date'])) {
                             try {
-                                $value = Carbon::createFromFormat('m/d/Y H:i', $value)
-                                               ->format('Y-m-d H:i:s');
+                                $value = Carbon::parse($value)->format('Y-m-d H:i:s');
                             } catch (\Exception $e) {
                                 $value = null;
                             }
@@ -56,15 +57,41 @@ trait CsvImportTrait
                     }
                 }
 
-                // Only insert rows where all mapped fields are present
                 if (count($tmp) === count($fields)) {
-                    $insert[] = $tmp;
+                    $insert[]   = $tmp;
+                    $rowsData[] = $tmp;
                 }
             }
 
-            // Insert in chunks
-            foreach (array_chunk($insert, 100) as $batch) {
-                $modelClass::insert($batch);
+            // Insert records and handle disbursed + budget allocation
+            foreach (array_chunk($rowsData, 100) as $batch) {
+                foreach ($batch as $rowData) {
+                    // create patient record
+                    $patient = $modelClass::create($rowData);
+
+                    // ---- Budget Allocation ----
+                    if (!empty($rowData['amount'])) {
+                         BudgetAllocation::create([
+                            'patient_id'      => $patient->id,
+                            'user_id'         => Auth::id(),
+                            'amount'          => $rowData['amount'],
+                            'remarks'         => 'Imported via CSV',
+                            'budget_status'   => 'Disbursed',
+                            'allocation_date' => $rowData['allocation_date'] ?? now(),
+                        ]);
+                    }
+
+                    // ---- Disbursed ----
+                    if (!empty($rowData['disbursed_date'])) {
+                        PatientStatusLog::create([
+                            'patient_id'  => $patient->id,
+                            'status'      => PatientStatusLog::STATUS_DISBURSED,
+                            'status_date' => $rowData['disbursed_date'],
+                            'user_id'     => Auth::id(),
+                            'remarks'     => 'Imported via CSV',
+                        ]);
+                    }
+                }
             }
 
             $rows  = count($insert);
@@ -109,14 +136,23 @@ trait CsvImportTrait
 
         $model       = new $fullModelName();
         $fillables   = $model->getFillable();
+
         // Exclude timestamp fields from mapping dropdown
         $exclude     = ['created_at', 'updated_at', 'deleted_at'];
         $fillables   = array_filter($fillables, function($f) use ($exclude) {
             return !in_array($f, $exclude);
         });
 
+        if ($request->boolean('has_disbursed_date')) {
+            $fillables[] = 'disbursed_date';
+            $fillables[] = 'amount';
+            $fillables[] = 'allocation_date';
+        }
+
         $redirect  = url()->previous();
         $routeName = 'admin.' . strtolower(Str::plural(Str::kebab($modelName))) . '.processCsvImport';
+
+        $hasDisbursedDate = $request->boolean('has_disbursed_date');
 
         return view('csvImport.parseInput', compact(
             'headers',
@@ -125,7 +161,8 @@ trait CsvImportTrait
             'modelName',
             'lines',
             'redirect',
-            'routeName'
+            'routeName',
+            'hasDisbursedDate'
         ));
     }
 }

@@ -14,10 +14,8 @@ class TimeSeriesController extends Controller
     {
         $type = request('type');
 
-        // Export CSV for all analytics
         $csvPath = $this->exportToCsvFile();
 
-        // Determine JSON file based on type
         $jsonFiles = [
             'cswd'   => 'stl_output.json',
             'budget' => 'stl_budget_output.json',
@@ -27,31 +25,23 @@ class TimeSeriesController extends Controller
 
         $shouldRunPython = false;
 
-        // Run Python if JSON doesn't exist or CSV row count increased
         if (!file_exists($jsonPath)) {
             $shouldRunPython = true;
         } else {
             $metaPath = str_replace('.json', '_meta.json', $jsonPath);
-            $currentRowCount = $this->getCsvRowCount($csvPath);
+            $currentHash = file_exists($csvPath) ? md5_file($csvPath) : null;
+            $lastHash = file_exists($metaPath) ? json_decode(file_get_contents($metaPath), true)['file_hash'] ?? null : null;
 
-            $lastRowCount = 0;
-            if (file_exists($metaPath)) {
-                $meta = json_decode(file_get_contents($metaPath), true);
-                $lastRowCount = $meta['row_count'] ?? 0;
-            }
-
-            if ($currentRowCount > $lastRowCount) {
+            if ($currentHash !== $lastHash) {
                 $shouldRunPython = true;
 
-                // Save metadata
                 file_put_contents($metaPath, json_encode([
-                    'row_count'  => $currentRowCount,
+                    'file_hash'  => $currentHash,
                     'updated_at' => now()->toDateTimeString(),
                 ]));
             }
         }
 
-        // Run the appropriate Python script
         if ($shouldRunPython) {
             if ($type === 'budget') {
                 $this->runBudgetPython();
@@ -60,7 +50,6 @@ class TimeSeriesController extends Controller
             }
         }
 
-        // --- Permissions & view mapping ---
         $analyticsViews = [
             'cswd'       => ['permission' => 'CSWD-ANALYTICS',     'view' => 'admin.timeseries.cswd.index'],
             'budget'     => ['permission' => 'BUDGET-ANALYTICS',   'view' => 'admin.timeseries.budget.index'],
@@ -80,19 +69,6 @@ class TimeSeriesController extends Controller
         }
 
         return view($view);
-    }
-
-    private function getCsvRowCount($csvPath)
-    {
-        if (!file_exists($csvPath)) return 0;
-
-        $rowCount = 0;
-        if (($handle = fopen($csvPath, "r")) !== false) {
-            while (fgetcsv($handle) !== false) $rowCount++;
-            fclose($handle);
-        }
-
-        return max(0, $rowCount - 1); // exclude header
     }
 
     public function exportToCsvFile()
