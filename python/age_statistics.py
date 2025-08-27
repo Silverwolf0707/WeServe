@@ -4,7 +4,7 @@ import os
 
 # Paths
 base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-full_csv_path = os.path.join(base_path, 'storage', 'app', 'public', 'full_patient_data.csv')
+full_csv_path = os.path.join(base_path, 'storage', 'app', 'public', 'full_patient_data1.csv')
 json_path = os.path.join(base_path, 'storage', 'app', 'public', 'age_stats_output.json')
 
 # Load CSV

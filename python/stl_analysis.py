@@ -5,7 +5,7 @@ import os
 
 # Paths
 base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-csv_path = os.path.join(base_path, 'storage', 'app', 'public', 'full_patient_data.csv')
+csv_path = os.path.join(base_path, 'storage', 'app', 'public', 'full_patient_data1.csv')
 json_path = os.path.join(base_path, 'storage', 'app', 'public', 'stl_output.json')
 
 # Load CSV
@@ -36,7 +36,7 @@ for cat in categories:
         continue
 
     # STL decomposition
-    stl = STL(cat_series, period=12, robust=True, seasonal_deg=1, trend_deg=1, low_pass_deg=1)
+    stl = STL(cat_series, period=12, robust=True)
     result = stl.fit()
 
     output[cat] = {
