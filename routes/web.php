@@ -14,10 +14,11 @@ use App\Http\Controllers\Admin\AuditLogsController;
 use App\Http\Controllers\Admin\OnlinePatientApplicationController;
 use App\Http\Controllers\Admin\PatientRecordsController;
 use App\Http\Controllers\Admin\ProcessTrackingController;
+use App\Http\Controllers\Traits\CsvImportTrait;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\ChangePasswordController;
-
+use App\Models\PatientRecord;
 
 Route::get('/online-application', [OnlineApplicationController::class, 'index'])->name('online-application.index');
 // Show the form
@@ -66,6 +67,10 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     Route::post('patient-records/mass-submit', [PatientRecordsController::class, 'massSubmit'])->name('patient-records.massSubmit');
     Route::post('patient-records/{id}/submit-emergency', [PatientRecordsController::class, 'submitEmergency'])
         ->name('patient-records.submit-emergency');
+
+    Route::get('csv/template/{type}', [PatientRecordsController::class, 'csvTemplate'])
+    ->name('csv.template');
+
 
     Route::resource('online-applications', OnlinePatientApplicationController::class)
         ->only(['index', 'show']);

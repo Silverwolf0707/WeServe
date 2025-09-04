@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PatientRecordsController extends Controller
 {
@@ -323,5 +324,42 @@ class PatientRecordsController extends Controller
         return redirect()
             ->route('admin.patient-records.show', $id)
             ->with('success', 'Emergency application submitted successfully with remarks.');
+    }
+
+    public function csvTemplate($type)
+    {
+        $headers = [
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=template_{$type}.csv",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $columns = [
+            'date_processed',
+            'case_type',
+            'control_number',
+            'claimant_name',
+            'case_category',
+            'patient_name',
+            'diagnosis',
+            'age',
+            'address',
+            'contact_number',
+            'case_worker',
+        ];
+
+        if ($type === 'disbursed') {
+            $columns = array_merge($columns, ['disbursed_date', 'amount', 'allocation_date']);
+        }
+
+        $callback = function () use ($columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns); // header only
+            fclose($file);
+        };
+
+        return new StreamedResponse($callback, 200, $headers);
     }
 }

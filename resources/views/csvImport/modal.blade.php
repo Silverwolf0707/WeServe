@@ -11,8 +11,11 @@
             </div>
 
             <div class="modal-body">
-                <form method="POST" action="{{ route($route, ['model' => $model]) }}" enctype="multipart/form-data">
+                {{-- Directly submit to processCsvImport --}}
+                <form method="POST" action="{{ route('admin.patient-records.processCsvImport') }}" enctype="multipart/form-data">
                     @csrf
+                    <input type="hidden" name="modelName" value="PatientRecord">
+
                     <div class="mb-3">
                         <label for="csv_file" class="form-label">
                             {{ trans('global.app_csv_file_to_import') }}
@@ -33,6 +36,7 @@
                             <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
                     </div>
+
                     <div class="mb-3 form-check">
                         <input type="checkbox" class="form-check-input" id="has_disbursed_date"
                             name="has_disbursed_date" value="1">
@@ -41,14 +45,26 @@
                         </label>
                     </div>
 
-                    <div class="d-flex justify-content-between">
+                    {{-- CSV Templates --}}
+                    <div class="mb-3">
+                        <label class="form-label">Download CSV Templates</label>
+                        <div class="d-flex flex-column gap-2">
+                            <a href="{{ route('admin.csv.template', ['type' => 'basic']) }}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-download me-1"></i> Template (Without Disbursed Date)
+                            </a>
+                            <a href="{{ route('admin.csv.template', ['type' => 'disbursed']) }}" class="btn btn-outline-success btn-sm">
+                                <i class="fas fa-download me-1"></i> Template (With Disbursed Date)
+                            </a>
+                        </div>
+                    </div>
 
+                    <div class="d-flex justify-content-between">
                         <a class="btn btn-secondary" href="{{ route('admin.patient-records.index') }}">
                             <i class="fas fa-arrow-left me-1"></i> Back to List
                         </a>
 
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-file-import me-1"></i> {{ trans('global.app_parse_csv') }}
+                            <i class="fas fa-file-import me-1"></i> Import CSV
                         </button>
                     </div>
                 </form>

@@ -178,7 +178,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($recentlyDVSubmitted as $log)
+                                @forelse($recentlyDvSubmitted as $log)
                                     <tr>
                                         <td>{{ $log->patient->control_number ?? 'N/A' }}</td>
                                         <td>{{ $log->patient->claimant_name ?? 'Unknown' }}</td>
@@ -297,6 +297,8 @@
 
 @section('scripts')
     @parent
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script>
         const barangayLabels = @json($barangayLabels);
         const barangayData = @json($barangayData);

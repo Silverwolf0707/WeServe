@@ -6,7 +6,7 @@ import os
 # Paths
 # --------------------------
 base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-full_csv_path = os.path.join(base_path, 'storage', 'app', 'public', 'full_patient_data1.csv')
+full_csv_path = os.path.join(base_path, 'storage', 'app', 'public', 'full_patient_data.csv')
 json_path = os.path.join(base_path, 'storage', 'app', 'public', 'budget_stats_output.json')
 
 # --------------------------
