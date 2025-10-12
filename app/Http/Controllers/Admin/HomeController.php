@@ -5,8 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Models\PatientRecord;
 use App\Models\PatientStatusLog;
 use App\Models\Role;
-use App\Models\User;
-use Illuminate\Support\Carbon;
+use App\Models\AuditLog;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use LaravelDaily\LaravelCharts\Classes\LaravelChart;
@@ -88,8 +87,48 @@ class HomeController
                 ];
             });
 
+            $recentActivities = AuditLog::with('user')
+                ->latest()
+                ->take(10)
+                ->get()
+                ->map(function ($log) {
+                    $department = $log->user
+                        ? $log->user->roles->pluck('title')->first()
+                        : 'System';
+                    $colors = [
+                        'user' => '#4e73df',
+                        'mayors office' => '#1cc88a',
+                        'budget office' => '#f6c23e',
+                        'accounting office' => '#36b9cc',
+                        'treasury office' => '#e74a3b',
+                        'cswd' => '#4e73df',
+                    ];
 
-            return view('home', compact('chart1', 'chart2', 'departments'));
+                    $color = $colors[strtolower($department)] ?? '#6c63ff';
+                           $badgeClass = 'badge-secondary';
+        if (str_contains(strtolower($log->description), 'created')) {
+            $badgeClass = 'badge-success';
+        } elseif (str_contains(strtolower($log->description), 'updated')) {
+            $badgeClass = 'badge-info';
+        } elseif (str_contains(strtolower($log->description), 'deleted')) {
+            $badgeClass = 'badge-danger';
+        }
+
+                    return [
+                        'date' => $log->created_at->format('Y-m-d H:i A'),
+                        'department' => $department,
+                        'action' => ucfirst(str_replace('audit:', '', $log->description)),
+                        'color' => $color,
+                        'username' => $log->user->name ?? 'System',
+                        'host' => $log->host ?? request()->ip(),
+                        'subject_type' => $log->subject_type ?? 'N/A',
+                        'badge' => $badgeClass,
+
+                    ];
+                });
+
+
+            return view('home', compact('chart1', 'chart2', 'departments', 'recentActivities'));
         } else {
 
             $totalPatients = PatientRecord::count();
@@ -150,19 +189,19 @@ class HomeController
 
 
             $recentlyBudgetAllocated = PatientStatusLog::with('patient')->whereIn('id', function ($query) {
-                    $query->select(DB::raw('MAX(id)'))
-                        ->from('patient_status_logs')
-                        ->groupBy('patient_id');
-                })
+                $query->select(DB::raw('MAX(id)'))
+                    ->from('patient_status_logs')
+                    ->groupBy('patient_id');
+            })
                 ->where('status', PatientStatusLog::STATUS_BUDGET_ALLOCATED)
                 ->orderByDesc('status_date')
                 ->get();
 
             $recentlyDvSubmitted = PatientStatusLog::with('patient')->whereIn('id', function ($query) {
-                    $query->select(DB::raw('MAX(id)'))
-                        ->from('patient_status_logs')
-                        ->groupBy('patient_id');
-                })
+                $query->select(DB::raw('MAX(id)'))
+                    ->from('patient_status_logs')
+                    ->groupBy('patient_id');
+            })
                 ->where('status', PatientStatusLog::STATUS_DV_SUBMITTED)
                 ->orderByDesc('status_date')
                 ->get();

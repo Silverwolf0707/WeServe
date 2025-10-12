@@ -69,48 +69,27 @@
                     <tr>
                         <th>Date</th>
                         <th>Department</th>
+                        <th>Subject Type</th>
                         <th>Action</th>
-                        <th>Status</th>
+                        <th>Username</th>
+                        <th>Host</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr>
-                        <td>2025-08-09</td>
-                        <td style="--dept-color: #4e73df">CSWD</td>
-                        <td>Submitted Application #A001</td>
-                        <td><span class="status-badge badge-completed">Completed</span></td>
-                    </tr>
-                    <tr>
-                        <td>2025-08-08</td>
-                        <td style="--dept-color: #f6c23e">Budget</td>
-                        <td>Processed Funding Request</td>
-                        <td><span class="status-badge badge-in-progress">In Progress</span></td>
-                    </tr>
-                    <tr>
-                        <td>2025-08-07</td>
-                        <td style="--dept-color: #1cc88a">Mayor's Office</td>
-                        <td>Signed Approval</td>
-                        <td><span class="status-badge badge-completed">Completed</span></td>
-                    </tr>
-                    <tr>
-                        <td>2025-08-06</td>
-                        <td style="--dept-color: #36b9cc">Accounting</td>
-                        <td>Verified Expense Report</td>
-                        <td><span class="status-badge badge-pending">Pending</span></td>
-                    </tr>
-                    <tr>
-                        <td>2025-08-05</td>
-                        <td style="--dept-color: #e74a3b">Treasurer's</td>
-                        <td>Released Payment Batch #102</td>
-                        <td><span class="status-badge badge-completed">Completed</span></td>
-                    </tr>
-                    <tr>
-                        <td>2025-08-04</td>
-                        <td style="--dept-color: #4e73df">CSWD</td>
-                        <td>Updated Beneficiary List</td>
-                        <td><span class="status-badge badge-in-progress">In Progress</span></td>
-                    </tr>
-                </tbody>
+                <tbody> @forelse ($recentActivities as $activity) <tr>
+                    <td>{{ $activity['date'] }}</td>
+                    <td style="--dept-color: {{ $activity['color'] }}">{{ $activity['department'] }}</td>
+                    <td>{{ $activity['subject_type'] }}</td>
+                    <td>
+                        <span class="status-badge badge {{ $activity['badge'] }}">
+                            {{ $activity['action'] }}
+                        </span>
+                    </td>
+
+                    <td>{{ $activity['username'] ?? 'System' }}</td>
+                    <td>{{ $activity['host'] ?? 'N/A' }}</td>
+                </tr> @empty <tr>
+                        <td colspan="4" class="text-center text-muted">No recent activities found.</td>
+                    </tr> @endforelse </tbody>
             </table>
         </div>
     </div>
@@ -129,7 +108,7 @@
             document.getElementById('current-datetime').textContent = now.toLocaleDateString('en-US', options);
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Start datetime updater
             updateDateTime();
             setInterval(updateDateTime, 1000);
@@ -145,11 +124,11 @@
 
             // Add hover effects to buttons
             document.querySelectorAll('.view-btn, .view-all-btn').forEach(button => {
-                button.addEventListener('mouseenter', function() {
+                button.addEventListener('mouseenter', function () {
                     this.style.transform = 'translateY(-2px)';
                     this.style.boxShadow = '0 5px 15px rgba(0,0,0,0.1)';
                 });
-                button.addEventListener('mouseleave', function() {
+                button.addEventListener('mouseleave', function () {
                     this.style.transform = '';
                     this.style.boxShadow = '';
                 });
