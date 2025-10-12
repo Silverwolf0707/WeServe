@@ -56,12 +56,12 @@ class HomeController
             $departments = Role::with('users')->get()->map(function ($role) use ($activeUserIds) {
                 $totalUsers = $role->users()->count();
                 $activeUsers = $role->users()->whereIn('id', $activeUserIds)->count();
-    
+
                 $titleKey = strtolower(trim($role->title));
-               
+
                 $icons = [
                     'user' => 'fa-users',
-                    "mayors office" => 'fa-building', 
+                    "mayors office" => 'fa-building',
                     'budget office' => 'fa-wallet',
                     'accounting office' => 'fa-calculator',
                     "treasury office" => 'fa-coins',
@@ -115,36 +115,58 @@ class HomeController
 
             $monthlyLabels = $monthlyStats->pluck('month');
             $monthlyData = $monthlyStats->pluck('total');
-           
+
+            $recentlyDraft = PatientStatusLog::with('patient')
+                ->whereIn('id', function ($query) {
+                    $query->select(DB::raw('MAX(id)'))
+                        ->from('patient_status_logs')
+                        ->groupBy('patient_id');
+                })
+                ->where('status', PatientStatusLog::STATUS_DRAFT)
+                ->orderByDesc('status_date')
+                ->get();
+
+
             $recentlySubmitted = PatientStatusLog::with('patient')
+                ->whereIn('id', function ($query) {
+                    $query->select(DB::raw('MAX(id)'))
+                        ->from('patient_status_logs')
+                        ->groupBy('patient_id');
+                })
                 ->where('status', PatientStatusLog::STATUS_SUBMITTED)
                 ->orderByDesc('status_date')
-                ->take(10)
                 ->get();
 
             $recentlyApprovedRejected = PatientStatusLog::with('patient')
+                ->whereIn('id', function ($query) {
+                    $query->select(DB::raw('MAX(id)'))
+                        ->from('patient_status_logs')
+                        ->groupBy('patient_id');
+                })
                 ->whereIn('status', [PatientStatusLog::STATUS_APPROVED, PatientStatusLog::STATUS_REJECTED])
                 ->orderByDesc('status_date')
                 ->take(10)
                 ->get();
 
-            $recentlyBudgetAllocated = PatientStatusLog::with('patient')
+
+            $recentlyBudgetAllocated = PatientStatusLog::with('patient')->whereIn('id', function ($query) {
+                    $query->select(DB::raw('MAX(id)'))
+                        ->from('patient_status_logs')
+                        ->groupBy('patient_id');
+                })
                 ->where('status', PatientStatusLog::STATUS_BUDGET_ALLOCATED)
                 ->orderByDesc('status_date')
-                ->take(10)
                 ->get();
 
-            $recentlyDvSubmitted = PatientStatusLog::with('patient')
+            $recentlyDvSubmitted = PatientStatusLog::with('patient')->whereIn('id', function ($query) {
+                    $query->select(DB::raw('MAX(id)'))
+                        ->from('patient_status_logs')
+                        ->groupBy('patient_id');
+                })
                 ->where('status', PatientStatusLog::STATUS_DV_SUBMITTED)
                 ->orderByDesc('status_date')
-                ->take(10)
                 ->get();
 
-            $recentlyDisbursed = PatientStatusLog::with('patient')
-                ->where('status', PatientStatusLog::STATUS_DISBURSED)
-                ->orderByDesc('status_date')
-                ->take(10)
-                ->get();
 
 
             return view('dashboard_offices', compact(
@@ -161,7 +183,7 @@ class HomeController
                 'recentlyApprovedRejected',
                 'recentlyBudgetAllocated',
                 'recentlyDvSubmitted',
-                'recentlyDisbursed',
+                'recentlyDraft'
             ));
         }
     }

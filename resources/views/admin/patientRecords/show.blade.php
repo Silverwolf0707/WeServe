@@ -77,7 +77,7 @@
 
             @php
                 $latestStatusValue = optional($latestStatus)->status;
-                $isLocked = !in_array($latestStatusValue, [null, 'Rejected', 'Processing']);
+                $isLocked = !in_array($latestStatusValue, [null, 'Rejected', 'Processing', "Draft"]);
             @endphp
 
             @can('submit_patient_application')

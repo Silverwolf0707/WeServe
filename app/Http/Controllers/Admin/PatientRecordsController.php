@@ -93,13 +93,13 @@ class PatientRecordsController extends Controller
         // Create the patient record if eligible
         $patientRecord = PatientRecord::create($request->all());
 
-        // Create a status log entry
-        // PatientStatusLog::create([
-        //     'patient_id' => $patientRecord->id,
-        //     'status' => PatientStatusLog::STATUS_SUBMITTED,
-        //     'user_id' => Auth::id(),
-        //     'created_at' => now(),
-        // ]);
+        PatientStatusLog::create([
+            'patient_id' => $patientRecord->id,
+            'status' => PatientStatusLog::STATUS_DRAFT,
+            'user_id' => Auth::id(),
+            'created_at' => now(),
+            'status_date' => now(),
+        ]);
         broadcast(new PatientRecordCreated($patientRecord))->toOthers();
 
         return redirect()->route('admin.patient-records.index')->with('toast', [

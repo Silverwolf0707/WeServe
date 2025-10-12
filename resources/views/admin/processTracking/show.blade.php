@@ -81,8 +81,8 @@
                 @foreach ($steps as $index => $step)
                     <div
                         class="stepper-step
-                                                                {{ $baseStatus !== 'Rejected' && $index < $currentIndex ? 'completed' : '' }} 
-                                                                {{ $baseStatus !== 'Rejected' && $index === $currentIndex ? 'active' : '' }}">
+                                                                        {{ $baseStatus !== 'Rejected' && $index < $currentIndex ? 'completed' : '' }} 
+                                                                        {{ $baseStatus !== 'Rejected' && $index === $currentIndex ? 'active' : '' }}">
 
                         <div class="stepper-circle">
                             @if ($baseStatus !== 'Rejected' && $index <= $currentIndex)
@@ -134,18 +134,16 @@
                 <div class="mb-4">
                     <h6 class="text-primary">📋 Process Summary</h6>
                     <ul class="list-group" id="processSummaryList">
-                        @foreach ($patient->statusLogs as $log)
+                        @foreach ($patient->statusLogs->where('status', '!=', 'Draft') as $log)
                             @php
                                 $statusKey = strtolower(str_replace(' ', '-', $log->status));
-                                if (strpos($log->status, '[ROLLED BACK]') !== false) {
-                                    $statusClass = 'status-rolled-back';
-                                } else {
-                                    $statusClass = 'status-' . $statusKey;
-                                }
+                                $statusClass = strpos($log->status, '[ROLLED BACK]') !== false
+                                    ? 'status-rolled-back'
+                                    : 'status-' . $statusKey;
 
                                 $roleTitle = $log->user
                                     ? $log->user->roles->pluck('title')->implode(', ')
-                                    : 'System'; 
+                                    : 'System';
                             @endphp
 
                             <li class="list-group-item {{ $statusClass }}">
@@ -156,11 +154,11 @@
                                     From: {{ $roleTitle }}<br>
                                     <em>Remarks:</em> {{ $log->remarks ?? '-' }}
                                 </div>
-
                             </li>
                         @endforeach
                     </ul>
                 </div>
+
             @endif
 
             @php
@@ -224,12 +222,12 @@
                                         <input type="hidden" name="action" id="decisionAction">
 
                                         <button type="button" class="btn btn-success" onclick="
-                                                    const form = this.closest('form');
-                                                    form.querySelector('#decisionAction').value = 'approve';
-                                                    this.disabled = true;
-                                                    this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Processing...';
-                                                    form.submit();
-                                                ">
+                                                                const form = this.closest('form');
+                                                                form.querySelector('#decisionAction').value = 'approve';
+                                                                this.disabled = true;
+                                                                this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Processing...';
+                                                                form.submit();
+                                                            ">
                                             Confirm Approve
                                         </button>
 
@@ -298,12 +296,12 @@
                                     <div class="modal-footer">
                                         <input type="hidden" name="action" id="decisionAction">
                                         <button type="button" class="btn btn-danger" onclick="
-                                    const form = this.closest('form');
-                                    form.querySelector('#decisionAction').value = 'reject';
-                                    this.disabled = true;
-                                    this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Processing...';
-                                    form.submit();
-                                ">
+                                                const form = this.closest('form');
+                                                form.querySelector('#decisionAction').value = 'reject';
+                                                this.disabled = true;
+                                                this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Processing...';
+                                                form.submit();
+                                            ">
                                             Confirm Reject
                                         </button>
 
@@ -406,11 +404,11 @@
 
                                     <div class="modal-footer d-flex flex-column gap-2 p-4 pt-0">
                                         <button type="button" class="btn btn-success w-100 rounded-pill py-2" onclick="
-                                    const form = this.closest('form');
-                                    this.disabled = true;
-                                    this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Processing...';
-                                    form.submit();
-                                ">
+                                                const form = this.closest('form');
+                                                this.disabled = true;
+                                                this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Processing...';
+                                                form.submit();
+                                            ">
                                             <i class="fas fa-check-circle me-1"></i>
                                             {{ $patient->budgetAllocation ? 'Update Allocation' : 'Confirm Allocation' }}
                                         </button>
@@ -483,11 +481,11 @@
 
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-danger" onclick="
-                const form = this.closest('form');
-                this.disabled = true;
-                this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Rolling back...';
-                form.submit();
-            ">
+                    const form = this.closest('form');
+                    this.disabled = true;
+                    this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Rolling back...';
+                    form.submit();
+                ">
                                     <i class="fas fa-undo-alt me-1"></i> Rollback
                                 </button>
 
@@ -585,12 +583,12 @@
 
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-success w-100" onclick="
-                                    const btn = this;
-                                    const form = btn.closest('form');
-                                    btn.disabled = true;
-                                    btn.innerHTML = '<i class=\'fas fa-spinner fa-spin me-1\'></i> Processing...';
-                                    form.submit();
-                                ">
+                                                const btn = this;
+                                                const form = btn.closest('form');
+                                                btn.disabled = true;
+                                                btn.innerHTML = '<i class=\'fas fa-spinner fa-spin me-1\'></i> Processing...';
+                                                form.submit();
+                                            ">
                                                 <i class="fas fa-check-circle me-1"></i>
                                                 {{ $patient->disbursementVoucher ? 'Update' : 'Submit' }} DV
                                             </button>
@@ -681,12 +679,12 @@
 
                                 <div class="modal-footer d-flex flex-column gap-2">
                                     <button type="button" class="btn btn-danger w-100" onclick="
-                    const btn = this;
-                    const form = btn.closest('form');
-                    btn.disabled = true;
-                    btn.innerHTML = '<i class=\'fas fa-spinner fa-spin me-1\'></i> Processing...';
-                    form.submit();
-                ">
+                            const btn = this;
+                            const form = btn.closest('form');
+                            btn.disabled = true;
+                            btn.innerHTML = '<i class=\'fas fa-spinner fa-spin me-1\'></i> Processing...';
+                            form.submit();
+                        ">
                                         <i class="fas fa-check-circle me-1"></i> Confirm Disbursement
                                     </button>
 
@@ -729,23 +727,23 @@
                             <div class="d-flex justify-content-between">
                                 {{-- Normal Submit --}}
                                 <button type="button" class="btn btn-primary" @if ($isLocked) disabled @endif onclick="
-                                        const form = this.closest('form');
-                                        this.disabled = true;
-                                        this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Submitting...';
-                                        form.action='{{ route('admin.patient-records.submit', $patient->id) }}';
-                                        form.submit();
-                                    ">
+                                                const form = this.closest('form');
+                                                this.disabled = true;
+                                                this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Submitting...';
+                                                form.action='{{ route('admin.patient-records.submit', $patient->id) }}';
+                                                form.submit();
+                                            ">
                                     Submit
                                 </button>
 
                                 {{-- Emergency Submit --}}
                                 <button type="button" class="btn btn-danger" @if ($isLocked) disabled @endif onclick="
-                                        const form = this.closest('form');
-                                        this.disabled = true;
-                                        this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Submitting...';
-                                        form.action='{{ route('admin.patient-records.submit-emergency', $patient->id) }}';
-                                        form.submit();
-                                    ">
+                                                const form = this.closest('form');
+                                                this.disabled = true;
+                                                this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Submitting...';
+                                                form.action='{{ route('admin.patient-records.submit-emergency', $patient->id) }}';
+                                                form.submit();
+                                            ">
                                     Submit [Emergency]
                                 </button>
                             </div>

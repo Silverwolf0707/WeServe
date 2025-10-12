@@ -95,7 +95,53 @@
             <div class="col-lg-6">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-header bg-white fw-semibold">
-                        Recently Submitted Applications
+                        Pending Submission
+                    </div>
+
+                    <div class="card-body p-0">
+                        <!-- Scrollable wrapper -->
+                        <div style="max-height: 1000px; overflow-y: auto; overflow-x: hidden;">
+                            <table class="table table-striped mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Code</th>
+                                        <th>Name</th>
+                                        <th>Category</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($recentlyDraft as $log)
+                                        <tr>
+                                            <td>{{ $log->patient->control_number ?? 'N/A' }}</td>
+                                            <td>{{ $log->patient->claimant_name ?? 'Unknown' }}</td>
+                                            <td>{{ $log->patient->case_category ?? 'N/A' }}</td>
+                                            <td>
+                                                <a href="{{ route('admin.patient-records.show', $log->patient->id) }}">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted">
+                                                No pending submission.
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endcan
+
+        @can('approve_patient')
+            <div class="col-lg-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white fw-semibold">
+                        Pending Approvals
                     </div>
                     <div class="card-body p-0">
                         <table class="table table-striped mb-0">
@@ -104,6 +150,7 @@
                                     <th>Code</th>
                                     <th>Name</th>
                                     <th>Category</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -112,46 +159,16 @@
                                         <td>{{ $log->patient->control_number ?? 'N/A' }}</td>
                                         <td>{{ $log->patient->claimant_name ?? 'Unknown' }}</td>
                                         <td>{{ $log->patient->case_category ?? 'N/A' }}</td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="3" class="text-center text-muted">
-                                            No recent submissions.
+                                        <td>
+                                            <a href="{{ route('admin.process-tracking.show', $log->patient->id) }}">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
                                         </td>
                                     </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        @endcan
-        @can('approve_patient')
-            <div class="col-lg-6">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-header bg-white fw-semibold">
-                        Recently Approved or Rejected Applications
-                    </div>
-                    <div class="card-body p-0">
-                        <table class="table table-striped mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Code</th>
-                                    <th>Name</th>
-                                    <th>Category</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($recentlyApprovedRejected as $log)
-                                    <tr>
-                                        <td>{{ $log->patient->control_number ?? 'N/A' }}</td>
-                                        <td>{{ $log->patient->claimant_name ?? 'Unknown' }}</td>
-                                        <td>{{ $log->patient->case_category ?? 'N/A' }}</td>
-                                    </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="3" class="text-center text-muted">
-                                            No recent submissions.
+                                        <td colspan="4" class="text-center text-muted">
+                                            No pending approvals or rejections.
                                         </td>
                                     </tr>
                                 @endforelse
@@ -166,7 +183,7 @@
             <div class="col-lg-6">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-header bg-white fw-semibold">
-                        Recently DV Inputted Applications
+                        Pending DV Input
                     </div>
                     <div class="card-body p-0">
                         <table class="table table-striped mb-0">
@@ -175,19 +192,25 @@
                                     <th>Code</th>
                                     <th>Name</th>
                                     <th>Category</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($recentlyDvSubmitted as $log)
+                                @forelse($recentlyBudgetAllocated as $log)
                                     <tr>
                                         <td>{{ $log->patient->control_number ?? 'N/A' }}</td>
                                         <td>{{ $log->patient->claimant_name ?? 'Unknown' }}</td>
                                         <td>{{ $log->patient->case_category ?? 'N/A' }}</td>
+                                        <td>
+                                            <a href="{{ route('admin.process-tracking.show', $log->patient->id) }}">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="3" class="text-center text-muted">
-                                            No recent submissions.
+                                        <td colspan="4" class="text-center text-muted">
+                                            No pending dv input.
                                         </td>
                                     </tr>
                                 @endforelse
@@ -201,7 +224,7 @@
             <div class="col-lg-6">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-header bg-white fw-semibold">
-                        Recently Budget Allocated Applications
+                        Pending Budget Allocation
                     </div>
                     <div class="card-body p-0">
                         <table class="table table-striped mb-0">
@@ -210,19 +233,25 @@
                                     <th>Code</th>
                                     <th>Name</th>
                                     <th>Category</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($recentlyBudgetAllocated as $log)
+                                @forelse($recentlyApprovedRejected as $log)
                                     <tr>
                                         <td>{{ $log->patient->control_number ?? 'N/A' }}</td>
                                         <td>{{ $log->patient->claimant_name ?? 'Unknown' }}</td>
                                         <td>{{ $log->patient->case_category ?? 'N/A' }}</td>
+                                        <td>
+                                            <a href="{{ route('admin.process-tracking.show', $log->patient->id) }}" >
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="3" class="text-center text-muted">
-                                            No recent submissions.
+                                        <td colspan="4" class="text-center text-muted">
+                                            No pending budget allocations.
                                         </td>
                                     </tr>
                                 @endforelse
@@ -236,7 +265,7 @@
             <div class="col-lg-6">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-header bg-white fw-semibold">
-                        Recently Disbursed Applications
+                        Pending Disbursement
                     </div>
                     <div class="card-body p-0">
                         <table class="table table-striped mb-0">
@@ -245,19 +274,25 @@
                                     <th>Code</th>
                                     <th>Name</th>
                                     <th>Category</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($recentlyDisbursed as $log)
+                                @forelse($recentlyDvSubmitted as $log)
                                     <tr>
                                         <td>{{ $log->patient->control_number ?? 'N/A' }}</td>
                                         <td>{{ $log->patient->claimant_name ?? 'Unknown' }}</td>
                                         <td>{{ $log->patient->case_category ?? 'N/A' }}</td>
+                                        <td>
+                                            <a href="{{ route('admin.process-tracking.show', $log->patient->id) }}">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="3" class="text-center text-muted">
-                                            No recent submissions.
+                                        <td colspan="4" class="text-center text-muted">
+                                            No pending disbursement.
                                         </td>
                                     </tr>
                                 @endforelse
