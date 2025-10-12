@@ -252,76 +252,104 @@
 
 <script>
 async function loadStlData(category = 'ALL', component = 'observed', year = 'ALL') {
-    const res = await fetch('/admin/timeseries/get-stl-json?type=cswd');
-    const json = await res.json();
+    const chartContainer = document.getElementById('combinedChart').parentElement;
 
-    // Populate case type selector
-    const caseSelector = document.getElementById('caseTypeSelector');
-    if (caseSelector.options.length === 0) {
-        caseSelector.innerHTML = '';
-        const allOpt = document.createElement('option');
-        allOpt.value = 'ALL';
-        allOpt.textContent = 'ALL';
-        caseSelector.appendChild(allOpt);
+    try {
+        const res = await fetch('/admin/timeseries/get-stl-json?type=cswd');
+        const json = await res.json();
 
-        Object.keys(json).forEach(cat => {
-            const opt = document.createElement('option');
-            opt.value = cat;
-            opt.textContent = cat;
-            caseSelector.appendChild(opt);
-        });
-    }
+        if (!json || Object.keys(json).length === 0) {
+            chartContainer.innerHTML = `<div class="text-center text-muted py-5">
+                <strong>⚠ STL Chart can't load because of lack of data.</strong><br>
+                Please upload at least 1–2 years of records to generate decomposition.
+            </div>`;
+            return;
+        }
 
-    if (!category) category = caseSelector.value || 'ALL';
-    caseSelector.value = category;
+        const caseSelector = document.getElementById('caseTypeSelector');
+        if (caseSelector.options.length === 0) {
+            caseSelector.innerHTML = '';
+            const allOpt = document.createElement('option');
+            allOpt.value = 'ALL';
+            allOpt.textContent = 'ALL';
+            caseSelector.appendChild(allOpt);
 
-    // Populate year selector
-    const yearSelector = document.getElementById('yearSelector');
-    if (yearSelector.options.length === 0) {
-        yearSelector.innerHTML = '';
-        const allYearOpt = document.createElement('option');
-        allYearOpt.value = 'ALL';
-        allYearOpt.textContent = 'ALL';
-        yearSelector.appendChild(allYearOpt);
+            Object.keys(json).forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = cat;
+                caseSelector.appendChild(opt);
+            });
+        }
 
-        let allDates = [];
+        if (!category) category = caseSelector.value || 'ALL';
+        caseSelector.value = category;
+
+        const yearSelector = document.getElementById('yearSelector');
+        if (yearSelector.options.length === 0) {
+            yearSelector.innerHTML = '';
+            const allYearOpt = document.createElement('option');
+            allYearOpt.value = 'ALL';
+            allYearOpt.textContent = 'ALL';
+            yearSelector.appendChild(allYearOpt);
+
+            let allDates = [];
+            if (category === 'ALL') {
+                const cats = Object.keys(json);
+                allDates = json[cats[0]].dates;
+            } else {
+                allDates = json[category].dates;
+            }
+            const years = [...new Set(allDates.map(d => d.split('-')[0]))].sort((a, b) => b - a);
+            years.forEach(y => {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y;
+                yearSelector.appendChild(opt);
+            });
+        }
+
+        if (!year) year = yearSelector.value || 'ALL';
+        yearSelector.value = year;
+
+        let labels = [];
+        let dataForYear = [];
+
         if (category === 'ALL') {
             const cats = Object.keys(json);
-            allDates = json[cats[0]].dates;
+            const dates = json[cats[0]].dates;
+            const idxs = dates.map((d, i) => (year === 'ALL' || d.startsWith(year + '-')) ? i : -1).filter(i => i >= 0);
+            dataForYear = idxs.map(i => cats.reduce((sum, c) => sum + (json[c][component][i] || 0), 0));
+            labels = idxs.map(i => dates[i]);
         } else {
-            allDates = json[category].dates;
+            const ds = json[category];
+            const idxs = ds.dates.map((d, i) => (year === 'ALL' || d.startsWith(year + '-')) ? i : -1).filter(i => i >= 0);
+            dataForYear = idxs.map(i => ds[component][i]);
+            labels = idxs.map(i => ds.dates[i]);
         }
-        const years = [...new Set(allDates.map(d => d.split('-')[0]))].sort((a, b) => b - a);
-        years.forEach(y => {
-            const opt = document.createElement('option');
-            opt.value = y;
-            opt.textContent = y;
-            yearSelector.appendChild(opt);
-        });
+
+        if (labels.length < 12) {
+            chartContainer.innerHTML = `<div class="text-center text-muted py-5">
+                <strong>⚠ STL Chart can't load because of lack of data.</strong><br>
+                At least 12+ months of records are required.
+            </div>`;
+            return;
+        }
+
+        if (!document.getElementById('combinedChart')) {
+            chartContainer.innerHTML = `<canvas id="combinedChart" height="300" class="w-100"></canvas>`;
+        }
+
+        // --- render as before ---
+        renderChart(labels, dataForYear, component);
+        updateSummaryText(component, category, year, dataForYear, labels);
+
+    } catch (err) {
+        console.error("Error loading STL data:", err);
+        chartContainer.innerHTML = `<div class="text-center text-danger py-5">
+            Failed to load STL data.
+        </div>`;
     }
-
-    if (!year) year = yearSelector.value || 'ALL';
-    yearSelector.value = year;
-
-    // Process data for chart
-    let labels = [];
-    let dataForYear = [];
-
-    if (category === 'ALL') {
-        const cats = Object.keys(json);
-        const dates = json[cats[0]].dates;
-        const idxs = dates.map((d, i) => (year === 'ALL' || d.startsWith(year + '-')) ? i : -1).filter(i => i >= 0);
-        dataForYear = idxs.map(i => cats.reduce((sum, c) => sum + (json[c][component][i] || 0), 0));
-        labels = idxs.map(i => dates[i]);
-    } else {
-        const ds = json[category];
-        const idxs = ds.dates.map((d, i) => (year === 'ALL' || d.startsWith(year + '-')) ? i : -1).filter(i => i >= 0);
-        dataForYear = idxs.map(i => ds[component][i]);
-        labels = idxs.map(i => ds.dates[i]);
-    }
-
-    renderChart(labels, dataForYear, component);
-    updateSummaryText(component, category, year, dataForYear, labels);
 }
 
 function renderChart(labels, data, component) {

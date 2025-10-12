@@ -31,7 +31,6 @@ class OnlinePatientApplicationController extends Controller
         DB::transaction(function () use ($applicationId) {
             $application = OnlinePatientApplication::findOrFail($applicationId);
 
-            // Generate unique control number
             $today = now()->format('Ymd');
             $latestId = PatientRecord::max('id') + 1;
             $controlNumber = 'CSWD-' . $today . '-' . str_pad($latestId, 4, '0', STR_PAD_LEFT);
@@ -41,7 +40,6 @@ class OnlinePatientApplicationController extends Controller
                 $controlNumber = 'CSWD-' . $today . '-' . str_pad($latestId, 4, '0', STR_PAD_LEFT);
             }
 
-            // Create Patient Record
             $patient = PatientRecord::create([
                 'control_number' => $controlNumber,
                 'case_type'      => $application->case_type,
@@ -56,14 +54,12 @@ class OnlinePatientApplicationController extends Controller
                 'case_worker'    => Auth::user()->name,
             ]);
 
-            // Store tracking number in pivot table
             PatientTrackingNumber::create([
                 'patient_id' => $patient->id,
                 'tracking_number' => $application->tracking_number,
                 'tracking_created_at' => $application->created_at,
             ]);
 
-            // Log initial status
             PatientStatusLog::create([
                 'patient_id' => $patient->id,
                 'status' => 'Processing',
@@ -73,7 +69,6 @@ class OnlinePatientApplicationController extends Controller
                 'created_at' => now(),
             ]);
 
-            // Delete online application (row is moved)
             $application->delete();
         });
 

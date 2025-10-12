@@ -47,7 +47,7 @@
                         <tr>
                             <th>Diagnosis:</th>
                             <td>
-                                @if(strlen($patientRecord->diagnosis) > 60)
+                                @if (strlen($patientRecord->diagnosis) > 60)
                                     {{ Str::limit($patientRecord->diagnosis, 60) }}
                                     <button class="btn btn-sm btn-outline-primary ml-2" data-bs-toggle="modal"
                                         data-bs-target="#diagnosisModal">
@@ -94,30 +94,41 @@
                             <div class="form-group">
                                 <label for="submitted_date">Submitted Date</label>
                                 <input type="datetime-local" name="submitted_date" id="submitted_date" class="form-control mb-3"
-                                    value="{{ now()->toDateTimeLocalString() }}" @if($isLocked) disabled @endif>
+                                    value="{{ now()->toDateTimeLocalString() }}"
+                                    @if ($isLocked) disabled @endif>
 
                                 <label for="remarks">Remarks</label>
-                                <textarea name="remarks" id="remarks" rows="4" class="form-control" required @if($isLocked)
-                                disabled @endif></textarea>
+                                <textarea name="remarks" id="remarks" rows="4" class="form-control"
+                                    @if ($isLocked) disabled @endif></textarea>
                             </div>
 
                             <div class="d-flex justify-content-between">
-                                {{-- Normal submit --}}
-                                <button type="submit"
-                                    formaction="{{ route('admin.patient-records.submit', $patientRecord->id) }}"
-                                    class="btn btn-primary" @if($isLocked) disabled @endif>
+                                {{-- Normal Submit --}}
+                                <button type="button" class="btn btn-primary" @if ($isLocked) disabled @endif
+                                    onclick="
+                        const form = this.closest('form');
+                        this.disabled = true;
+                        this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Submitting...';
+                        form.action='{{ route('admin.patient-records.submit', $patientRecord->id) }}';
+                        form.submit();
+                    ">
                                     Submit
                                 </button>
 
-                                {{-- Emergency submit --}}
-                                <button type="submit"
-                                    formaction="{{ route('admin.patient-records.submit-emergency', $patientRecord->id) }}"
-                                    class="btn btn-danger" @if($isLocked) disabled @endif>
+                                {{-- Emergency Submit --}}
+                                <button type="button" class="btn btn-danger" @if ($isLocked) disabled @endif
+                                    onclick="
+                        const form = this.closest('form');
+                        this.disabled = true;
+                        this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Submitting...';
+                        form.action='{{ route('admin.patient-records.submit-emergency', $patientRecord->id) }}';
+                        form.submit();
+                    ">
                                     Submit [Emergency]
                                 </button>
                             </div>
 
-                            @if($isLocked)
+                            @if ($isLocked)
                                 <div class="alert alert-info mt-3">
                                     This application has already been submitted and is currently in process.
                                 </div>
@@ -126,6 +137,7 @@
                     </div>
                 </div>
             @endcan
+
 
 
             <div class="d-flex justify-content-between">
@@ -137,7 +149,7 @@
                 </a>
                 <a class="btn btn-info {{ !$hasProcessTracking ? 'disabled' : '' }}"
                     href="{{ $hasProcessTracking ? route('admin.process-tracking.show', $patientRecord->id) : '#' }}"
-                    @if(!$hasProcessTracking) aria-disabled="true" tabindex="-1" @endif>
+                    @if (!$hasProcessTracking) aria-disabled="true" tabindex="-1" @endif>
                     View Process Tracking
                 </a>
             </div>
@@ -153,7 +165,8 @@
                     <h5 class="modal-title" id="diagnosisModalLabel">Full Diagnosis</h5>
 
                 </div>
-                <div class="modal-body" style="
+                <div class="modal-body"
+                    style="
                       white-space: pre-wrap;
                       word-wrap: break-word;
                       overflow-y: auto;
@@ -170,6 +183,4 @@
             </div>
         </div>
     </div>
-
-
 @endsection

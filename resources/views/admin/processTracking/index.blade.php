@@ -26,6 +26,7 @@
                         <th>{{ __('Status') }}</th>
                         <th>{{ __('Department Responsible') }}</th>
                         <th class="text-center" width="50">{{ __('Actions') }}</th>
+                        <th style="display:none;">SortPriority</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -53,6 +54,42 @@
                                         ? trim(str_replace('[ROLLED BACK]', '', $currentStatus))
                                         : $currentStatus;
                                 @endphp
+
+                                @php
+                                    $priorityMap = [
+                                        'CSWD Office' => [
+                                            'Processing' => 1,
+                                            'Submitted' => 3,
+                                            'Rejected' => 2,
+                                        ],
+                                        'Budget Office' => [
+                                            'Approved' => 1,
+                                            'Budget Allocated' => 2,
+                                            'Approved[ROLLED BACK]' => 3,
+                                            
+                                        ],
+                                        'Treasury Office' => [
+                                            'Ready for Disbursement' => 2,
+                                            'Disbursed' => 3,
+                                            'DV Submitted' => 1,
+                                        ],
+                                        'Mayor\'s Office' => [
+                                            'Submitted' => 2,
+                                            'Submitted[Emergency]' => 1,
+                                            'Submitted[ROLLED BACK]' => 3,
+                                            'Approved' => 4,
+                                        ],
+                                        'Accounting Office' => [
+                                            'Budget Allocated' => 1,
+                                            'Budget Allocated[ROLLED BACK]' => 2,
+                                            'DV Submitted' => 3,
+                                        ],
+                                    ];
+
+                                    $role = Auth::user()->roles->pluck('title')->first();
+                                    $priority = $priorityMap[$role][$currentStatus] ?? 999;
+                                @endphp
+
 
                                 @if ($baseStatus === 'Submitted')
                                     <span class="badge d-inline-flex align-items-center"
@@ -136,6 +173,9 @@
                                     <i class="fas fa-eye"></i>
                                 </a>
                             </td>
+                            </td>
+                            <td style="display:none;">{{ $priority }}</td>
+                        </tr>
                         </tr>
                     @endforeach
                 </tbody>
@@ -189,8 +229,8 @@
                         </div>
                         <div class="mb-3">
                             <label for="massDecisionStatusDate" class="form-label">Decision Date</label>
-                            <input type="datetime-local" class="form-control" id="massDecisionStatusDate" name="status_date"
-                                value="{{ now()->toDateTimeLocalString() }}" required>
+                            <input type="datetime-local" class="form-control" id="massDecisionStatusDate"
+                                name="status_date" value="{{ now()->toDateTimeLocalString() }}" required>
                         </div>
 
 
@@ -390,8 +430,13 @@
             });
 
             let table = $('.datatable-ProcessTracking:not(.ajaxTable)').DataTable({
-                buttons: dtButtons
+                buttons: dtButtons,
+                order: [
+                    [8, 'asc'],
+                    [1, 'desc']
+                ],
             });
+
 
             $('a[data-toggle="tab"]').on('shown.bs.tab click', function() {
                 $($.fn.dataTable.tables(true)).DataTable().columns.adjust();

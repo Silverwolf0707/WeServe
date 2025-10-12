@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('patient_id')->constrained('patient_records')->onDelete('cascade');
             $table->foreignId('user_id')->constrained()->onDelete('cascade'); // accounting user
-            $table->string('dv_code');
-            $table->datetime('dv_date');
+            $table->string('dv_code')->nullable();
+            $table->datetime('dv_date')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

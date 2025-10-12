@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class StatisticsController extends Controller
@@ -97,7 +98,7 @@ public function index()
         exec("\"$pythonPath\" \"$scriptPath\"", $output, $return_var);
 
         if ($return_var !== 0) {
-            \Log::error("Python budget statistics script failed", ['output' => $output]);
+            Log::error("Python budget statistics script failed", ['output' => $output]);
         }
     }
 
@@ -109,7 +110,7 @@ public function index()
         exec("\"$pythonPath\" \"$scriptPath\"", $output, $return_var);
 
         if ($return_var !== 0) {
-            \Log::error("Python age statistics script failed", ['output' => $output]);
+            Log::error("Python age statistics script failed", ['output' => $output]);
         }
     }
 

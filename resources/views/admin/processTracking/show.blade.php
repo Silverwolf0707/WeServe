@@ -57,7 +57,7 @@
                 </div>
             </div>
 
-            {{-- ✅ VISUAL PROCESS TRACKER --}}
+            {{--VISUAL PROCESS TRACKER --}}
             @php
                 $steps = ['Submitted', 'Approved', 'Budget Allocated', 'DV Submitted', 'Disbursed'];
 
@@ -79,9 +79,10 @@
 
             <div class="stepper">
                 @foreach ($steps as $index => $step)
-                    <div class="stepper-step
-                                {{ $baseStatus !== 'Rejected' && $index < $currentIndex ? 'completed' : '' }} 
-                                {{ $baseStatus !== 'Rejected' && $index === $currentIndex ? 'active' : '' }}">
+                    <div
+                        class="stepper-step
+                                                                {{ $baseStatus !== 'Rejected' && $index < $currentIndex ? 'completed' : '' }} 
+                                                                {{ $baseStatus !== 'Rejected' && $index === $currentIndex ? 'active' : '' }}">
 
                         <div class="stepper-circle">
                             @if ($baseStatus !== 'Rejected' && $index <= $currentIndex)
@@ -97,7 +98,7 @@
             </div>
 
 
-            {{-- ✅ END PROCESS TRACKER --}}
+            {{-- END PROCESS TRACKER --}}
 
             {{-- PROCESS SUMMARY --}}
             @if ($patient->statusLogs->count())
@@ -141,16 +142,21 @@
                                 } else {
                                     $statusClass = 'status-' . $statusKey;
                                 }
+
+                                $roleTitle = $log->user
+                                    ? $log->user->roles->pluck('title')->implode(', ')
+                                    : 'System'; 
                             @endphp
 
                             <li class="list-group-item {{ $statusClass }}">
                                 <div>
                                     <strong>{{ ucfirst($log->status) }}:</strong>
                                     {{ $log->user->name ?? 'System' }} -
-                                    {{ \Carbon\Carbon::parse($log->status_date)->format('F j, Y g:i A') }}<br>
+                                    {{ \Carbon\Carbon::parse($log->status_date)->format('F j, Y g:i A') }} -
+                                    From: {{ $roleTitle }}<br>
                                     <em>Remarks:</em> {{ $log->remarks ?? '-' }}
                                 </div>
-                                
+
                             </li>
                         @endforeach
                     </ul>
@@ -215,8 +221,18 @@
                                         </div>
                                     </div>
                                     <div class="modal-footer">
-                                        <button type="submit" name="action" value="approve" class="btn btn-success">Confirm
-                                            Approve</button>
+                                        <input type="hidden" name="action" id="decisionAction">
+
+                                        <button type="button" class="btn btn-success" onclick="
+                                                    const form = this.closest('form');
+                                                    form.querySelector('#decisionAction').value = 'approve';
+                                                    this.disabled = true;
+                                                    this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Processing...';
+                                                    form.submit();
+                                                ">
+                                            Confirm Approve
+                                        </button>
+
                                     </div>
                                 </div>
                             </form>
@@ -259,14 +275,12 @@
                                             @endforeach
                                         </div>
 
-                                        <!-- Other Reason -->
                                         <div class="mb-3">
                                             <label for="otherReason" class="form-label">Other Reason (Optional)</label>
                                             <input type="text" name="other_reason" id="otherReason" class="form-control"
                                                 value="{{ old('other_reason') }}" placeholder="Specify other reason here">
                                         </div>
 
-                                        <!-- Remarks -->
                                         <div class="mb-3">
                                             <div class="mb-3">
                                                 <label for="statusDate" class="form-label">Status Date</label>
@@ -282,9 +296,17 @@
                                     </div>
 
                                     <div class="modal-footer">
-                                        <button type="submit" name="action" value="reject" class="btn btn-danger">
+                                        <input type="hidden" name="action" id="decisionAction">
+                                        <button type="button" class="btn btn-danger" onclick="
+                                    const form = this.closest('form');
+                                    form.querySelector('#decisionAction').value = 'reject';
+                                    this.disabled = true;
+                                    this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Processing...';
+                                    form.submit();
+                                ">
                                             Confirm Reject
                                         </button>
+
                                     </div>
                                 </div>
                             </form>
@@ -383,10 +405,16 @@
                                     </div>
 
                                     <div class="modal-footer d-flex flex-column gap-2 p-4 pt-0">
-                                        <button type="submit" class="btn btn-success w-100 rounded-pill py-2">
+                                        <button type="button" class="btn btn-success w-100 rounded-pill py-2" onclick="
+                                    const form = this.closest('form');
+                                    this.disabled = true;
+                                    this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Processing...';
+                                    form.submit();
+                                ">
                                             <i class="fas fa-check-circle me-1"></i>
                                             {{ $patient->budgetAllocation ? 'Update Allocation' : 'Confirm Allocation' }}
                                         </button>
+
                                         <button type="button" class="btn btn-secondary w-100 rounded-pill py-2"
                                             data-bs-dismiss="modal">Cancel</button>
                                     </div>
@@ -448,13 +476,21 @@
 
                                 <div class="form-group">
                                     <label for="rollback_remarks">Remarks</label>
-                                    <textarea name="rollback_remarks" class="form-control" id="rollback_remarks" rows="3"
-                                        required></textarea>
+                                    <textarea name="rollback_remarks" class="form-control" id="rollback_remarks"
+                                        rows="3"></textarea>
                                 </div>
                             </div>
 
                             <div class="modal-footer">
-                                <button type="submit" class="btn btn-danger">Rollback</button>
+                                <button type="button" class="btn btn-danger" onclick="
+                const form = this.closest('form');
+                this.disabled = true;
+                this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Rolling back...';
+                form.submit();
+            ">
+                                    <i class="fas fa-undo-alt me-1"></i> Rollback
+                                </button>
+
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                             </div>
                         </div>
@@ -531,14 +567,13 @@
                                         <div class="form-group mb-3">
                                             <label for="dv_code">DV Code</label>
                                             <input type="text" name="dv_code" id="dv_code" class="form-control form-control-lg"
-                                                value="{{ old('dv_code', $patient->disbursementVoucher->dv_code ?? '') }}" required>
+                                                value="{{ old('dv_code', $patient->disbursementVoucher->dv_code ?? '') }}">
                                         </div>
                                         <div class="form-group mb-3">
                                             <label for="dv_date">DV Date</label>
                                             <input type="datetime-local" name="dv_date" id="dv_date"
                                                 class="form-control form-control-lg"
-                                                value="{{ old('dv_date', optional($patient->disbursementVoucher)->dv_date ? \Carbon\Carbon::parse($patient->disbursementVoucher->dv_date)->format('Y-m-d') : '') }}"
-                                                required>
+                                                value="{{ old('dv_date', optional($patient->disbursementVoucher)->dv_date ? \Carbon\Carbon::parse($patient->disbursementVoucher->dv_date)->format('Y-m-d') : '') }}">
                                         </div>
 
                                         <div class="form-group mb-3">
@@ -549,10 +584,17 @@
                                         </div>
 
                                         <div class="modal-footer">
-                                            <button type="submit" class="btn btn-success w-100">
+                                            <button type="button" class="btn btn-success w-100" onclick="
+                                    const btn = this;
+                                    const form = btn.closest('form');
+                                    btn.disabled = true;
+                                    btn.innerHTML = '<i class=\'fas fa-spinner fa-spin me-1\'></i> Processing...';
+                                    form.submit();
+                                ">
                                                 <i class="fas fa-check-circle me-1"></i>
                                                 {{ $patient->disbursementVoucher ? 'Update' : 'Submit' }} DV
                                             </button>
+
                                             <button type="button" class="btn btn-secondary w-100 mt-2"
                                                 data-bs-dismiss="modal">Cancel</button>
                                         </div>
@@ -581,7 +623,7 @@
                         @endcan
                         <button type="button" class="btn btn-success btn-lg px-4 text-white mt-4" data-bs-toggle="modal"
                             data-bs-target="#quickDisburseModal">
-                            <i class="fas fa-check-circle me-1"></i> Quick Disburse
+                            <i class="fas fa-check-circle me-1"></i> Mark as Disbursed
                         </button>
 
                         <button type="button" class="btn btn-danger btn-lg px-4 text-white mt-4" data-bs-toggle="modal"
@@ -591,7 +633,6 @@
 
 
                     @elseif ($baseStatus === 'Ready for Disbursement')
-                        {{-- VERIFY OTP --}}
                         @php
                             $otp = $patient->otpCodes()->latest()->first();
                         @endphp
@@ -639,12 +680,21 @@
                                 </div>
 
                                 <div class="modal-footer d-flex flex-column gap-2">
-                                    <button type="submit" class="btn btn-danger w-100">
+                                    <button type="button" class="btn btn-danger w-100" onclick="
+                    const btn = this;
+                    const form = btn.closest('form');
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class=\'fas fa-spinner fa-spin me-1\'></i> Processing...';
+                    form.submit();
+                ">
                                         <i class="fas fa-check-circle me-1"></i> Confirm Disbursement
                                     </button>
-                                    <button type="button" class="btn btn-secondary w-100 mt-2"
-                                        data-bs-dismiss="modal">Cancel</button>
+
+                                    <button type="button" class="btn btn-secondary w-100 mt-2" data-bs-dismiss="modal">
+                                        Cancel
+                                    </button>
                                 </div>
+
                             </div>
                         </form>
                     </div>
@@ -672,22 +722,30 @@
                                     value="{{ now()->toDateTimeLocalString() }}" @if($isLocked) disabled @endif>
 
                                 <label for="remarks">Remarks</label>
-                                <textarea name="remarks" id="remarks" rows="4" class="form-control" required @if($isLocked)
-                                disabled @endif></textarea>
+                                <textarea name="remarks" id="remarks" rows="4" class="form-control" @if($isLocked) disabled
+                                @endif></textarea>
                             </div>
 
                             <div class="d-flex justify-content-between">
-                                {{-- Normal submit --}}
-                                <button type="submit"
-                                    formaction="{{ route('admin.process-tracking.submit', $patient->id) }}"
-                                    class="btn btn-primary" @if($isLocked) disabled @endif>
+                                {{-- Normal Submit --}}
+                                <button type="button" class="btn btn-primary" @if ($isLocked) disabled @endif onclick="
+                                        const form = this.closest('form');
+                                        this.disabled = true;
+                                        this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Submitting...';
+                                        form.action='{{ route('admin.patient-records.submit', $patient->id) }}';
+                                        form.submit();
+                                    ">
                                     Submit
                                 </button>
 
-                                {{-- Emergency submit --}}
-                                <button type="submit"
-                                    formaction="{{ route('admin.patient-records.submit-emergency', $patient->id) }}"
-                                    class="btn btn-danger" @if($isLocked) disabled @endif>
+                                {{-- Emergency Submit --}}
+                                <button type="button" class="btn btn-danger" @if ($isLocked) disabled @endif onclick="
+                                        const form = this.closest('form');
+                                        this.disabled = true;
+                                        this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Submitting...';
+                                        form.action='{{ route('admin.patient-records.submit-emergency', $patient->id) }}';
+                                        form.submit();
+                                    ">
                                     Submit [Emergency]
                                 </button>
                             </div>
@@ -744,16 +802,16 @@
         });
     </script>
     <script>
-        setTimeout(() => {
-            Echo.channel('process-tracking')
-                .listen('.patient.process.updated', (e) => {
-                    console.log("Status changed:", e);
-                    // e = { patient_id: 1, status: "...", status_date: "...", remarks: "..." }
-                });
+        // setTimeout(() => {
+        //     Echo.channel('process-tracking')
+        //         .listen('.patient.process.updated', (e) => {
+        //             console.log("Status changed:", e);
+
+        //         });
 
 
 
-        }, 300);
+        // }, 300);
 
 
         document.addEventListener('DOMContentLoaded', function () {

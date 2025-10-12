@@ -20,9 +20,31 @@ class SettingsController extends Controller
     {
         abort_if(Gate::denies('settings'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        // Delete all patient records (cascade will handle related tables)
-        PatientRecord::query()->delete();
+        PatientRecord::withTrashed()->forceDelete();
 
-        return back()->with('success', 'All patient records and related data have been deleted successfully.');
+        $files = [
+            storage_path('app/public/stl_output.json'),
+            storage_path('app/public/stl_output_meta.json'),
+            storage_path('app/public/stl_budget_output.json'),
+            storage_path('app/public/stl_budget_output_meta.json'),
+
+            storage_path('app/public/age_stats_output.json'),
+            storage_path('app/public/age_stats_meta.json'),
+            storage_path('app/public/budget_stats_output.json'),
+            storage_path('app/public/budget_stats_meta.json'),
+        ];
+
+        foreach ($files as $file) {
+            if (file_exists($file)) {
+                unlink($file);
+            }
+        }
+
+        return redirect()->route('admin.settings.index')->with('toast', [
+            'type' => 'success',
+            'title' => 'All Records Deleted',
+            'message' => 'All patient records have been permanently deleted.',
+            'time' => now()->diffForHumans(),
+        ]);
     }
 }

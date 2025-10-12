@@ -17,11 +17,12 @@ use App\Http\Controllers\Admin\ProcessTrackingController;
 use App\Http\Controllers\Traits\CsvImportTrait;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\Auth\ChangePasswordController;
 use App\Models\PatientRecord;
 
 Route::get('/online-application', [OnlineApplicationController::class, 'index'])->name('online-application.index');
-// Show the form
+
 
 Route::post('/applications/store', [OnlineApplicationController::class, 'store'])
     ->name('applications.store');
@@ -91,7 +92,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     Route::post('process-tracking/massBudgetAllocate', [ProcessTrackingController::class, 'massBudgetAllocate'])->name('process-tracking.massBudgetAllocate');
 
     Route::post('process-tracking/{patient}/store-dv', [ProcessTrackingController::class, 'storeDV'])->name('process-tracking.storeDV');
-    Route::put('process-tracking/{id}/update-dv', [ProcessTrackingController::class, 'updateDV'])->name('process-tracking.updateDV');
+    Route::put( 'process-tracking/{id}/update-dv', [ProcessTrackingController::class, 'updateDV'])->name('process-tracking.updateDV');
     Route::post('process-tracking/massDVInput', [ProcessTrackingController::class, 'massDVInput'])->name('process-tracking.massDVInput');
 
 

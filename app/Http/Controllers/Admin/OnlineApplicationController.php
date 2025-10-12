@@ -48,9 +48,8 @@ class OnlineApplicationController
 
         $trackingNumber = $request->tracking_number;
 
-        // Check transferred patient records via pivot table first
         $trackingRecord = \App\Models\PatientTrackingNumber::where('tracking_number', $trackingNumber)
-            ->with('patient.statusLogs') // eager load logs
+            ->with('patient.statusLogs') 
             ->first();
 
         if ($trackingRecord && $trackingRecord->patient) {
@@ -64,7 +63,6 @@ class OnlineApplicationController
             ]);
         }
 
-        // Check online applications (not yet transferred)
         $application = OnlinePatientApplication::where('tracking_number', $trackingNumber)->first();
         if ($application) {
             return view('trackingpage')->with([

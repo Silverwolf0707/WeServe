@@ -96,7 +96,9 @@
                         <a href="{{ route('admin.process-tracking.index') }}"
                             class="nav-link {{ request()->is('admin/process-tracking*') ? 'active' : '' }}">
                             <i class="nav-icon fas fa-stream"></i>
-                            <p>Process Tracking</p>
+                            <p>Process Tracking
+                                {{-- <span class="badge badge-danger right"> 1</span> --}}
+                            </p>
                         </a>
                     </li>
                 @endcan

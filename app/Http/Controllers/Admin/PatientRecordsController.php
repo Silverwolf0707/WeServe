@@ -173,13 +173,12 @@ class PatientRecordsController extends Controller
 
             DB::commit();
 
-            // Redirect with toast
             return redirect()
                 ->route('admin.patient-records.index')
                 ->with('toast', [
                     'type' => 'danger',
                     'title' => 'Mass Delete Completed',
-                    'message' => "✅ {$deletedCount} " . ($deletedCount === 1 ? "record was" : "records were") . " deleted successfully",
+                    'message' => "{$deletedCount} " . ($deletedCount === 1 ? "record was" : "records were") . " deleted successfully",
                     'time' => now()->diffForHumans(),
                 ]);
         } catch (\Exception $e) {
@@ -202,7 +201,7 @@ class PatientRecordsController extends Controller
         abort_if(Gate::denies('submit_patient_application'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         $request->validate([
-            'remarks' => 'required|string|max:1000',
+            'remarks' => 'nullable|string|max:1000',
             'status' => 'required|string',
             'submitted_date' => 'required|date'
         ]);
@@ -265,13 +264,12 @@ class PatientRecordsController extends Controller
 
             DB::commit();
 
-            // Prepare toast message
             $messages = [];
             if (count($submitted)) {
-                $messages[] = "✅ " . count($submitted) . " " . (count($submitted) === 1 ? "patient has" : "patients have") . " been submitted";
+                $messages[] = count($submitted) . " " . (count($submitted) === 1 ? "patient has" : "patients have") . " been submitted";
             }
             if (count($skipped)) {
-                $messages[] = "⚠️ " . count($skipped) . " " . (count($skipped) === 1 ? "patient was" : "patients were") . " skipped (already submitted)";
+                $messages[] = count($skipped) . " " . (count($skipped) === 1 ? "patient was" : "patients were") . " skipped (already submitted)";
             }
 
             $toastMessage = implode('<br>', $messages);
@@ -301,13 +299,12 @@ class PatientRecordsController extends Controller
         abort_if(Gate::denies('submit_patient_application'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         $request->validate([
-            'remarks' => 'required|string|max:1000',
+            'remarks' => 'nullable|string|max:1000',
             'submitted_date' => 'required|date'
         ]);
 
         $statusDate = $request->input('submitted_date');
 
-        // Create status log with emergency flag
         PatientStatusLog::create([
             'patient_id'  => $id,
             'status'      => 'Submitted[Emergency]',

@@ -56,7 +56,7 @@ class ProcessTrackingController extends Controller
         abort_if(Gate::denies('approve_patient'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         $rules = [
-            'remarks' => 'required|string|max:1000',
+            'remarks' => 'nullable|string|max:1000',
             'action'  => 'required|in:approve,reject',
             'status_date' => 'required|date',
         ];
@@ -76,7 +76,6 @@ class ProcessTrackingController extends Controller
             ? PatientStatusLog::STATUS_APPROVED
             : PatientStatusLog::STATUS_REJECTED;
 
-        // 1️⃣ Create status log (remarks stored here)
         $statusLog = PatientStatusLog::create([
             'patient_id' => $patient->id,
             'status'     => $status,
@@ -86,7 +85,6 @@ class ProcessTrackingController extends Controller
             'created_at' => now(),
         ]);
 
-        // 2️⃣ Store multiple reasons if rejected
         if ($request->action === 'reject') {
             $reasons = $validated['reasons'] ?? [];
 
@@ -129,7 +127,7 @@ class ProcessTrackingController extends Controller
         $rules = [
             'ids'     => 'required|array|min:1',
             'ids.*'   => 'integer|exists:patient_records,id',
-            'remarks' => 'required|string|max:1000',
+            'remarks' => 'nullable|string|max:1000',
             'action'  => 'required|in:approve,reject',
             'status_date' => 'required|date',
         ];
@@ -204,13 +202,13 @@ class ProcessTrackingController extends Controller
 
             $messages = [];
             if (count($approved)) {
-                $messages[] = "✅ " . count($approved) . " " . (count($approved) === 1 ? 'patient has' : 'patients have') . " been approved";
+                $messages[] = count($approved) . " " . (count($approved) === 1 ? 'patient has' : 'patients have') . " been approved";
             }
             if (count($rejected)) {
-                $messages[] = "❌ " . count($rejected) . " " . (count($rejected) === 1 ? 'patient has' : 'patients have') . " been rejected";
+                $messages[] = count($rejected) . " " . (count($rejected) === 1 ? 'patient has' : 'patients have') . " been rejected";
             }
             if (count($skipped)) {
-                $messages[] = "⚠️ " . count($skipped) . " " . (count($skipped) === 1 ? 'patient was' : 'patients were') . " skipped (not submitted or already processed)";
+                $messages[] = count($skipped) . " " . (count($skipped) === 1 ? 'patient was' : 'patients were') . " skipped (not submitted or already processed)";
             }
 
             $toastMessage = implode('<br>', $messages);
@@ -243,8 +241,8 @@ class ProcessTrackingController extends Controller
         abort_if(Gate::denies('accounting_dv_input'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         $request->validate([
-            'dv_code' => 'required|string|max:255',
-            'dv_date' => 'required|date',
+            'dv_code' => 'nullable|string|max:255',
+            'dv_date' => 'nullable|date',
             'status_date' => 'required|date',
         ]);
 
@@ -267,38 +265,37 @@ class ProcessTrackingController extends Controller
             'patient_id' => $patient->id,
             'user_id' => Auth::id(),
             'status' => PatientStatusLog::STATUS_DV_SUBMITTED,
-            'remarks' => 'DV recorded: ' . $request->dv_code,
+            'remarks' => 'DV recorded',
             'status_date' => $request->status_date,
         ]);
 
-        // ✅ Generate DV PDF
-        $pdf = app('dompdf.wrapper');
-        $pdf->loadView('admin.pdf.dv', [
-            'patient' => $patient,
-            'dv'      => $dv,
-        ]);
+        // $pdf = app('dompdf.wrapper');
+        // $pdf->loadView('admin.pdf.dv', [
+        //     'patient' => $patient,
+        //     'dv'      => $dv,
+        // ]);
 
-        $fileName = 'DV_' . $patient->id . '_' . now()->format('Ymd_His') . '.pdf';
-        $filePath = 'documents/' . $patient->id . '/' . $fileName;
+        // $fileName = 'DV_' . $patient->id . '_' . now()->format('Ymd_His') . '.pdf';
+        // $filePath = 'documents/' . $patient->id . '/' . $fileName;
 
-        // Save the PDF in storage
-        Storage::disk('public')->put($filePath, $pdf->output());
+        // // Save the PDF in storage
+        // Storage::disk('public')->put($filePath, $pdf->output());
 
-        // Save document record
-        Document::create([
-            'patient_id'    => $patient->id,
-            'file_name'     => $fileName,
-            'file_path'     => $filePath,
-            'document_type' => 'DV',
-            'description'   => 'Disbursement Voucher PDF',
-        ]);
+        // // Save document record
+        // Document::create([
+        //     'patient_id'    => $patient->id,
+        //     'file_name'     => $fileName,
+        //     'file_path'     => $filePath,
+        //     'document_type' => 'DV',
+        //     'description'   => 'Disbursement Voucher PDF',
+        // ]);
 
         // Refresh patient for broadcasting
         $patient->load('latestStatusLog');
         broadcast(new PatientStatusChanged($patient, 'dv_submitted'));
 
         return redirect()->route('admin.process-tracking.show', $id)
-            ->with('status', 'Disbursement Voucher added successfully, PDF generated.');
+            ->with('status', 'DV added successfully.');
     }
 
 
@@ -307,7 +304,7 @@ class ProcessTrackingController extends Controller
         $patient = PatientRecord::findOrFail($id);
 
         $validated = $request->validate([
-            'dv_code' => 'required|string|max:255',
+            'dv_code' => 'nullable|string|max:255',
             'dv_date' => 'required|date',
             'status_date' => 'required|date',
         ]);
@@ -326,51 +323,50 @@ class ProcessTrackingController extends Controller
             'status_date' => $validated['status_date'],
         ]);
 
-        // ✅ Regenerate PDF
-        if ($dv) {
-            $pdf = app('dompdf.wrapper');
-            $pdf->loadView('admin.pdf.dv', [
-                'patient' => $patient,
-                'dv'      => $dv,
-            ]);
+        // if ($dv) {
+        //     $pdf = app('dompdf.wrapper');
+        //     $pdf->loadView('admin.pdf.dv', [
+        //         'patient' => $patient,
+        //         'dv'      => $dv,
+        //     ]);
 
-            $fileName = 'DV_' . $patient->id . '_' . now()->format('Ymd_His') . '.pdf';
-            $filePath = 'documents/' . $patient->id . '/' . $fileName;
+        //     $fileName = 'DV_' . $patient->id . '_' . now()->format('Ymd_His') . '.pdf';
+        //     $filePath = 'documents/' . $patient->id . '/' . $fileName;
 
-            // Save new PDF
-            Storage::disk('public')->put($filePath, $pdf->output());
+        //     // Save new PDF
+        //     Storage::disk('public')->put($filePath, $pdf->output());
 
-            // Update or create Document record
-            $document = Document::where('patient_id', $patient->id)
-                ->where('document_type', 'DV')
-                ->first();
+        //     // Update or create Document record
+        //     $document = Document::where('patient_id', $patient->id)
+        //         ->where('document_type', 'DV')
+        //         ->first();
 
-            if ($document) {
-                // Delete old file
-                if (Storage::disk('public')->exists($document->file_path)) {
-                    Storage::disk('public')->delete($document->file_path);
-                }
-                $document->update([
-                    'file_name' => $fileName,
-                    'file_path' => $filePath,
-                    'description' => 'Disbursement Voucher PDF (updated)',
-                ]);
-            } else {
-                Document::create([
-                    'patient_id'    => $patient->id,
-                    'file_name'     => $fileName,
-                    'file_path'     => $filePath,
-                    'document_type' => 'DV',
-                    'description'   => 'Disbursement Voucher PDF',
-                ]);
-            }
-        }
+        //     if ($document) {
+        //         // Delete old file
+        //         if (Storage::disk('public')->exists($document->file_path)) {
+        //             Storage::disk('public')->delete($document->file_path);
+        //         }
+        //         $document->update([
+        //             'file_name' => $fileName,
+        //             'file_path' => $filePath,
+        //             'description' => 'Disbursement Voucher PDF (updated)',
+        //         ]);
+        //     } else {
+        //         Document::create([
+        //             'patient_id'    => $patient->id,
+        //             'file_name'     => $fileName,
+        //             'file_path'     => $filePath,
+        //             'document_type' => 'DV',
+        //             'description'   => 'Disbursement Voucher PDF',
+        //         ]);
+        //     }
+        // }
 
         // Refresh patient for broadcasting
         $patient->load('latestStatusLog');
         broadcast(new PatientStatusChanged($patient, 'dv_submitted'));
 
-        return back()->with('success', 'DV updated, PDF regenerated, and status progressed.');
+        return back()->with('success', 'DV updated successfully.');
     }
 
     public function massDVInput(Request $request)
@@ -380,7 +376,7 @@ class ProcessTrackingController extends Controller
         $request->validate([
             'ids'   => 'required|array|min:1',
             'ids.*' => 'integer|exists:patient_records,id',
-            'dv_date' => 'required|date',
+            'dv_date' => 'nullable|date',
             'status_date' => 'required|date',
         ]);
 
@@ -416,13 +412,13 @@ class ProcessTrackingController extends Controller
                 }
 
                 // Generate unique DV code
-                $dvCode = $this->generateUniqueDvCode();
+                // $dvCode = $this->generateUniqueDvCode();
 
                 // Create DV
                 $dv = DisbursementVoucher::create([
                     'patient_id' => $patient->id,
                     'user_id'    => Auth::id(),
-                    'dv_code'    => $dvCode,
+                    'dv_code'    => null,
                     'dv_date'    => $request->dv_date,
                 ]);
 
@@ -431,7 +427,7 @@ class ProcessTrackingController extends Controller
                     'patient_id' => $patient->id,
                     'user_id'    => Auth::id(),
                     'status'     => PatientStatusLog::STATUS_DV_SUBMITTED,
-                    'remarks'    => 'DV recorded: ' . $dvCode,
+                    'remarks'    => 'DV recorded' . null,
                     'status_date' => $request->status_date,
                 ]);
 
@@ -446,10 +442,10 @@ class ProcessTrackingController extends Controller
             // Build toast messages
             $messages = [];
             if (count($submitted)) {
-                $messages[] = "✅ " . count($submitted) . " patient" . (count($submitted) > 1 ? "s" : "") . " DV submitted";
+                $messages[] = count($submitted) . " patient" . (count($submitted) > 1 ? "s" : "") . " DV submitted";
             }
             if (count($skipped)) {
-                $messages[] = "⚠️ " . count($skipped) . " patient" . (count($skipped) > 1 ? "s" : "") . " skipped (" . implode(", ", $skipped) . ")";
+                $messages[] = count($skipped) . " patient" . (count($skipped) > 1 ? "s" : "") . " skipped (" . implode(", ", $skipped) . ")";
             }
 
             $toastMessage = implode('<br>', $messages);
@@ -477,15 +473,15 @@ class ProcessTrackingController extends Controller
     /**
      * Generate a unique DV Code (random, no duplicates).
      */
-    private function generateUniqueDvCode()
-    {
-        do {
-            // Example format: DV-2025-XXXXX (random 5 alphanumeric)
-            $code = 'DV-' . date('Y') . '-' . strtoupper(Str::random(5));
-        } while (DisbursementVoucher::where('dv_code', $code)->exists());
+    // private function generateUniqueDvCode()
+    // {
+    //     do {
+    //         // Example format: DV-2025-XXXXX (random 5 alphanumeric)
+    //         $code = 'DV-' . date('Y') . '-' . strtoupper(Str::random(5));
+    //     } while (DisbursementVoucher::where('dv_code', $code)->exists());
 
-        return $code;
-    }
+    //     return $code;
+    // }
 
 
     public function storeBudget(Request $request, $id)
@@ -504,7 +500,6 @@ class ProcessTrackingController extends Controller
             return back()->with('error', 'Budget already allocated for this patient.');
         }
 
-        // ✅ 1. Save Budget Allocation
         BudgetAllocation::create([
             'patient_id' => $patient->id,
             'user_id' => Auth::id(),
@@ -514,7 +509,6 @@ class ProcessTrackingController extends Controller
             'allocation_date' => $request->status_date,
         ]);
 
-        // ✅ 2. Save Status Log
         PatientStatusLog::create([
             'patient_id' => $patient->id,
             'user_id' => Auth::id(),
@@ -523,38 +517,35 @@ class ProcessTrackingController extends Controller
             'status_date' => $request->status_date,
         ]);
 
-        // ✅ 3. Auto-generate OBRE PDF
-        $data = [
-            'patient' => $patient,
-            'address' => $patient->address,
-            'amount' => $request->amount,
-            'remarks' => $request->remarks,
-            'status_date' => $request->status_date,
-            'prepared_by' => Auth::user()->name,
-        ];
+        // $data = [
+        //     'patient' => $patient,
+        //     'address' => $patient->address,
+        //     'amount' => $request->amount,
+        //     'remarks' => $request->remarks,
+        //     'status_date' => $request->status_date,
+        //     'prepared_by' => Auth::user()->name,
+        // ];
 
-        $pdf = Pdf::loadView('admin.pdf.obre', $data);
+        // $pdf = Pdf::loadView('admin.pdf.obre', $data);
 
-        $fileName = 'OBRE_' . $patient->id . '_' . now()->format('Ymd_His') . '.pdf';
-        $filePath = 'documents/' . $patient->id . '/' . $fileName;
+        // $fileName = 'OBRE_' . $patient->id . '_' . now()->format('Ymd_His') . '.pdf';
+        // $filePath = 'documents/' . $patient->id . '/' . $fileName;
 
-        Storage::disk('public')->put($filePath, $pdf->output());
+        // Storage::disk('public')->put($filePath, $pdf->output());
 
-        // ✅ 4. Save to documents table
-        Document::create([
-            'patient_id' => $patient->id,
-            'file_name' => $fileName,
-            'file_path' => 'storage/' . $filePath,
-            'document_type' => 'OBRE',
-            'description' => 'Obligation Request and Status document',
-        ]);
+        // Document::create([
+        //     'patient_id' => $patient->id,
+        //     'file_name' => $fileName,
+        //     'file_path' => 'storage/' . $filePath,
+        //     'document_type' => 'OBRE',
+        //     'description' => 'Obligation Request and Status document',
+        // ]);
 
-        // ✅ 5. Broadcast event
         $patient->load('latestStatusLog');
         broadcast(new PatientStatusChanged($patient, 'budget_allocated'));
 
         return redirect()->route('admin.process-tracking.show', $id)
-            ->with('status', 'Budget allocated and OBRE generated successfully.');
+            ->with('status', 'Budget allocated successfully.');
     }
 
     public function updateBudget(Request $request, $id)
@@ -581,39 +572,38 @@ class ProcessTrackingController extends Controller
             'status_date' => $request->status_date,
         ]);
 
-        // ✅ Re-generate OBRE PDF
-        $pdf = app('dompdf.wrapper');
-        $pdf->loadView('admin.pdf.obre', [
-            'patient' => $patient,
-            'budget'  => $budget,
-        ]);
+        // $pdf = app('dompdf.wrapper');
+        // $pdf->loadView('admin.pdf.obre', [
+        //     'patient' => $patient,
+        //     'budget'  => $budget,
+        // ]);
 
-        $fileName = 'OBRE_' . $patient->id . '_' . now()->format('Ymd_His') . '.pdf';
-        $filePath = 'documents/' . $patient->id . '/' . $fileName;
+        // $fileName = 'OBRE_' . $patient->id . '_' . now()->format('Ymd_His') . '.pdf';
+        // $filePath = 'documents/' . $patient->id . '/' . $fileName;
 
-        // Delete old OBRE if exists
-        $oldDoc = Document::where('patient_id', $patient->id)
-            ->where('document_type', 'OBRE')
-            ->first();
+        // // Delete old OBRE if exists
+        // $oldDoc = Document::where('patient_id', $patient->id)
+        //     ->where('document_type', 'OBRE')
+        //     ->first();
 
-        if ($oldDoc) {
-            Storage::disk('public')->delete($oldDoc->file_path); // remove file
-            $oldDoc->update([
-                'file_name' => $fileName,
-                'file_path' => $filePath,
-                'description' => 'Updated OBRE PDF after budget modification'
-            ]);
-        } else {
-            Document::create([
-                'patient_id' => $patient->id,
-                'file_name' => $fileName,
-                'file_path' => $filePath,
-                'document_type' => 'OBRE',
-                'description' => 'OBRE PDF after budget update',
-            ]);
-        }
+        // if ($oldDoc) {
+        //     Storage::disk('public')->delete($oldDoc->file_path); // remove file
+        //     $oldDoc->update([
+        //         'file_name' => $fileName,
+        //         'file_path' => $filePath,
+        //         'description' => 'Updated OBRE PDF after budget modification'
+        //     ]);
+        // } else {
+        //     Document::create([
+        //         'patient_id' => $patient->id,
+        //         'file_name' => $fileName,
+        //         'file_path' => $filePath,
+        //         'document_type' => 'OBRE',
+        //         'description' => 'OBRE PDF after budget update',
+        //     ]);
+        // }
 
-        Storage::disk('public')->put($filePath, $pdf->output());
+        // Storage::disk('public')->put($filePath, $pdf->output());
 
         // Refresh patient for broadcast
         $patient->load('latestStatusLog');
@@ -684,10 +674,10 @@ class ProcessTrackingController extends Controller
 
             $messages = [];
             if (count($allocated)) {
-                $messages[] = "✅ " . count($allocated) . " patient" . (count($allocated) > 1 ? "s" : "") . " allocated budget";
+                $messages[] = count($allocated) . " patient" . (count($allocated) > 1 ? "s" : "") . " allocated budget";
             }
             if (count($skipped)) {
-                $messages[] = "⚠️ " . count($skipped) . " patient" . (count($skipped) > 1 ? "s" : "") . " skipped (not approved or already has budget)";
+                $messages[] = count($skipped) . " patient" . (count($skipped) > 1 ? "s" : "") . " skipped (not approved or already has budget)";
             }
 
             $toastMessage = implode('<br>', $messages);
@@ -827,10 +817,10 @@ class ProcessTrackingController extends Controller
             // Build messages
             $messages = [];
             if (count($disbursed)) {
-                $messages[] = "✅ " . count($disbursed) . " patient" . (count($disbursed) > 1 ? "s" : "") . " disbursed";
+                $messages[] = count($disbursed) . " patient" . (count($disbursed) > 1 ? "s" : "") . " disbursed";
             }
             if (count($skipped)) {
-                $messages[] = "⚠️ " . count($skipped) . " skipped (no DV submitted or already disbursed)";
+                $messages[] = count($skipped) . " skipped (no DV submitted or already disbursed)";
             }
 
             $toastMessage = implode('<br>', $messages);
@@ -929,18 +919,15 @@ class ProcessTrackingController extends Controller
             return back()->with('error', 'Incorrect OTP code.');
         }
 
-        // Mark OTP as verified
         $latestOtp->update([
             'is_verified' => true,
             'verified_at' => now(),
         ]);
 
-        // Update budget status
         $patient->budgetAllocation()->update([
             'budget_status' => 'Disbursed',
         ]);
 
-        // Log status
         PatientStatusLog::create([
             'patient_id' => $patient->id,
             'user_id' => Auth::id(),
@@ -957,7 +944,7 @@ class ProcessTrackingController extends Controller
     {
         $request->validate([
             'rollback_to' => 'required|string',
-            'rollback_remarks' => 'required|string',
+            'rollback_remarks' => 'nullable|string',
         ]);
 
         $validStatuses = $patient->statusLogs->pluck('status')->map(function ($status) {
@@ -972,7 +959,6 @@ class ProcessTrackingController extends Controller
 
         $rolledBackStatus = $rollbackTo . '[ROLLED BACK]';
 
-        // Log new status with [ROLLED BACK] mark
         $patient->statusLogs()->create([
             'status' => $rolledBackStatus,
             'remarks' => '[ROLLED BACK] ' . $request->rollback_remarks,
@@ -993,10 +979,8 @@ class ProcessTrackingController extends Controller
     {
         $patient = PatientRecord::findOrFail($id);
 
-        // Get the latest log (this should be the rollback one)
         $latestLog = $patient->statusLogs()->latest()->first();
 
-        // Get the log before it
         $previousLog = $patient->statusLogs()
             ->where('id', '<', $latestLog->id)
             ->latest()
@@ -1006,7 +990,6 @@ class ProcessTrackingController extends Controller
             return back()->with('error', 'No previous status found to return to.');
         }
 
-        // Create a new log to restore previous status
         $restoredLog = PatientStatusLog::create([
             'patient_id' => $patient->id,
             'status'     => $previousLog->status, // no rollback tag
@@ -1024,7 +1007,7 @@ class ProcessTrackingController extends Controller
         abort_if(Gate::denies('submit_patient_application'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         $request->validate([
-            'remarks' => 'required|string|max:1000',
+            'remarks' => 'nullable|string|max:1000',
             'status' => 'required|string',
             'submitted_date' => 'required|date'
         ]);

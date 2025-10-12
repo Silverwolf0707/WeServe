@@ -27,7 +27,7 @@ class DocumentManagementController extends Controller
 
         $request->validate([
             'patient_id' => 'required|exists:patient_records,id',
-            'files.*' => 'required|file|mimes:jpg,jpeg,png|max:2048', // limit to 2MB per image
+            'files.*' => 'required|file|mimes:jpg,jpeg,png|max:2048',
             'document_type' => 'nullable|string|max:255',
             'description' => 'nullable|string|max:1000',
         ]);

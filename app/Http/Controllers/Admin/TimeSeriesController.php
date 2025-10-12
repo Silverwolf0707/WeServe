@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class TimeSeriesController extends Controller
@@ -108,7 +109,7 @@ class TimeSeriesController extends Controller
         exec("\"$pythonPath\" \"$scriptPath\"", $output, $return_var);
 
         if ($return_var !== 0) {
-            \Log::error("CSWD STL Python script failed", ['output' => $output]);
+            Log::error("CSWD STL Python script failed", ['output' => $output]);
         }
     }
 
@@ -120,7 +121,7 @@ class TimeSeriesController extends Controller
         exec("\"$pythonPath\" \"$scriptPath\"", $output, $return_var);
 
         if ($return_var !== 0) {
-            \Log::error("Budget STL Python script failed", ['output' => $output]);
+            Log::error("Budget STL Python script failed", ['output' => $output]);
         }
     }
 
