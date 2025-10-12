@@ -99,7 +99,6 @@
                     </div>
 
                     <div class="card-body p-0">
-                        <!-- Scrollable wrapper -->
                         <div style="max-height: 1000px; overflow-y: auto; overflow-x: hidden;">
                             <table class="table table-striped mb-0">
                                 <thead class="table-light">
@@ -144,36 +143,38 @@
                         Pending Approvals
                     </div>
                     <div class="card-body p-0">
-                        <table class="table table-striped mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Code</th>
-                                    <th>Name</th>
-                                    <th>Category</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($recentlySubmitted as $log)
+                        <div style="max-height: 1000px; overflow-y: auto; overflow-x: hidden;">
+                            <table class="table table-striped mb-0">
+                                <thead class="table-light">
                                     <tr>
-                                        <td>{{ $log->patient->control_number ?? 'N/A' }}</td>
-                                        <td>{{ $log->patient->claimant_name ?? 'Unknown' }}</td>
-                                        <td>{{ $log->patient->case_category ?? 'N/A' }}</td>
-                                        <td>
-                                            <a href="{{ route('admin.process-tracking.show', $log->patient->id) }}">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                        </td>
+                                        <th>Code</th>
+                                        <th>Name</th>
+                                        <th>Category</th>
+                                        <th>Action</th>
                                     </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="4" class="text-center text-muted">
-                                            No pending approvals or rejections.
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    @forelse($recentlySubmitted as $log)
+                                        <tr>
+                                            <td>{{ $log->patient->control_number ?? 'N/A' }}</td>
+                                            <td>{{ $log->patient->claimant_name ?? 'Unknown' }}</td>
+                                            <td>{{ $log->patient->case_category ?? 'N/A' }}</td>
+                                            <td>
+                                                <a href="{{ route('admin.process-tracking.show', $log->patient->id) }}">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted">
+                                                No pending approvals or rejections.
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -186,36 +187,38 @@
                         Pending DV Input
                     </div>
                     <div class="card-body p-0">
-                        <table class="table table-striped mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Code</th>
-                                    <th>Name</th>
-                                    <th>Category</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($recentlyBudgetAllocated as $log)
+                        <div style="max-height: 1000px; overflow-y: auto; overflow-x: hidden;">
+                            <table class="table table-striped mb-0">
+                                <thead class="table-light">
                                     <tr>
-                                        <td>{{ $log->patient->control_number ?? 'N/A' }}</td>
-                                        <td>{{ $log->patient->claimant_name ?? 'Unknown' }}</td>
-                                        <td>{{ $log->patient->case_category ?? 'N/A' }}</td>
-                                        <td>
-                                            <a href="{{ route('admin.process-tracking.show', $log->patient->id) }}">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                        </td>
+                                        <th>Code</th>
+                                        <th>Name</th>
+                                        <th>Category</th>
+                                        <th>Action</th>
                                     </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="4" class="text-center text-muted">
-                                            No pending dv input.
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    @forelse($recentlyBudgetAllocated as $log)
+                                        <tr>
+                                            <td>{{ $log->patient->control_number ?? 'N/A' }}</td>
+                                            <td>{{ $log->patient->claimant_name ?? 'Unknown' }}</td>
+                                            <td>{{ $log->patient->case_category ?? 'N/A' }}</td>
+                                            <td>
+                                                <a href="{{ route('admin.process-tracking.show', $log->patient->id) }}">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted">
+                                                No pending dv input.
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -227,186 +230,189 @@
                         Pending Budget Allocation
                     </div>
                     <div class="card-body p-0">
-                        <table class="table table-striped mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Code</th>
-                                    <th>Name</th>
-                                    <th>Category</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($recentlyApprovedRejected as $log)
+                        <div style="max-height: 1000px; overflow-y: auto; overflow-x: hidden;">
+                            <table class="table table-striped mb-0">
+                                <thead class="table-light">
                                     <tr>
-                                        <td>{{ $log->patient->control_number ?? 'N/A' }}</td>
-                                        <td>{{ $log->patient->claimant_name ?? 'Unknown' }}</td>
-                                        <td>{{ $log->patient->case_category ?? 'N/A' }}</td>
-                                        <td>
-                                            <a href="{{ route('admin.process-tracking.show', $log->patient->id) }}" >
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                        </td>
+                                        <th>Code</th>
+                                        <th>Name</th>
+                                        <th>Category</th>
+                                        <th>Action</th>
                                     </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="4" class="text-center text-muted">
-                                            No pending budget allocations.
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    @forelse($recentlyApprovedRejected as $log)
+                                        <tr>
+                                            <td>{{ $log->patient->control_number ?? 'N/A' }}</td>
+                                            <td>{{ $log->patient->claimant_name ?? 'Unknown' }}</td>
+                                            <td>{{ $log->patient->case_category ?? 'N/A' }}</td>
+                                            <td>
+                                                <a href="{{ route('admin.process-tracking.show', $log->patient->id) }}">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted">
+                                                No pending budget allocations.
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
-            </div>
         @endcan
-        @can('treasury_disburse')
-            <div class="col-lg-6">
-                <div class="card border-0 shadow-sm h-100">
+            @can('treasury_disburse')
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-white fw-semibold">
+                            Pending Disbursement
+                        </div>
+                        <div class="card-body p-0">
+                            <div style="max-height: 1000px; overflow-y: auto; overflow-x: hidden;">
+                            <table class="table table-striped mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Code</th>
+                                        <th>Name</th>
+                                        <th>Category</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($recentlyDvSubmitted as $log)
+                                        <tr>
+                                            <td>{{ $log->patient->control_number ?? 'N/A' }}</td>
+                                            <td>{{ $log->patient->claimant_name ?? 'Unknown' }}</td>
+                                            <td>{{ $log->patient->case_category ?? 'N/A' }}</td>
+                                            <td>
+                                                <a href="{{ route('admin.process-tracking.show', $log->patient->id) }}">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted">
+                                                No pending disbursement.
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+            @endcan
+
+            <div class="col-lg-6 d-flex flex-column gap-4">
+                <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white fw-semibold">
-                        Pending Disbursement
+                        Patients per Barangay
                     </div>
-                    <div class="card-body p-0">
-                        <table class="table table-striped mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Code</th>
-                                    <th>Name</th>
-                                    <th>Category</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($recentlyDvSubmitted as $log)
-                                    <tr>
-                                        <td>{{ $log->patient->control_number ?? 'N/A' }}</td>
-                                        <td>{{ $log->patient->claimant_name ?? 'Unknown' }}</td>
-                                        <td>{{ $log->patient->case_category ?? 'N/A' }}</td>
-                                        <td>
-                                            <a href="{{ route('admin.process-tracking.show', $log->patient->id) }}">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="4" class="text-center text-muted">
-                                            No pending disbursement.
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                    <div class="card-body">
+                        <div class="chart-container" style="position: relative; height: 250px;">
+                            <canvas id="barangayChart"></canvas>
+                        </div>
                     </div>
                 </div>
-            </div>
-        @endcan
 
-        <div class="col-lg-6 d-flex flex-column gap-4">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white fw-semibold">
-                    Patients per Barangay
-                </div>
-                <div class="card-body">
-                    <div class="chart-container" style="position: relative; height: 250px;">
-                        <canvas id="barangayChart"></canvas>
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white fw-semibold">
+                        Patients Per Month
                     </div>
-                </div>
-            </div>
-
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white fw-semibold">
-                    Patients Per Month
-                </div>
-                <div class="card-body">
-                    <div class="chart-container" style="position: relative; height: 250px;">
-                        <canvas id="monthlyChart"></canvas>
+                    <div class="card-body">
+                        <div class="chart-container" style="position: relative; height: 250px;">
+                            <canvas id="monthlyChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 @endsection
 
-@section('scripts')
-    @parent
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    @section('scripts')
+        @parent
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <script>
-        const barangayLabels = @json($barangayLabels);
-        const barangayData = @json($barangayData);
+        <script>
+            const barangayLabels = @json($barangayLabels);
+            const barangayData = @json($barangayData);
 
-        const monthLabels = @json($monthlyLabels);
-        const monthData = @json($monthlyData);
+            const monthLabels = @json($monthlyLabels);
+            const monthData = @json($monthlyData);
 
-        new Chart(document.getElementById('barangayChart'), {
-            type: 'doughnut',
-            data: {
-                labels: barangayLabels,
-                datasets: [{
-                    data: barangayData,
-                    backgroundColor: [
-                        '#4e73df', '#1cc88a', '#36b9cc',
-                        '#f6c23e', '#e74a3b', '#858796',
-                        '#20c997', '#6610f2', '#6f42c1',
-                        '#fd7e14', '#e83e8c', '#198754'
-                    ],
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
+            new Chart(document.getElementById('barangayChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: barangayLabels,
+                    datasets: [{
+                        data: barangayData,
+                        backgroundColor: [
+                            '#4e73df', '#1cc88a', '#36b9cc',
+                            '#f6c23e', '#e74a3b', '#858796',
+                            '#20c997', '#6610f2', '#6f42c1',
+                            '#fd7e14', '#e83e8c', '#198754'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
                     }
                 }
-            }
-        });
+            });
 
-        new Chart(document.getElementById('monthlyChart'), {
-            type: 'line',
-            data: {
-                labels: monthLabels,
-                datasets: [{
-                    label: 'Patients',
-                    data: monthData,
-                    borderColor: '#4e73df',
-                    backgroundColor: 'rgba(78,115,223,0.1)',
-                    tension: 0.4,
-                    fill: true,
-                    pointRadius: 3,
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true
+            new Chart(document.getElementById('monthlyChart'), {
+                type: 'line',
+                data: {
+                    labels: monthLabels,
+                    datasets: [{
+                        label: 'Patients',
+                        data: monthData,
+                        borderColor: '#4e73df',
+                        backgroundColor: 'rgba(78,115,223,0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 3,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
                     }
                 }
-            }
-        });
-    </script>
+            });
+        </script>
 
-    <script>
-        function updateDateTime() {
-            const now = new Date();
-            const options = {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            };
-            const dateStr = now.toLocaleDateString(undefined, options);
-            const timeStr = now.toLocaleTimeString();
-            document.getElementById('current-datetime').textContent = `${dateStr} | ${timeStr}`;
-        }
-        setInterval(updateDateTime, 1000);
-        updateDateTime();
-    </script>
-@endsection
+        <script>
+            function updateDateTime() {
+                const now = new Date();
+                const options = {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                };
+                const dateStr = now.toLocaleDateString(undefined, options);
+                const timeStr = now.toLocaleTimeString();
+                document.getElementById('current-datetime').textContent = `${dateStr} | ${timeStr}`;
+            }
+            setInterval(updateDateTime, 1000);
+            updateDateTime();
+        </script>
+    @endsection
