@@ -71,6 +71,10 @@
                             <th>Case Worker:</th>
                             <td>{{ $patientRecord->case_worker }}</td>
                         </tr>
+                        <tr>
+                            <th>Tracking Number:</th>
+                            <td>{{ $patientRecord->trackingNumber->tracking_number ?? '' }}</td>
+                        </tr>
                     </table>
                 </div>
             </div>
@@ -140,18 +144,23 @@
 
 
 
-            <div class="d-flex justify-content-between">
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <!-- Left Side: Back to List -->
                 <a class="btn btn-secondary" href="{{ route('admin.patient-records.index') }}">
                     <i class="fas fa-arrow-left me-1"></i> Back to List
                 </a>
-                <a class="btn btn-secondary" href="{{ route('admin.document-management.show', $patientRecord->id) }}">
-                    <i class="fas fa-file-alt me-1"></i> View Documents
-                </a>
-                <a class="btn btn-info {{ !$hasProcessTracking ? 'disabled' : '' }}"
-                    href="{{ $hasProcessTracking ? route('admin.process-tracking.show', $patientRecord->id) : '#' }}"
-                    @if (!$hasProcessTracking) aria-disabled="true" tabindex="-1" @endif>
-                    View Process Tracking
-                </a>
+
+                <!-- Right Side: View Documents and Process Tracking -->
+                <div class="d-flex gap-2">
+                    <a class="btn btn-primary" href="{{ route('admin.document-management.show', $patientRecord->id) }}">
+                        <i class="fas fa-file-alt me-1"></i> View Documents
+                    </a>
+                    <a class="btn btn-info {{ !$hasProcessTracking ? 'disabled' : '' }}"
+                       href="{{ $hasProcessTracking ? route('admin.process-tracking.show', $patientRecord->id) : '#' }}"
+                       @if (!$hasProcessTracking) aria-disabled="true" tabindex="-1" @endif>
+                        <i class="fas fa-tasks me-1"></i> View Process Tracking
+                    </a>
+                </div>
             </div>
         </div>
     </div>

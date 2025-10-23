@@ -11,6 +11,7 @@ use App\Http\Requests\StorePatientRecordRequest;
 use App\Http\Requests\UpdatePatientRecordRequest;
 use App\Models\PatientRecord;
 use App\Models\PatientStatusLog;
+use App\Models\PatientTrackingNumber;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -27,8 +28,7 @@ class PatientRecordsController extends Controller
     public function index()
     {
         abort_if(Gate::denies('patient_record_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
-
-        $patientRecords = PatientRecord::all();
+        $patientRecords = PatientRecord::orderByDesc('date_processed')->get();
 
         return view('admin.patientRecords.index', compact('patientRecords'));
     }
@@ -95,12 +95,22 @@ class PatientRecordsController extends Controller
 
         PatientStatusLog::create([
             'patient_id' => $patientRecord->id,
-            'status' => PatientStatusLog::STATUS_DRAFT,
+            'status' => PatientStatusLog::STATUS_PROCESSING,
             'user_id' => Auth::id(),
             'created_at' => now(),
             'status_date' => now(),
         ]);
         broadcast(new PatientRecordCreated($patientRecord))->toOthers();
+
+        do {
+            $trackingNumber = 'WS' . now()->format('YmdHis') . rand(100, 999);
+        } while (PatientTrackingNumber::where('tracking_number', $trackingNumber)->exists());
+
+
+        PatientTrackingNumber::create([
+            'patient_id' => $patientRecord->id,
+            'tracking_number' => $trackingNumber,
+        ]);
 
         return redirect()->route('admin.patient-records.index')->with('toast', [
             'type' => 'success',

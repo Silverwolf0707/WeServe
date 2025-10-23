@@ -59,14 +59,14 @@
                                     $priorityMap = [
                                         'CSWD Office' => [
                                             'Processing' => 1,
-                                            'Submitted' => 3,
+                                            'Submitted[ROLLED BACK]' => 3,
+                                            'Submitted' => 4,
                                             'Rejected' => 2,
                                         ],
                                         'Budget Office' => [
                                             'Approved' => 1,
                                             'Budget Allocated' => 2,
                                             'Approved[ROLLED BACK]' => 3,
-                                            
                                         ],
                                         'Treasury Office' => [
                                             'Ready for Disbursement' => 2,
@@ -139,6 +139,12 @@
                                         <i class="fas fa-exclamation-triangle me-2"></i>
                                         Submitted [Emergency]{!! $isRollback ? ' <small>[ROLLED BACK]</small>' : '' !!}
                                     </span>
+                                @elseif ($baseStatus === 'Processing')
+                                    <span class="badge d-inline-flex align-items-center"
+                                        style="background-color: #5f5f5f; padding: 6px 12px; border-radius: 50px; color: white;">
+                                        <i class="fas fa-spinner me-2"></i>
+                                        Processing{!! $isRollback ? ' <small>[ROLLED BACK]</small>' : '' !!}
+                                    </span>
                                 @else
                                     <span class="badge bg-secondary d-inline-flex align-items-center"
                                         style="padding: 6px 12px; border-radius: 50px;">
@@ -159,6 +165,8 @@
                                         'DV Submitted' => 'Treasury Office',
                                         'Disbursed' => 'Completed',
                                         'Ready for Disbursement' => 'Treasury Office',
+                                        'Processing' => 'CSWD Office',
+                                        'Draft' => 'CSWD Office',
                                     ];
 
                                     $cleanStatus = str_replace('[ROLLED BACK]', '', $baseStatus);

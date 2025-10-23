@@ -81,8 +81,8 @@
                 @foreach ($steps as $index => $step)
                     <div
                         class="stepper-step
-                                                                        {{ $baseStatus !== 'Rejected' && $index < $currentIndex ? 'completed' : '' }} 
-                                                                        {{ $baseStatus !== 'Rejected' && $index === $currentIndex ? 'active' : '' }}">
+                                                                                                {{ $baseStatus !== 'Rejected' && $index < $currentIndex ? 'completed' : '' }} 
+                                                                                                {{ $baseStatus !== 'Rejected' && $index === $currentIndex ? 'active' : '' }}">
 
                         <div class="stepper-circle">
                             @if ($baseStatus !== 'Rejected' && $index <= $currentIndex)
@@ -222,12 +222,12 @@
                                         <input type="hidden" name="action" id="decisionAction">
 
                                         <button type="button" class="btn btn-success" onclick="
-                                                                const form = this.closest('form');
-                                                                form.querySelector('#decisionAction').value = 'approve';
-                                                                this.disabled = true;
-                                                                this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Processing...';
-                                                                form.submit();
-                                                            ">
+                                                                                                    const form = this.closest('form');
+                                                                                                    form.querySelector('#decisionAction').value = 'approve';
+                                                                                                    this.disabled = true;
+                                                                                                    this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Processing...';
+                                                                                                    form.submit();
+                                                                                                ">
                                             Confirm Approve
                                         </button>
 
@@ -296,12 +296,12 @@
                                     <div class="modal-footer">
                                         <input type="hidden" name="action" id="decisionAction">
                                         <button type="button" class="btn btn-danger" onclick="
-                                                const form = this.closest('form');
-                                                form.querySelector('#decisionAction').value = 'reject';
-                                                this.disabled = true;
-                                                this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Processing...';
-                                                form.submit();
-                                            ">
+                                                                                    const form = this.closest('form');
+                                                                                    form.querySelector('#decisionAction').value = 'reject';
+                                                                                    this.disabled = true;
+                                                                                    this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Processing...';
+                                                                                    form.submit();
+                                                                                ">
                                             Confirm Reject
                                         </button>
 
@@ -404,11 +404,11 @@
 
                                     <div class="modal-footer d-flex flex-column gap-2 p-4 pt-0">
                                         <button type="button" class="btn btn-success w-100 rounded-pill py-2" onclick="
-                                                const form = this.closest('form');
-                                                this.disabled = true;
-                                                this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Processing...';
-                                                form.submit();
-                                            ">
+                                                                                    const form = this.closest('form');
+                                                                                    this.disabled = true;
+                                                                                    this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Processing...';
+                                                                                    form.submit();
+                                                                                ">
                                             <i class="fas fa-check-circle me-1"></i>
                                             {{ $patient->budgetAllocation ? 'Update Allocation' : 'Confirm Allocation' }}
                                         </button>
@@ -481,11 +481,11 @@
 
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-danger" onclick="
-                    const form = this.closest('form');
-                    this.disabled = true;
-                    this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Rolling back...';
-                    form.submit();
-                ">
+                                const form = this.closest('form');
+                                this.disabled = true;
+                                this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Rolling back...';
+                                form.submit();
+                            ">
                                     <i class="fas fa-undo-alt me-1"></i> Rollback
                                 </button>
 
@@ -497,111 +497,112 @@
             </div>
             @can('accounting_dv_input')
                 @if ($baseStatus === 'Budget Allocated')
+                    <!-- Accounting Action Card -->
                     <div class="card shadow-sm border-0 mb-4" style="background-color: #f8f9fa;">
                         <div class="card-header bg-primary text-white d-flex align-items-center">
                             <i class="fas fa-file-invoice"></i>
-                            <h5 class="mb-0" style="margin-left: 10px;">Disbursement Voucher</h5>
+                            <h5 class="mb-0 ms-2">Disbursement Voucher</h5>
                         </div>
 
                         <div class="card-body text-center">
+                            <!-- Enter/Edit DV Button -->
                             <button type="button" class="btn btn-info btn-lg px-4 text-white" data-bs-toggle="modal"
                                 data-bs-target="#dvModal">
-                                <i class="fas fa-file-alt me-2"></i> {{ $patient->disbursementVoucher ? 'Edit' : 'Enter' }} DV
-                                Details
+                                <i class="fas fa-file-alt me-2"></i>
+                                {{ $patient->disbursementVoucher ? 'Edit' : 'Enter' }} DV Details
                             </button>
+
+                            <!-- Rollback Process Button -->
                             <button type="button" class="btn btn-danger btn-lg px-4 text-white" data-bs-toggle="modal"
                                 data-bs-target="#rollbackModal">
                                 <i class="fas fa-undo-alt me-1"></i> Rollback Process
                             </button>
+
                             @php
                                 $latestLog = $patient->statusLogs->last();
                             @endphp
 
+                            <!-- Return to Rollbacker Button -->
                             @if ($latestLog && str_contains(strtolower($latestLog->remarks), 'rolled back'))
                                 <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST"
                                     style="display:inline;">
                                     @csrf
-                                    <button type="submit" class="btn btn-warning btn-lg px-4 text-white">
+                                    <button type="submit" class="btn btn-warning btn-lg px-4 text-white mt-2">
                                         <i class="fas fa-share me-1"></i> Return to Rollbacker
                                     </button>
                                 </form>
                             @endif
                         </div>
                     </div>
-                    <div class="form-group mt-4">
-                        <a class="btn btn-secondary" href="{{ route('admin.process-tracking.index') }}">
-                            <i class="fas fa-arrow-left me-1"></i> Back to List
-                        </a>
-                        <a class="btn btn-secondary" href="{{ route('admin.document-management.show', $patient->id) }}">
-                            <i class="fas fa-file-alt me-1"></i> View Document
-                        </a>
-                        <a class="btn btn-secondary" href="{{ route('admin.patient-records.show', $patient->id) }}">
-                            <i class="fas fa-file-medical me-1"></i> View Record
-                        </a>
-                    </div>
-                    <!-- DV Modal -->
-                    <div class="modal fade" id="dvModal" tabindex="-1" role="dialog" aria-labelledby="dvModalLabel"
-                        aria-hidden="true">
-                        <div class="modal-dialog" role="document">
-                            <form action="{{ $patient->disbursementVoucher
-                        ? route('admin.process-tracking.updateDV', $patient->id)
-                        : route('admin.process-tracking.storeDV', $patient->id) }}" method="POST">
-                                @csrf
-                                @if ($patient->disbursementVoucher)
-                                    @method('PUT')
-                                @endif
-
-                                <div class="modal-content border-0">
-                                    <div class="modal-header bg-primary text-white">
-                                        <h5 class="modal-title" id="dvModalLabel"><i class="fas fa-file-invoice me-2"></i>
-                                            {{ $patient->disbursementVoucher ? 'Edit' : 'Enter' }} Disbursement Voucher
-                                        </h5>
-                                        <button type="button" class="close text-white" data-bs-dismiss="modal" aria-label="Close">
-                                            <span aria-hidden="true">&times;</span>
-                                        </button>
-                                    </div>
-
-                                    <div class="modal-body">
-                                        <div class="form-group mb-3">
-                                            <label for="dv_code">DV Code</label>
-                                            <input type="text" name="dv_code" id="dv_code" class="form-control form-control-lg"
-                                                value="{{ old('dv_code', $patient->disbursementVoucher->dv_code ?? '') }}">
-                                        </div>
-                                        <div class="form-group mb-3">
-                                            <label for="dv_date">DV Date</label>
-                                            <input type="datetime-local" name="dv_date" id="dv_date"
-                                                class="form-control form-control-lg"
-                                                value="{{ old('dv_date', optional($patient->disbursementVoucher)->dv_date ? \Carbon\Carbon::parse($patient->disbursementVoucher->dv_date)->format('Y-m-d') : '') }}">
-                                        </div>
-
-                                        <div class="form-group mb-3">
-                                            <label for="status_date">Status Date</label>
-                                            <input type="datetime-local" name="status_date" id="status_date"
-                                                class="form-control form-control-lg"
-                                                value="{{ old('status_date', now()->toDateTimeLocalString()) }}" required>
-                                        </div>
-
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-success w-100" onclick="
-                                                const btn = this;
-                                                const form = btn.closest('form');
-                                                btn.disabled = true;
-                                                btn.innerHTML = '<i class=\'fas fa-spinner fa-spin me-1\'></i> Processing...';
-                                                form.submit();
-                                            ">
-                                                <i class="fas fa-check-circle me-1"></i>
-                                                {{ $patient->disbursementVoucher ? 'Update' : 'Submit' }} DV
-                                            </button>
-
-                                            <button type="button" class="btn btn-secondary w-100 mt-2"
-                                                data-bs-dismiss="modal">Cancel</button>
-                                        </div>
-                                    </div>
-                            </form>
-                        </div>
-                    </div>
                 @endif
             @endcan
+
+            <!-- ✅ Disbursement Voucher Modal (Adjusted to modal-lg) -->
+            <div class="modal fade" id="dvModal" tabindex="-1" aria-labelledby="dvModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-md" role="document">
+                    <form action="{{ $patient->disbursementVoucher
+        ? route('admin.process-tracking.updateDV', $patient->id)
+        : route('admin.process-tracking.storeDV', $patient->id) }}" method="POST">
+                        @csrf
+                        @if ($patient->disbursementVoucher)
+                            @method('PUT')
+                        @endif
+
+                        <div class="modal-content border-0 shadow-lg">
+                            <div class="modal-header bg-primary text-white">
+                                <h5 class="modal-title" id="dvModalLabel">
+                                    <i class="fas fa-file-invoice me-2"></i>
+                                    {{ $patient->disbursementVoucher ? 'Edit' : 'Enter' }} Disbursement Voucher
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                    aria-label="Close"></button>
+                            </div>
+
+                            <div class="modal-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="dv_code" class="form-label fw-bold">DV Code</label>
+                                        <input type="text" name="dv_code" id="dv_code" class="form-control form-control-lg"
+                                            value="{{ old('dv_code', $patient->disbursementVoucher->dv_code ?? '') }}"
+                                            placeholder="Enter DV Code">
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label for="dv_date" class="form-label fw-bold">DV Date</label>
+                                        <input type="datetime-local" name="dv_date" id="dv_date"
+                                            class="form-control form-control-lg"
+                                            value="{{ old('dv_date', optional($patient->disbursementVoucher)->dv_date ? \Carbon\Carbon::parse($patient->disbursementVoucher->dv_date)->format('Y-m-d\TH:i') : '') }}">
+                                    </div>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label for="status_date" class="form-label fw-bold">Status Date</label>
+                                    <input type="datetime-local" name="status_date" id="status_date"
+                                        class="form-control form-control-lg"
+                                        value="{{ old('status_date', now()->toDateTimeLocalString()) }}" required>
+                                </div>
+                            </div>
+
+                            <div class="modal-footer d-flex flex-column gap-2">
+                                <button type="button" class="btn btn-success w-100" onclick="
+                                const btn = this;
+                                const form = btn.closest('form');
+                                btn.disabled = true;
+                                btn.innerHTML = '<i class=\'fas fa-spinner fa-spin me-1\'></i> Processing...';
+                                form.submit();
+                            ">
+                                    <i class="fas fa-check-circle me-1"></i>
+                                    {{ $patient->disbursementVoucher ? 'Update' : 'Submit' }} DV
+                                </button>
+
+                                <button type="button" class="btn btn-secondary w-100" data-bs-dismiss="modal">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
 
 
             @can('treasury_disburse')
@@ -678,13 +679,13 @@
                                 </div>
 
                                 <div class="modal-footer d-flex flex-column gap-2">
-                                    <button type="button" class="btn btn-danger w-100" onclick="
-                            const btn = this;
-                            const form = btn.closest('form');
-                            btn.disabled = true;
-                            btn.innerHTML = '<i class=\'fas fa-spinner fa-spin me-1\'></i> Processing...';
-                            form.submit();
-                        ">
+                                    <button type="button" class="btn btn-success w-100" onclick="
+                                                    const btn = this;
+                                                    const form = btn.closest('form');
+                                                    btn.disabled = true;
+                                                    btn.innerHTML = '<i class=\'fas fa-spinner fa-spin me-1\'></i> Processing...';
+                                                    form.submit();
+                                                ">
                                         <i class="fas fa-check-circle me-1"></i> Confirm Disbursement
                                     </button>
 
@@ -727,23 +728,23 @@
                             <div class="d-flex justify-content-between">
                                 {{-- Normal Submit --}}
                                 <button type="button" class="btn btn-primary" @if ($isLocked) disabled @endif onclick="
-                                                const form = this.closest('form');
-                                                this.disabled = true;
-                                                this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Submitting...';
-                                                form.action='{{ route('admin.patient-records.submit', $patient->id) }}';
-                                                form.submit();
-                                            ">
+                                                                        const form = this.closest('form');
+                                                                        this.disabled = true;
+                                                                        this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Submitting...';
+                                                                        form.action='{{ route('admin.patient-records.submit', $patient->id) }}';
+                                                                        form.submit();
+                                                                    ">
                                     Submit
                                 </button>
 
                                 {{-- Emergency Submit --}}
                                 <button type="button" class="btn btn-danger" @if ($isLocked) disabled @endif onclick="
-                                                const form = this.closest('form');
-                                                this.disabled = true;
-                                                this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Submitting...';
-                                                form.action='{{ route('admin.patient-records.submit-emergency', $patient->id) }}';
-                                                form.submit();
-                                            ">
+                                                                        const form = this.closest('form');
+                                                                        this.disabled = true;
+                                                                        this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Submitting...';
+                                                                        form.action='{{ route('admin.patient-records.submit-emergency', $patient->id) }}';
+                                                                        form.submit();
+                                                                    ">
                                     Submit [Emergency]
                                 </button>
                             </div>
@@ -758,75 +759,82 @@
                 </div>
             @endcan
 
+        
+
             <div class="form-group mt-4">
-                <a class="btn btn-secondary" href="{{ route('admin.process-tracking.index') }}">
-                    <i class="fas fa-arrow-left me-1"></i> Back to List
-                </a>
-                <a class="btn btn-secondary" href="{{ route('admin.document-management.show', $patient->id) }}">
-                    <i class="fas fa-file-alt me-1"></i> View Document
-                </a>
-                <a class="btn btn-secondary" href="{{ route('admin.patient-records.show', $patient->id) }}">
-                    <i class="fas fa-file-medical me-1"></i> View Record
-                </a>
+                <div class="left-buttons">
+                    <a class="btn btn-secondary" href="{{ route('admin.process-tracking.index') }}">
+                        <i class="fas fa-arrow-left me-1"></i> Back to List
+                    </a>
+                </div>
+
+                <div class="right-buttons">
+                    <a class="btn btn-primary" href="{{ route('admin.document-management.show', $patient->id) }}">
+                        <i class="fas fa-file-alt me-1"></i> View Document
+                    </a>
+                    <a class="btn btn-success" href="{{ route('admin.patient-records.show', $patient->id) }}">
+                        <i class="fas fa-file-medical me-1"></i> View Record
+                    </a>
+                </div>
             </div>
+
         </div>
-    </div>
 @endsection
-@push('scripts')
+    @push('scripts')
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            var toastEl = document.getElementById('liveToast');
-            var timerEl = document.getElementById('toast-timer');
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var toastEl = document.getElementById('liveToast');
+                var timerEl = document.getElementById('toast-timer');
 
-            if (toastEl) {
-                var toast = new bootstrap.Toast(toastEl, {
-                    autohide: true,
-                    delay: 5000
-                });
-                toast.show();
+                if (toastEl) {
+                    var toast = new bootstrap.Toast(toastEl, {
+                        autohide: true,
+                        delay: 5000
+                    });
+                    toast.show();
 
-                let remaining = 5;
-                const interval = setInterval(() => {
-                    remaining--;
-                    if (timerEl) {
-                        timerEl.textContent = `Closing in ${remaining}s`;
-                    }
-                    if (remaining <= 0) {
-                        clearInterval(interval);
-                    }
-                }, 1000);
-            }
-        });
-    </script>
-    <script>
-        // setTimeout(() => {
-        //     Echo.channel('process-tracking')
-        //         .listen('.patient.process.updated', (e) => {
-        //             console.log("Status changed:", e);
+                    let remaining = 5;
+                    const interval = setInterval(() => {
+                        remaining--;
+                        if (timerEl) {
+                            timerEl.textContent = `Closing in ${remaining}s`;
+                        }
+                        if (remaining <= 0) {
+                            clearInterval(interval);
+                        }
+                    }, 1000);
+                }
+            });
+        </script>
+        <script>
+            // setTimeout(() => {
+            //     Echo.channel('process-tracking')
+            //         .listen('.patient.process.updated', (e) => {
+            //             console.log("Status changed:", e);
 
-        //         });
-
-
-
-        // }, 300);
+            //         });
 
 
-        document.addEventListener('DOMContentLoaded', function () {
-            const amountInput = document.getElementById('amount');
-            const buttons = document.querySelectorAll('.suggested-amount');
 
-            buttons.forEach(btn => {
-                btn.addEventListener('click', function () {
-                    const value = this.dataset.value;
-                    amountInput.value = value;
-                    amountInput.focus();
-                    amountInput.classList.add('bg-success', 'text-white');
-                    setTimeout(() => {
-                        amountInput.classList.remove('bg-success', 'text-white');
-                    }, 500);
+            // }, 300);
+
+
+            document.addEventListener('DOMContentLoaded', function () {
+                const amountInput = document.getElementById('amount');
+                const buttons = document.querySelectorAll('.suggested-amount');
+
+                buttons.forEach(btn => {
+                    btn.addEventListener('click', function () {
+                        const value = this.dataset.value;
+                        amountInput.value = value;
+                        amountInput.focus();
+                        amountInput.classList.add('bg-success', 'text-white');
+                        setTimeout(() => {
+                            amountInput.classList.remove('bg-success', 'text-white');
+                        }, 500);
+                    });
                 });
             });
-        });
-    </script>
-@endpush
+        </script>
+    @endpush

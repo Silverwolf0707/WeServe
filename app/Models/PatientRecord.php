@@ -163,4 +163,8 @@ class PatientRecord extends Model
     {
         return $this->hasMany(\App\Models\Document::class, 'patient_id');
     }
+    public function rejectionReasons()
+    {
+        return $this->hasMany(\App\Models\RejectionReason::class, 'patient_id');
+    }
 }

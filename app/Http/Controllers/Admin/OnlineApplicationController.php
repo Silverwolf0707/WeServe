@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\OnlinePatientApplication;
+use App\Models\PatientTrackingNumber;
 use Illuminate\Http\Request;
 
 class OnlineApplicationController
@@ -24,7 +25,9 @@ class OnlineApplicationController
             'case_type'      => 'required|in:Student,PWD,Senior,Solo Parent',
         ]);
 
-        $trackingNumber = 'WS' . now()->format('YmdHis') . rand(100, 999);
+        do {
+            $trackingNumber = 'WS' . now()->format('YmdHis') . rand(100, 999);
+        } while (PatientTrackingNumber::where('tracking_number', $trackingNumber)->exists());
 
         $application = OnlinePatientApplication::create([
             'tracking_number' => $trackingNumber,
@@ -48,8 +51,8 @@ class OnlineApplicationController
 
         $trackingNumber = $request->tracking_number;
 
-        $trackingRecord = \App\Models\PatientTrackingNumber::where('tracking_number', $trackingNumber)
-            ->with('patient.statusLogs') 
+        $trackingRecord = PatientTrackingNumber::where('tracking_number', $trackingNumber)
+            ->with('patient.statusLogs')
             ->first();
 
         if ($trackingRecord && $trackingRecord->patient) {

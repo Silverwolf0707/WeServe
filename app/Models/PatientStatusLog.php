@@ -13,6 +13,7 @@ class PatientStatusLog extends Model
     public $timestamps = true;
 
     const STATUS_DRAFT = 'Draft';
+    const STATUS_PROCESSING = 'Processing';
     const STATUS_SUBMITTED = 'Submitted';
     const STATUS_APPROVED = 'Approved';
     const STATUS_REJECTED = 'Rejected';

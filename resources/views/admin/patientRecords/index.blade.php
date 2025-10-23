@@ -71,7 +71,10 @@
                         @endphp
                         <tr data-entry-id="{{ $patientRecord->id }}" data-status="{{ $statusValue }}">
                             <td></td>
-                            <td>{{ \Carbon\Carbon::parse($patientRecord->date_processed)->format('F j, Y g:i A') }}</td>
+                            <td data-order="{{ \Carbon\Carbon::parse($patientRecord->date_processed)->timestamp }}">
+    {{ \Carbon\Carbon::parse($patientRecord->date_processed)->format('F j, Y g:i A') }}
+</td>
+
                             <td>{{ $patientRecord->case_type ?? '' }}</td>
                             <td>{{ $patientRecord->control_number ?? '' }}</td>
                             <td>{{ $patientRecord->claimant_name ?? '' }}</td>
@@ -179,7 +182,7 @@
                 $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
                     let selectedStatus = $('#statusFilter').val(); // value from dropdown
                     let rowStatus = $(table.row(dataIndex).node()).data(
-                    'status'); // read data-status
+                        'status'); // read data-status
 
                     // If nothing selected, show all
                     if (!selectedStatus) return true;
@@ -384,9 +387,7 @@
                         e.case_worker ?? '',
                         generateActions(e.id)
                     ]).draw(false).node();
-
-                    // Optional: Highlight the new row
-                    $(newRow).addClass('table-success');
+                    table.order([1, 'desc']).draw();
 
                     // Optional: Remove the highlight after a few seconds
                     setTimeout(() => {

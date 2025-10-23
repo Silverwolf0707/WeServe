@@ -49,7 +49,7 @@ table.dataTable thead .sorting_desc {
     background-image: none;
 }
 
-.btn-group-xs > .btn,
+.btn-group-xs>.btn,
 .btn-xs {
     padding: 1px 5px;
     font-size: 12px;
@@ -88,7 +88,7 @@ table.dataTable thead .sorting_desc {
     color: red;
 }
 
-.form-check.is-invalid ~ .invalid-feedback {
+.form-check.is-invalid~.invalid-feedback {
     display: block;
 }
 
@@ -211,13 +211,14 @@ div.dt-button-collection {
 
     /* --- Dropdown arrow fix --- */
     appearance: none;
-    -webkit-appearance: none; /* Safari */
-    -moz-appearance: none; /* Firefox */
-    background: #fff
-        url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='gray'><path d='M2 4l4 4 4-4'/></svg>")
-        no-repeat right 0.75rem center;
+    -webkit-appearance: none;
+    /* Safari */
+    -moz-appearance: none;
+    /* Firefox */
+    background: #fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='gray'><path d='M2 4l4 4 4-4'/></svg>") no-repeat right 0.75rem center;
     background-size: 12px 12px;
-    padding-right: 2rem; /* space for arrow */
+    padding-right: 2rem;
+    /* space for arrow */
     cursor: pointer;
 }
 
@@ -268,7 +269,8 @@ div.dt-button-collection {
 
 /* -------Admin button styles------- */
 .dataTables_wrapper .dt-buttons .btn {
-    border-radius: 50px !important; /* pill shape */
+    border-radius: 50px !important;
+    /* pill shape */
     padding: 0.4rem 1rem;
     font-size: 0.875rem;
     font-weight: 600;
@@ -279,11 +281,10 @@ div.dt-button-collection {
 
 /* Primary buttons (Select All / None) */
 .btn-primary {
-    background: linear-gradient(
-        135deg,
-        #4f46e5,
-        #3b82f6
-    ) !important; /* indigo → blue */
+    background: linear-gradient(135deg,
+            #4f46e5,
+            #3b82f6) !important;
+    /* indigo → blue */
     color: #fff !important;
 }
 
@@ -294,11 +295,10 @@ div.dt-button-collection {
 
 /* Secondary (More dropdown) */
 .btn-secondary {
-    background: linear-gradient(
-        135deg,
-        #6b7280,
-        #9ca3af
-    ) !important; /* gray gradient */
+    background: linear-gradient(135deg,
+            #6b7280,
+            #9ca3af) !important;
+    /* gray gradient */
     color: #0e0c0c !important;
 }
 
@@ -309,31 +309,37 @@ div.dt-button-collection {
 
 /* Force dropdown item text to be visible */
 .dt-button.dropdown-item {
-    color: #111 !important; /* dark text */
-    background-color: #fff !important; /* white background */
+    color: #111 !important;
+    /* dark text */
+    background-color: #fff !important;
+    /* white background */
     border-radius: 8px;
     padding: 0.5rem 0.75rem;
     font-weight: 500;
     transition: all 0.2s ease-in-out;
     display: flex !important;
-    justify-content: space-between; /* text left, checkbox right */
+    justify-content: space-between;
+    /* text left, checkbox right */
     align-items: center;
     gap: 0.5rem;
 }
 
 .dt-button.dropdown-item:hover {
-    color: #111 !important; /* keep readable */
+    color: #111 !important;
+    /* keep readable */
     background-color: #f3f4f6 !important;
     transform: translateX(4px);
 }
 
 /* Checkbox (checkmark) on the right in column visibility */
 .dt-button-collection .dt-button input[type="checkbox"] {
-    margin-left: auto; /* push to the far right */
+    margin-left: auto;
+    /* push to the far right */
     margin-right: 0;
     position: relative;
     top: 0;
-    float: none; /* remove default float */
+    float: none;
+    /* remove default float */
 }
 
 /* Adjust spacing */
@@ -525,11 +531,9 @@ div.dt-button-collection {
 
 .card-header-bg {
     height: 90px;
-    background: linear-gradient(
-        45deg,
-        var(--card-color),
-        var(--card-color-dark)
-    );
+    background: linear-gradient(45deg,
+            var(--card-color),
+            var(--card-color-dark));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -790,6 +794,7 @@ div.dt-button-collection {
     margin-top: 0.5rem;
     font-weight: 500;
 }
+
 /* end of process tracker styles */
 
 /* loading screen */
@@ -852,6 +857,7 @@ body.sidebar-collapse #loading-overlay {
         transform: rotate(360deg);
     }
 }
+
 /* end of loading screen */
 
 /* 🔹 Process Tracker Styles */
@@ -907,6 +913,7 @@ body.sidebar-collapse #loading-overlay {
     margin-top: 0.5rem;
     font-weight: 500;
 }
+
 /* end of process tracker styles */
 
 /* admin home dashboard */
@@ -1044,11 +1051,9 @@ body.sidebar-collapse #loading-overlay {
 
 .card-header-bg {
     height: 90px;
-    background: linear-gradient(
-        45deg,
-        var(--card-color),
-        var(--card-color-dark)
-    );
+    background: linear-gradient(45deg,
+            var(--card-color),
+            var(--card-color-dark));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1240,18 +1245,22 @@ body.sidebar-collapse #loading-overlay {
         transform: translateX(0);
         opacity: 0;
     }
+
     25% {
         opacity: 0.8;
     }
+
     50% {
         transform: translateX(50px);
     }
+
     100% {
         bottom: 110%;
         transform: translateX(-50px);
         opacity: 0;
     }
 }
+
 /* end of admin home dashboard */
 
 .dataTables_wrapper .dt-buttons {
@@ -1263,4 +1272,129 @@ body.sidebar-collapse #loading-overlay {
 .dataTables_wrapper .dt-buttons .btn {
     flex-shrink: 0;
     white-space: nowrap;
+}
+
+/* ===== Custom Button Section Styling ===== */
+.form-group.mt-4 {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f0f4ff;
+    /* light blue background */
+    padding: 15px 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.left-buttons {
+    display: flex;
+    align-items: center;
+}
+
+.right-buttons {
+    display: flex;
+    gap: 12px;
+    /* space between View Document and View Record */
+}
+
+.form-group.mt-4 a {
+    font-size: 15px;
+    font-weight: 500;
+    border-radius: 8px;
+    padding: 10px 16px;
+    transition: all 0.2s ease-in-out;
+}
+
+.form-group.mt-4 a:hover {
+    transform: translateY(-1px);
+    opacity: 0.9;
+}
+
+/* Optional color adjustments */
+.btn-secondary {
+    background-color: #6c757d;
+    border: none;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+
+/*setting css*/
+/* ===== GLOBAL DARK MODE FIX ===== */
+body.dark-mode,
+body.dark-mode #app,
+body.dark-mode .main-content,
+body.dark-mode .content-wrapper {
+    background-color: #121212 !important;
+    color: #e0e0e0 !important;
+}
+
+/* Sidebar */
+body.dark-mode .sidebar,
+body.dark-mode .c-sidebar {
+    background-color: #1a1a1a !important;
+    border-right: 1px solid #333 !important;
+}
+
+body.dark-mode .sidebar a,
+body.dark-mode .c-sidebar a {
+    color: #ccc !important;
+}
+
+body.dark-mode .sidebar a:hover,
+body.dark-mode .c-sidebar a:hover {
+    background-color: #198754 !important;
+    color: #fff !important;
+}
+
+/* Navbar or top header */
+body.dark-mode .header,
+body.dark-mode .navbar,
+body.dark-mode .c-header {
+    background-color: #1f1f1f !important;
+    color: #e0e0e0 !important;
+    border-bottom: 1px solid #333 !important;
+}
+
+/* Cards and content areas */
+body.dark-mode .card,
+body.dark-mode .card-body,
+body.dark-mode .card-header {
+    background-color: #1e1e1e !important;
+    color: #e0e0e0 !important;
+}
+
+/* Form elements */
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode textarea {
+    background-color: #2a2a2a !important;
+    color: #e0e0e0 !important;
+    border: 1px solid #444 !important;
+}
+
+/* Category panel */
+body.dark-mode .list-group-item {
+    background-color: #1e1e1e !important;
+    color: #e0e0e0 !important;
+}
+
+body.dark-mode .list-group-item.active {
+    background-color: #198754 !important;
+    color: #fff !important;
+    border-color: #198754 !important;
+}
+
+/* Scrollbar (optional for aesthetics) */
+body.dark-mode ::-webkit-scrollbar {
+    width: 8px;
+}
+body.dark-mode ::-webkit-scrollbar-thumb {
+    background-color: #333;
+    border-radius: 10px;
+}
+body.dark-mode ::-webkit-scrollbar-track {
+    background-color: #1a1a1a;
 }

@@ -35,23 +35,25 @@
                 <dd class="col-sm-9">{{ $application->tracking_number }}</dd>
             </dl>
             <div class="mt-4">
-                <form action="{{ route('admin.applications.confirm', $application->id) }}" method="POST">
+                <form action="{{ route('admin.applications.confirm', $application->id) }}" method="POST"
+                    class="d-flex align-items-center gap-2">
                     @csrf
-                    <div class="flex justify-between">
-                        <button type="submit"
-                            class="btn btn-success w-full py-2 px-4 rounded-lg hover:bg-green-700 transition">
-                            Confirm & Transfer to Patient Records
-                        </button>
-                        <a class="btn btn-secondary"
-                            href="{{ route('admin.online-applications.index') }}">
-                            <i class="fas fa-file-alt me-1"></i> Back
-                        </a>
-                    </div>
-
-                    
+                    <button type="submit"
+                        class="btn btn-success px-4 py-2 rounded-lg fw-semibold hover:bg-green-700 transition">
+                        <i class="fas fa-check-circle me-1"></i> Confirm & Transfer
+                    </button>
+                    <a href="{{ route('admin.online-applications.index') }}"
+                        class="btn btn-secondary px-4 py-2 rounded-lg fw-semibold">
+                        <i class="fas fa-arrow-left me-1"></i> Back
+                    </a>
                 </form>
             </div>
+
+
+
+            </form>
         </div>
+    </div>
 
     </div>
 

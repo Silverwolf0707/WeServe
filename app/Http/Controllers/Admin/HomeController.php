@@ -59,16 +59,16 @@ class HomeController
                 $titleKey = strtolower(trim($role->title));
 
                 $icons = [
-                    'user' => 'fa-users',
-                    "mayors office" => 'fa-building',
+                    'cswd office' => 'fa-users',
+                    "mayor's office" => 'fa-building',
                     'budget office' => 'fa-wallet',
                     'accounting office' => 'fa-calculator',
                     "treasury office" => 'fa-coins',
                 ];
 
                 $colors = [
-                    'user' => ['#4e73df', '#2b59cb'],
-                    "mayors office" => ['#1cc88a', '#17a673'],
+                    'cswd office' => ['#4e73df', '#2b59cb'],
+                    "mayor's office" => ['#1cc88a', '#17a673'],
                     'budget office' => ['#f6c23e', '#dda20a'],
                     'accounting office' => ['#36b9cc', '#2a96a8'],
                     "treasury office" => ['#e74a3b', '#c93020'],
@@ -105,14 +105,14 @@ class HomeController
                     ];
 
                     $color = $colors[strtolower($department)] ?? '#6c63ff';
-                           $badgeClass = 'badge-secondary';
-        if (str_contains(strtolower($log->description), 'created')) {
-            $badgeClass = 'badge-success';
-        } elseif (str_contains(strtolower($log->description), 'updated')) {
-            $badgeClass = 'badge-info';
-        } elseif (str_contains(strtolower($log->description), 'deleted')) {
-            $badgeClass = 'badge-danger';
-        }
+                    $badgeClass = 'badge-secondary';
+                    if (str_contains(strtolower($log->description), 'created')) {
+                        $badgeClass = 'badge-success';
+                    } elseif (str_contains(strtolower($log->description), 'updated')) {
+                        $badgeClass = 'badge-info';
+                    } elseif (str_contains(strtolower($log->description), 'deleted')) {
+                        $badgeClass = 'badge-danger';
+                    }
 
                     return [
                         'date' => $log->created_at->format('Y-m-d H:i A'),
@@ -161,7 +161,7 @@ class HomeController
                         ->from('patient_status_logs')
                         ->groupBy('patient_id');
                 })
-                ->where('status', PatientStatusLog::STATUS_DRAFT)
+                ->whereIn('status', [PatientStatusLog::STATUS_DRAFT, PatientStatusLog::STATUS_PROCESSING])
                 ->orderByDesc('status_date')
                 ->get();
 

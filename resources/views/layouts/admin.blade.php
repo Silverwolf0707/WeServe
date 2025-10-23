@@ -358,6 +358,11 @@
                 setTimeout(() => loader.style.display = "none", 500);
             });
         });
+
+           document.addEventListener('DOMContentLoaded', function () {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.body.classList.toggle('dark-mode', savedTheme === 'dark');
+    });
     </script>
 
 </body>

@@ -7,7 +7,8 @@
                 style="background: linear-gradient(135deg, #4e73df, #1cc88a);">
 
                 <div class="position-relative mx-auto mb-2" style="width: 120px; height: 120px;">
-                    <div class="rounded-circle border border-4 border-white shadow w-100 h-100 overflow-hidden" id="profilePreview">
+                    <div class="rounded-circle border border-4 border-white shadow w-100 h-100 overflow-hidden"
+                        id="profilePreview">
                         @if(Auth::user()->profile_image)
                             <img src="{{ asset('storage/' . Auth::user()->profile_image) }}" alt="Profile"
                                 class="rounded-circle w-100 h-100 object-fit-cover">
@@ -16,7 +17,9 @@
                         @endif
                     </div>
 
-                    <label for="profileImageInput" class="position-absolute bottom-0 end-0 bg-white rounded-circle p-1 shadow" style="cursor: pointer;">
+                    <label for="profileImageInput"
+                        class="position-absolute bottom-0 end-0 bg-white rounded-circle p-1 shadow"
+                        style="cursor: pointer;">
                         <i class="fas fa-camera text-primary"></i>
                     </label>
                     <input type="file" id="profileImageInput" class="d-none" accept="image/*">
@@ -45,8 +48,7 @@
                 </ul>
             </div>
 
-            <div class="modal-footer border-0 justify-content-center py-3"
-                 style="background-color: #f1f3f7;">
+            <div class="modal-footer border-0 justify-content-center py-3" style="background-color: #f1f3f7;">
                 <button type="button" class="btn btn-primary btn-lg" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
@@ -57,14 +59,28 @@
     const profileInput = document.getElementById('profileImageInput');
     const profilePreview = document.getElementById('profilePreview');
 
-    profileInput.addEventListener('change', function(e) {
+    profileInput.addEventListener('change', function (e) {
         const file = e.target.files[0];
-        if(file) {
+        if (file) {
             const reader = new FileReader();
-            reader.onload = function(event) {
+            reader.onload = function (event) {
                 profilePreview.innerHTML = `<img src="${event.target.result}" class="rounded-circle w-100 h-100 object-fit-cover">`;
             }
             reader.readAsDataURL(file);
         }
     });
 </script>
+<style>
+    /* Fix for layout reversal when viewing Process Tracking show page */
+    #profileModal .list-group-item {
+        flex-direction: row !important;
+        text-align: left !important;
+        justify-content: flex-start !important;
+    }
+
+    #profileModal .list-group-item i {
+        margin-right: 0.75rem !important;
+        /* Ensure spacing remains consistent */
+        margin-left: 0 !important;
+    }
+</style>

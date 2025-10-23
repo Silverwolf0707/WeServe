@@ -33,7 +33,7 @@
 
 
 
-     
+
         <section class="process" id="process">
             <div class="container text-center">
                 <h2>Application Process</h2>
@@ -100,21 +100,59 @@
                                     $status = $log->status;
                                     $isRollback = str_contains($status, '[ROLLED BACK]');
                                     $baseStatus = $isRollback ? trim(str_replace('[ROLLED BACK]', '', $status)) : $status;
-                                    $color = $badgeColors[$baseStatus] ?? '#6c757d';
-                                    $icon = $icons[$baseStatus] ?? 'fa-question-circle';
-                                    $textColor = $baseStatus === 'Budget Allocated' ? 'black' : 'white';
+
+                                    // ✅ Define the color for each status background
+                                    switch ($baseStatus) {
+                                        case 'Processing':
+                                            $color = '#6c757d'; // gray
+                                            $icon = 'fa-hourglass-half';
+                                            break;
+                                        case 'Submitted':
+                                            $color = '#28a745'; // green
+                                            $icon = 'fa-paper-plane';
+                                            break;
+                                        case 'Approved':
+                                            $color = '#28a745'; // green
+                                            $icon = 'fa-check-circle';
+                                            break;
+                                        case 'Rejected':
+                                            $color = '#dc3545'; // red
+                                            $icon = 'fa-times-circle';
+                                            break;
+                                        case 'Budget Allocated':
+                                            $color = '#d4a017'; // dark yellow
+                                            $icon = 'fa-wallet';
+                                            break;
+                                        case 'DV Submitted':
+                                            $color = '#17a2b8'; // light blue
+                                            $icon = 'fa-file-invoice-dollar';
+                                            break;
+                                        case 'Disbursed':
+                                            $color = '#28a745'; // green
+                                            $icon = 'fa-hand-holding-usd';
+                                            break;
+                                        default:
+                                            $color = '#6c757d'; // fallback gray
+                                            $icon = 'fa-question-circle';
+                                            break;
+                                    }
+
+                                    // Adjust text color for readability
+                                    $textColor = in_array($baseStatus, ['Budget Allocated']) ? 'black' : 'white';
                                 @endphp
 
-                                <div class="tracking-entry">
-                                    <div class="status-icon" style="background-color: {{ $color }};">
+                                <!-- ✅ Updated: background now uses the status color -->
+                                <div class="tracking-entry"
+                                    style="background-color: {{ $color }}; border-left: 6px solid {{ $color }}; color: {{ $textColor }};">
+                                    <div class="status-icon" style="background-color: rgba(255,255,255,0.2);">
                                         <i class="fas {{ $icon }}" style="color: {{ $textColor }};"></i>
                                     </div>
 
                                     <div class="status-details">
-                                        <p class="tracking-date">
+                                        <p class="tracking-date" style="color: {{ $textColor }};">
                                             {{ \Carbon\Carbon::parse($log->status_date)->format('F j, Y g:i A') }}
                                         </p>
-                                        <p class="tracking-status">
+                                        <p class="tracking-status" style="color: {{ $textColor }};">
                                             <b>{{ $baseStatus }}:</b> {{ $log->remarks }}
                                         </p>
                                     </div>
@@ -133,6 +171,7 @@
                     </div>
                 </div>
             </div>
+
         </section>
 
         <footer class="footer">

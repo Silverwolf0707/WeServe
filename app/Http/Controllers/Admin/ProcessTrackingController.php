@@ -513,7 +513,7 @@ class ProcessTrackingController extends Controller
             'patient_id' => $patient->id,
             'user_id' => Auth::id(),
             'status' => PatientStatusLog::STATUS_BUDGET_ALLOCATED,
-            'remarks' => 'Budget allocated: ₱' . number_format($request->amount, 2),
+            'remarks' => $request->remarks,
             'status_date' => $request->status_date,
         ]);
 
@@ -568,7 +568,7 @@ class ProcessTrackingController extends Controller
             'patient_id' => $patient->id,
             'status' => PatientStatusLog::STATUS_BUDGET_ALLOCATED,
             'user_id' => Auth::id(),
-            'remarks' => 'Budget updated: ₱' . number_format($validated['amount'], 2),
+            'remarks' => $request->remarks,
             'status_date' => $request->status_date,
         ]);
 

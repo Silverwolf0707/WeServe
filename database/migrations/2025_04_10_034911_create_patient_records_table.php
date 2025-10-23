@@ -19,7 +19,7 @@ class CreatePatientRecordsTable extends Migration
             $table->string('claimant_name');
             $table->string('case_category');
             $table->string('patient_name');
-            $table->longText('diagnosis');
+            $table->longText('diagnosis')->nullable();
             $table->integer('age');
             $table->string('address');
             $table->string('contact_number');

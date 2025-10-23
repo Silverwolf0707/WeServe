@@ -17,6 +17,41 @@ class UsersTableSeeder extends Seeder
                 'password'       => bcrypt('12345678'),
                 'remember_token' => null,
             ],
+            [
+                'id'             => 2,
+                'name'           => 'CSWD Office',
+                'email'          => 'cswd@weserve.gov',
+                'password'       => bcrypt('12345678'),
+                'remember_token' => null,
+            ],
+            [
+                'id'             => 3,
+                'name'           => 'Mayors Office',
+                'email'          => 'mayor@weserve.gov',
+                'password'       => bcrypt('12345678'),
+                'remember_token' => null,
+            ],
+            [
+                'id'             => 4,
+                'name'           => 'Budget Office',
+                'email'          => 'budget@weserve.gov',
+                'password'       => bcrypt('12345678'),
+                'remember_token' => null,
+            ],
+            [
+                'id'             => 5,
+                'name'           => 'Accounting Office',
+                'email'          => 'accounting@weserve.gov',
+                'password'       => bcrypt('12345678'),
+                'remember_token' => null,
+            ],
+            [
+                'id'             => 6,
+                'name'           => 'Treasury Office',
+                'email'          => 'treasury@weserve.gov',
+                'password'       => bcrypt('12345678'),
+                'remember_token' => null,
+            ],
         ];
 
         User::insert($users);

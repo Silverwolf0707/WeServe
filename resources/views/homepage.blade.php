@@ -75,11 +75,11 @@
 
                 <div class="about-slider-wrapper">
                     <div id="aboutSlider" class="about-slider">
-                        <img class="slide" src="https://picsum.photos/600/400?random=1" alt="Community Work"
+                        <img class="slide" src="cswd1.jpg" alt="Community Work"
                             loading="lazy">
-                        <img class="slide" src="https://picsum.photos/600/400?random=2" alt="CSWD Office"
+                        <img class="slide" src="cswd2.jpg" alt="CSWD Office"
                             loading="lazy">
-                        <img class="slide" src="https://picsum.photos/600/400?random=3" alt="Support Services"
+                        <img class="slide" src="cswd3.jpg" alt="Support Services"
                             loading="lazy">
                     </div>
 

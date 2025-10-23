@@ -27,14 +27,14 @@ class DocumentManagementController extends Controller
 
         $request->validate([
             'patient_id' => 'required|exists:patient_records,id',
-            'files.*' => 'required|file|mimes:jpg,jpeg,png|max:2048',
+            'files.*' => 'required|file|max:20480',
             'document_type' => 'nullable|string|max:255',
             'description' => 'nullable|string|max:1000',
         ]);
 
         if ($request->hasFile('files')) {
             foreach ($request->file('files') as $file) {
-                $path = $file->store('documents', 'public');
+                $path = $file->store("documents/{$request->patient_id}", 'public');
 
                 Document::create([
                     'patient_id' => $request->patient_id,
@@ -70,24 +70,23 @@ class DocumentManagementController extends Controller
         return back()->with('status', 'Document deleted successfully.');
     }
 
-public function massDestroy(Request $request)
-{
-    abort_if(Gate::denies('documents_management'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+    public function massDestroy(Request $request)
+    {
+        abort_if(Gate::denies('documents_management'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-    $ids = $request->input('ids');
+        $ids = $request->input('ids');
 
-    if (!is_array($ids)) {
-        return response()->json(['message' => 'Invalid request.'], 400);
+        if (!is_array($ids)) {
+            return response()->json(['message' => 'Invalid request.'], 400);
+        }
+
+        $documents = Document::whereIn('patient_id', $ids)->get();
+
+        foreach ($documents as $doc) {
+            Storage::disk('public')->delete($doc->file_path);
+            $doc->delete();
+        }
+
+        return response(null, 204);
     }
-
-    $documents = Document::whereIn('patient_id', $ids)->get();
-
-    foreach ($documents as $doc) {
-        Storage::disk('public')->delete($doc->file_path);
-        $doc->delete();
-    }
-
-    return response(null, 204);
-}
-
 }

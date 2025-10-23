@@ -31,12 +31,9 @@ Route::get('/track', [OnlineApplicationController::class, 'track'])->name('track
 
 
 Route::get('/', function () {
-    if (session('status')) {
-        return redirect()->route('admin.home')->with('status', session('status'));
-    }
-
-    return redirect()->route('admin.home');
+    return redirect()->route('online-application.index');
 });
+
 
 Auth::routes(['register' => false]);
 
