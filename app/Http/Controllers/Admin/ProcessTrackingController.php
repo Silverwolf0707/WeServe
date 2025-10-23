@@ -63,7 +63,7 @@ class ProcessTrackingController extends Controller
 
         // Multi-select validation if rejecting
         if ($request->action === 'reject') {
-            $rules['reasons']       = 'required|array|min:1';
+            $rules['reasons']       = 'nullable|array|min:1';
             $rules['reasons.*']     = 'string|max:255';
             $rules['other_reason']  = 'nullable|string|max:255';
         }
@@ -961,7 +961,7 @@ class ProcessTrackingController extends Controller
 
         $patient->statusLogs()->create([
             'status' => $rolledBackStatus,
-            'remarks' => '[ROLLED BACK] ' . $request->rollback_remarks,
+            'remarks' => $request->rollback_remarks,
             'user_id' => Auth::id(),
             'status_date' => now(),
         ]);

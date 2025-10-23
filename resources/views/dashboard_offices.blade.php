@@ -237,7 +237,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($recentlyApprovedRejected as $log)
+                                @forelse($recentlyApproved as $log)
                                     <tr>
                                         <td>{{ $log->patient->control_number ?? 'N/A' }}</td>
                                         <td>{{ $log->patient->claimant_name ?? 'Unknown' }}</td>

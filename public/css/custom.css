@@ -758,21 +758,40 @@ div.dt-button-collection {
     position: relative;
 }
 
+/* Default connector line */
 .stepper-step:not(:last-child)::after {
     content: "";
     position: absolute;
-    top: 15px;
+    top: 50%;
+    transform: translateY(-50%);
     right: -50%;
     width: 100%;
-    height: 4px;
+    height: 6px;
     background: #e0e0e0;
     z-index: 0;
+    border-radius: 4px;
 }
 
+/* ✅ Completed steps (green) */
+.stepper-step.completed .stepper-circle {
+    background: #28a745;
+}
 .stepper-step.completed::after {
     background: #28a745;
 }
 
+/* 🔵 Blue connector after last completed step */
+.stepper-step.completed.has-blue-line::after {
+    background: #007bff !important;
+}
+
+/* 🔵 Next step (blue circle) */
+.stepper-step.next .stepper-circle {
+    background: #007bff;
+    color: white;
+}
+
+/* ⚪ Default (future) steps */
 .stepper-circle {
     width: 30px;
     height: 30px;
@@ -783,17 +802,20 @@ div.dt-button-collection {
     color: white;
     position: relative;
     z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
 }
 
-.stepper-step.completed .stepper-circle,
-.stepper-step.active .stepper-circle {
-    background: #28a745;
-}
-
+/* Labels */
 .stepper-label {
     margin-top: 0.5rem;
     font-weight: 500;
+    color: #333;
+    font-size: 0.95rem;
 }
+
 
 /* end of process tracker styles */
 

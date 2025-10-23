@@ -161,7 +161,7 @@ class HomeController
                         ->from('patient_status_logs')
                         ->groupBy('patient_id');
                 })
-                ->whereIn('status', [PatientStatusLog::STATUS_DRAFT, PatientStatusLog::STATUS_PROCESSING])
+                ->whereIn('status', [PatientStatusLog::STATUS_DRAFT, PatientStatusLog::STATUS_PROCESSING, PatientStatusLog::STATUS_REJECTED])
                 ->orderByDesc('status_date')
                 ->get();
 
@@ -172,19 +172,28 @@ class HomeController
                         ->from('patient_status_logs')
                         ->groupBy('patient_id');
                 })
-                ->where('status', PatientStatusLog::STATUS_SUBMITTED)
+                ->whereIn('status', [PatientStatusLog::STATUS_SUBMITTED, PatientStatusLog::STATUS_SUBMITTED_EMERGENCY])
                 ->orderByDesc('status_date')
                 ->get();
 
-            $recentlyApprovedRejected = PatientStatusLog::with('patient')
+            // $recentlyApprovedRejected = PatientStatusLog::with('patient')
+            //     ->whereIn('id', function ($query) {
+            //         $query->select(DB::raw('MAX(id)'))
+            //             ->from('patient_status_logs')
+            //             ->groupBy('patient_id');
+            //     })
+            //     ->whereIn('status', [PatientStatusLog::STATUS_APPROVED, PatientStatusLog::STATUS_REJECTED])
+            //     ->orderByDesc('status_date')
+            //     ->get();
+
+            $recentlyApproved = PatientStatusLog::with('patient')
                 ->whereIn('id', function ($query) {
                     $query->select(DB::raw('MAX(id)'))
                         ->from('patient_status_logs')
                         ->groupBy('patient_id');
                 })
-                ->whereIn('status', [PatientStatusLog::STATUS_APPROVED, PatientStatusLog::STATUS_REJECTED])
+                ->where('status', PatientStatusLog::STATUS_APPROVED)
                 ->orderByDesc('status_date')
-                ->take(10)
                 ->get();
 
 
@@ -219,10 +228,10 @@ class HomeController
                 'monthlyLabels',
                 'monthlyData',
                 'recentlySubmitted',
-                'recentlyApprovedRejected',
                 'recentlyBudgetAllocated',
                 'recentlyDvSubmitted',
-                'recentlyDraft'
+                'recentlyDraft',
+                'recentlyApproved'
             ));
         }
     }

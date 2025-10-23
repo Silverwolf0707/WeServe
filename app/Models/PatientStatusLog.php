@@ -15,6 +15,7 @@ class PatientStatusLog extends Model
     const STATUS_DRAFT = 'Draft';
     const STATUS_PROCESSING = 'Processing';
     const STATUS_SUBMITTED = 'Submitted';
+    const STATUS_SUBMITTED_EMERGENCY = 'Submitted[Emergency]';
     const STATUS_APPROVED = 'Approved';
     const STATUS_REJECTED = 'Rejected';
     const STATUS_BUDGET_ALLOCATED = 'Budget Allocated';

@@ -57,7 +57,7 @@
                 </div>
             </div>
 
-            {{--VISUAL PROCESS TRACKER --}}
+            {{-- VISUAL PROCESS TRACKER --}}
             @php
                 $steps = ['Submitted', 'Approved', 'Budget Allocated', 'DV Submitted', 'Disbursed'];
 
@@ -69,23 +69,33 @@
                     'Disbursed' => 'Treasury Office',
                 ];
 
-                // Normalize the latest status (strip anything after brackets like '[ROLLED BACK]')
-                $rawStatus = $latestStatus->status;
+                // Normalize status
+                $rawStatus = $latestStatus->status ?? '';
                 $baseStatus = trim(preg_replace('/\[.*?\]/', '', $rawStatus));
 
-                // Get the current index in the steps
+                // Find the last completed step
                 $currentIndex = array_search($baseStatus, $steps);
+                if ($currentIndex === false) {
+                    $currentIndex = -1;
+                }
             @endphp
 
             <div class="stepper">
                 @foreach ($steps as $index => $step)
+                    @php
+                        $isCompleted = $index <= $currentIndex;
+                        $isNext = $index === $currentIndex + 1;
+                        $hasBlueLine = $index === $currentIndex; // blue line after current
+                    @endphp
+
                     <div
                         class="stepper-step
-                                                                                                {{ $baseStatus !== 'Rejected' && $index < $currentIndex ? 'completed' : '' }} 
-                                                                                                {{ $baseStatus !== 'Rejected' && $index === $currentIndex ? 'active' : '' }}">
+            {{ $isCompleted ? 'completed' : '' }}
+            {{ $isNext ? 'next' : '' }}
+            {{ $hasBlueLine ? 'has-blue-line' : '' }}">
 
                         <div class="stepper-circle">
-                            @if ($baseStatus !== 'Rejected' && $index <= $currentIndex)
+                            @if ($isCompleted)
                                 <i class="fas fa-check"></i>
                             @else
                                 {{ $index + 1 }}
@@ -96,9 +106,8 @@
                     </div>
                 @endforeach
             </div>
-
-
             {{-- END PROCESS TRACKER --}}
+
 
             {{-- PROCESS SUMMARY --}}
             @if ($patient->statusLogs->count())
@@ -115,7 +124,8 @@
                     }
 
                     .status-rejected,
-                    .status-rolled-back {
+                    .status-rolled-back,
+                    .status-submitted-emergency {
                         background-color: #f8d7da;
                         color: #721c24;
                     }
@@ -133,32 +143,115 @@
 
                 <div class="mb-4">
                     <h6 class="text-primary">📋 Process Summary</h6>
+                    @php
+                        // Define process flow sequence
+                        $processSteps = [
+                            'Submitted' => 'CSWD Office',
+                            'Approved' => 'Mayor\'s Office',
+                            'Budget Allocated' => 'Budget Office',
+                            'DV Submitted' => 'Accounting Office',
+                            'Disbursed' => 'Treasury Office',
+                        ];
+
+                        $stepKeys = array_keys($processSteps);
+                    @endphp
+
                     <ul class="list-group" id="processSummaryList">
                         @foreach ($patient->statusLogs->where('status', '!=', 'Draft') as $log)
                             @php
-                                $statusKey = strtolower(str_replace(' ', '-', $log->status));
-                                $statusClass = strpos($log->status, '[ROLLED BACK]') !== false
-                                    ? 'status-rolled-back'
-                                    : 'status-' . $statusKey;
+                                $originalStatus = $log->status;
+                                $cleanStatus = trim(preg_replace('/\[.*?\]/', '', $originalStatus)); // remove things like [ROLLED BACK]
+                                $statusKey = strtolower(str_replace([' ', '[', ']'], ['-', '-', ''], $cleanStatus));
 
-                                $roleTitle = $log->user
-                                    ? $log->user->roles->pluck('title')->implode(', ')
-                                    : 'System';
+                                // CSS class for coloring
+                                $statusClass =
+                                    strpos($originalStatus, '[ROLLED BACK]') !== false
+                                        ? 'status-rolled-back'
+                                        : 'status-' . $statusKey;
+
+                                $roleTitle = $log->user ? $log->user->roles->pluck('title')->implode(', ') : 'System';
+
+                                // Default "To" logic (normal flow)
+                                $toOffice = '-';
+                                $currentIndex = array_search($cleanStatus, $stepKeys);
+                                if ($currentIndex !== false && isset($stepKeys[$currentIndex + 1])) {
+                                    $toOffice = $processSteps[$stepKeys[$currentIndex + 1]];
+                                }
+
+                                // Special handling
+                                if (stripos($originalStatus, 'Processing') !== false) {
+                                    $fromOffice = null;
+                                    $toOffice = null;
+                                } elseif (stripos($originalStatus, 'Rejected') !== false) {
+                                    $toOffice = 'CSWD Office';
+                                } elseif (stripos($originalStatus, 'Submitted[Emergency]') !== false) {
+                                    $toOffice = 'CSWD Office';
+                                } elseif (stripos($originalStatus, '[ROLLED BACK]') !== false) {
+                                    if (stripos($originalStatus, 'Submitted') !== false) {
+                                        $toOffice = 'Mayor\'s Office';
+                                    } elseif (stripos($originalStatus, 'Approved') !== false) {
+                                        $toOffice = 'Budget Office';
+                                    } elseif (stripos($originalStatus, 'Budget Allocated') !== false) {
+                                        $toOffice = 'Accounting Office';
+                                    } else {
+                                        $toOffice = 'CSWD Office'; // fallback
+                                    }
+                                }
+
+                                // Determine "From" based on previous step (only for normal ones)
+                                $fromOffice = null;
+                                if (!stripos($originalStatus, 'Processing') && $currentIndex > 0) {
+                                    $fromOffice = $processSteps[$stepKeys[$currentIndex - 1]];
+                                }
                             @endphp
 
                             <li class="list-group-item {{ $statusClass }}">
                                 <div>
-                                    <strong>{{ ucfirst($log->status) }}:</strong>
+                                    <strong>{{ ucfirst($originalStatus) }}:</strong>
                                     {{ $log->user->name ?? 'System' }} -
-                                    {{ \Carbon\Carbon::parse($log->status_date)->format('F j, Y g:i A') }} -
-                                    From: {{ $roleTitle }}<br>
+                                    @if (!stripos($originalStatus, 'Processing'))
+                                        - From: {{ $fromOffice ?? $roleTitle }}
+                                        @if ($toOffice)
+                                            To: {{ $toOffice }}
+                                        @endif
+                                    @endif
+                                    -- {{ \Carbon\Carbon::parse($log->status_date)->format('F j, Y g:i A') }}
+                                    <br>
+
+                                    {{-- Rejection details --}}
+                                    @if (stripos($originalStatus, 'Rejected') !== false)
+                                        @php
+                                            $rejectionReasons = $patient->rejectionReasons->where(
+                                                'patient_status_log_id',
+                                                $log->id,
+                                            );
+                                        @endphp
+                                        <em>Rejection Reason(s):</em>
+                                        @if ($rejectionReasons->count() > 0)
+                                            <ul class="mb-0">
+                                                @foreach ($rejectionReasons as $reason)
+                                                    <li>{{ $reason->reason }}</li>
+                                                @endforeach
+                                            </ul>
+                                        @else
+                                            -
+                                        @endif
+                                        <br>
+                                    @endif
+
+                                    {{-- Budget info --}}
+                                    @if ($cleanStatus == 'Budget Allocated' && $patient->budgetAllocation)
+                                        <em>Budget allocated:</em>
+                                        ₱{{ number_format($patient->budgetAllocation->amount, 2) }}<br>
+                                    @endif
+
                                     <em>Remarks:</em> {{ $log->remarks ?? '-' }}
                                 </div>
                             </li>
                         @endforeach
                     </ul>
-                </div>
 
+                </div>
             @endif
 
             @php
@@ -175,16 +268,18 @@
                         <div class="card-body">
                             <div class="d-flex gap-2 mt-3">
                                 <!-- Trigger Approve Modal -->
-                                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#approveModal">
+                                <button type="button" class="btn btn-success" data-bs-toggle="modal"
+                                    data-bs-target="#approveModal">
                                     Approve
                                 </button>
                                 <!-- Trigger Reject Modal -->
-                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                                <button type="button" class="btn btn-danger" data-bs-toggle="modal"
+                                    data-bs-target="#rejectModal">
                                     Reject
                                 </button>
                                 @if ($latestLog && str_contains(strtolower($latestLog->remarks), 'rolled back'))
-                                    <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST"
-                                        style="display:inline;">
+                                    <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}"
+                                        method="POST" style="display:inline;">
                                         @csrf
                                         <button type="submit" class="btn btn-warning btn-lg px-4 text-white">
                                             <i class="fas fa-share me-1"></i> Return to Rollbacker
@@ -196,14 +291,16 @@
                     </div>
 
                     <!-- Approve Modal -->
-                    <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="approveModalLabel" aria-hidden="true">
+                    <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="approveModalLabel"
+                        aria-hidden="true">
                         <div class="modal-dialog">
                             <form method="POST" action="{{ route('admin.process-tracking.decision', $patient->id) }}">
                                 @csrf
                                 <div class="modal-content">
                                     <div class="modal-header bg-success text-white">
                                         <h5 class="modal-title" id="approveModalLabel">Approve Application</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                            aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
                                         <div class="mb-3">
@@ -214,20 +311,20 @@
 
                                         <div class="mb-3">
                                             <label for="approveRemarks" class="form-label">Remarks</label>
-                                            <textarea name="remarks" id="approveRemarks" class="form-control" rows="3"
-                                                placeholder="Enter remarks..."></textarea>
+                                            <textarea name="remarks" id="approveRemarks" class="form-control" rows="3" placeholder="Enter remarks..."></textarea>
                                         </div>
                                     </div>
                                     <div class="modal-footer">
                                         <input type="hidden" name="action" id="decisionAction">
 
-                                        <button type="button" class="btn btn-success" onclick="
-                                                                                                    const form = this.closest('form');
-                                                                                                    form.querySelector('#decisionAction').value = 'approve';
-                                                                                                    this.disabled = true;
-                                                                                                    this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Processing...';
-                                                                                                    form.submit();
-                                                                                                ">
+                                        <button type="button" class="btn btn-success"
+                                            onclick="
+                                                                const form = this.closest('form');
+                                                                form.querySelector('#decisionAction').value = 'approve';
+                                                                this.disabled = true;
+                                                                this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Processing...';
+                                                                form.submit();
+                                                            ">
                                             Confirm Approve
                                         </button>
 
@@ -238,14 +335,16 @@
                     </div>
 
                     <!-- Reject Modal -->
-                    <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+                    <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel"
+                        aria-hidden="true">
                         <div class="modal-dialog">
                             <form method="POST" action="{{ route('admin.process-tracking.decision', $patient->id) }}">
                                 @csrf
                                 <div class="modal-content">
                                     <div class="modal-header bg-danger text-white">
                                         <h5 class="modal-title" id="rejectModalLabel">Reject Application</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                            aria-label="Close"></button>
                                     </div>
 
                                     <div class="modal-body">
@@ -267,8 +366,10 @@
                                             @foreach ($reasonsList as $index => $reason)
                                                 <div class="form-check">
                                                     <input class="form-check-input" type="checkbox" name="reasons[]"
-                                                        value="{{ $reason }}" id="reason{{ $index }}" {{ collect(old('reasons'))->contains($reason) ? 'checked' : '' }}>
-                                                    <label class="form-check-label" for="reason{{ $index }}">{{ $reason }}</label>
+                                                        value="{{ $reason }}" id="reason{{ $index }}"
+                                                        {{ collect(old('reasons'))->contains($reason) ? 'checked' : '' }}>
+                                                    <label class="form-check-label"
+                                                        for="reason{{ $index }}">{{ $reason }}</label>
                                                 </div>
                                             @endforeach
                                         </div>
@@ -282,26 +383,28 @@
                                         <div class="mb-3">
                                             <div class="mb-3">
                                                 <label for="statusDate" class="form-label">Status Date</label>
-                                                <input type="datetime-local" name="status_date" id="statusDate" class="form-control"
-                                                    value="{{ now()->toDateTimeLocalString() }}" required>
+                                                <input type="datetime-local" name="status_date" id="statusDate"
+                                                    class="form-control" value="{{ now()->toDateTimeLocalString() }}"
+                                                    required>
                                             </div>
 
                                             <label for="rejectRemarks" class="form-label">Remarks</label>
-                                            <textarea name="remarks" id="rejectRemarks" class="form-control" rows="3"
-                                                placeholder="Enter remarks..." required>{{ old('remarks') }}</textarea>
+                                            <textarea name="remarks" id="rejectRemarks" class="form-control" rows="3" placeholder="Enter remarks..."
+                                                required>{{ old('remarks') }}</textarea>
                                         </div>
 
                                     </div>
 
                                     <div class="modal-footer">
                                         <input type="hidden" name="action" id="decisionAction">
-                                        <button type="button" class="btn btn-danger" onclick="
-                                                                                    const form = this.closest('form');
-                                                                                    form.querySelector('#decisionAction').value = 'reject';
-                                                                                    this.disabled = true;
-                                                                                    this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Processing...';
-                                                                                    form.submit();
-                                                                                ">
+                                        <button type="button" class="btn btn-danger"
+                                            onclick="
+                                                const form = this.closest('form');
+                                                form.querySelector('#decisionAction').value = 'reject';
+                                                this.disabled = true;
+                                                this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Processing...';
+                                                form.submit();
+                                            ">
                                             Confirm Reject
                                         </button>
 
@@ -339,8 +442,8 @@
                             @endphp
 
                             @if ($latestLog && str_contains(strtolower($latestLog->remarks), 'rolled back'))
-                                <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST"
-                                    style="display:inline;">
+                                <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}"
+                                    method="POST" style="display:inline;">
                                     @csrf
                                     <button type="submit" class="btn btn-warning btn-lg px-4 text-white">
                                         <i class="fas fa-share me-1"></i> Return to Rollbacker
@@ -351,12 +454,14 @@
                     </div>
 
                     <!-- Budget Modal -->
-                    <div class="modal fade" id="budgetModal" tabindex="-1" role="dialog" aria-labelledby="budgetModalLabel"
-                        aria-hidden="true">
+                    <div class="modal fade" id="budgetModal" tabindex="-1" role="dialog"
+                        aria-labelledby="budgetModalLabel" aria-hidden="true">
                         <div class="modal-dialog modal-dialog-centered" role="document">
-                            <form action="{{ $patient->budgetAllocation
-                        ? route('admin.process-tracking.updateBudget', $patient->id)
-                        : route('admin.process-tracking.storeBudget', $patient->id) }}" method="POST">
+                            <form
+                                action="{{ $patient->budgetAllocation
+                                    ? route('admin.process-tracking.updateBudget', $patient->id)
+                                    : route('admin.process-tracking.storeBudget', $patient->id) }}"
+                                method="POST">
                                 @csrf
                                 @if ($patient->budgetAllocation)
                                     @method('PUT')
@@ -368,7 +473,8 @@
                                             <i class="fas fa-wallet me-2"></i>
                                             {{ $patient->budgetAllocation ? 'Edit Budget Allocation' : 'Allocate Budget' }}
                                         </h5>
-                                        <button type="button" class="close text-white" data-bs-dismiss="modal" aria-label="Close">
+                                        <button type="button" class="close text-white" data-bs-dismiss="modal"
+                                            aria-label="Close">
                                             <span aria-hidden="true" style="font-size: 1.5rem;">&times;</span>
                                         </button>
                                     </div>
@@ -403,12 +509,13 @@
                                     </div>
 
                                     <div class="modal-footer d-flex flex-column gap-2 p-4 pt-0">
-                                        <button type="button" class="btn btn-success w-100 rounded-pill py-2" onclick="
-                                                                                    const form = this.closest('form');
-                                                                                    this.disabled = true;
-                                                                                    this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Processing...';
-                                                                                    form.submit();
-                                                                                ">
+                                        <button type="button" class="btn btn-success w-100 rounded-pill py-2"
+                                            onclick="
+                                                const form = this.closest('form');
+                                                this.disabled = true;
+                                                this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Processing...';
+                                                form.submit();
+                                            ">
                                             <i class="fas fa-check-circle me-1"></i>
                                             {{ $patient->budgetAllocation ? 'Update Allocation' : 'Confirm Allocation' }}
                                         </button>
@@ -432,7 +539,8 @@
                         <div class="modal-content">
                             <div class="modal-header bg-danger text-white">
                                 <h5 class="modal-title" id="rollbackModalLabel">Rollback Process</h5>
-                                <button type="button" class="close text-white" data-bs-dismiss="modal" aria-label="Close">
+                                <button type="button" class="close text-white" data-bs-dismiss="modal"
+                                    aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button>
                             </div>
@@ -474,18 +582,18 @@
 
                                 <div class="form-group">
                                     <label for="rollback_remarks">Remarks</label>
-                                    <textarea name="rollback_remarks" class="form-control" id="rollback_remarks"
-                                        rows="3"></textarea>
+                                    <textarea name="rollback_remarks" class="form-control" id="rollback_remarks" rows="3"></textarea>
                                 </div>
                             </div>
 
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-danger" onclick="
-                                const form = this.closest('form');
-                                this.disabled = true;
-                                this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Rolling back...';
-                                form.submit();
-                            ">
+                                <button type="button" class="btn btn-danger"
+                                    onclick="
+                    const form = this.closest('form');
+                    this.disabled = true;
+                    this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Rolling back...';
+                    form.submit();
+                ">
                                     <i class="fas fa-undo-alt me-1"></i> Rollback
                                 </button>
 
@@ -524,8 +632,8 @@
 
                             <!-- Return to Rollbacker Button -->
                             @if ($latestLog && str_contains(strtolower($latestLog->remarks), 'rolled back'))
-                                <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST"
-                                    style="display:inline;">
+                                <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}"
+                                    method="POST" style="display:inline;">
                                     @csrf
                                     <button type="submit" class="btn btn-warning btn-lg px-4 text-white mt-2">
                                         <i class="fas fa-share me-1"></i> Return to Rollbacker
@@ -537,12 +645,14 @@
                 @endif
             @endcan
 
-            <!-- ✅ Disbursement Voucher Modal (Adjusted to modal-lg) -->
+
             <div class="modal fade" id="dvModal" tabindex="-1" aria-labelledby="dvModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered modal-md" role="document">
-                    <form action="{{ $patient->disbursementVoucher
-        ? route('admin.process-tracking.updateDV', $patient->id)
-        : route('admin.process-tracking.storeDV', $patient->id) }}" method="POST">
+                    <form
+                        action="{{ $patient->disbursementVoucher
+                            ? route('admin.process-tracking.updateDV', $patient->id)
+                            : route('admin.process-tracking.storeDV', $patient->id) }}"
+                        method="POST">
                         @csrf
                         @if ($patient->disbursementVoucher)
                             @method('PUT')
@@ -562,7 +672,8 @@
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="dv_code" class="form-label fw-bold">DV Code</label>
-                                        <input type="text" name="dv_code" id="dv_code" class="form-control form-control-lg"
+                                        <input type="text" name="dv_code" id="dv_code"
+                                            class="form-control form-control-lg"
                                             value="{{ old('dv_code', $patient->disbursementVoucher->dv_code ?? '') }}"
                                             placeholder="Enter DV Code">
                                     </div>
@@ -584,7 +695,8 @@
                             </div>
 
                             <div class="modal-footer d-flex flex-column gap-2">
-                                <button type="button" class="btn btn-success w-100" onclick="
+                                <button type="button" class="btn btn-success w-100"
+                                    onclick="
                                 const btn = this;
                                 const form = btn.closest('form');
                                 btn.disabled = true;
@@ -606,15 +718,14 @@
 
 
             @can('treasury_disburse')
-                @if (
-                        in_array($baseStatus, ['DV Submitted', 'Ready for Disbursement']) &&
+                @if (in_array($baseStatus, ['DV Submitted', 'Ready for Disbursement']) &&
                         $patient->budgetAllocation &&
-                        $patient->budgetAllocation->budget_status !== 'Disbursed'
-                    )
+                        $patient->budgetAllocation->budget_status !== 'Disbursed')
                     @if ($baseStatus === 'DV Submitted' && $patient->budgetAllocation->budget_status === 'Not Disbursed')
                         {{-- READY FOR DISBURSEMENT --}}
                         @can('disbursed_message_automation')
-                            <form action="{{ route('admin.process-tracking.sendOtp', $patient->id) }}" method="POST" class="d-inline-block">
+                            <form action="{{ route('admin.process-tracking.sendOtp', $patient->id) }}" method="POST"
+                                class="d-inline-block">
                                 @csrf
                                 <button class="btn btn-warning btn-lg px-4 text-white mt-4">
                                     <i class="fas fa-exclamation-circle me-1"></i> Ready for Disbursement</button>
@@ -629,24 +740,19 @@
                             data-bs-target="#rollbackModal">
                             <i class="fas fa-undo-alt me-1"></i> Rollback Process
                         </button>
-
-
                     @elseif ($baseStatus === 'Ready for Disbursement')
                         @php
                             $otp = $patient->otpCodes()->latest()->first();
                         @endphp
 
-                        <form action="{{ route('admin.process-tracking.verifyOtp', $patient->id) }}" method="POST" class="mt-4">
+                        <form action="{{ route('admin.process-tracking.verifyOtp', $patient->id) }}" method="POST"
+                            class="mt-4">
                             @csrf
                             <label for="otp_code">Enter OTP to Confirm Disbursement:</label>
                             <input type="text" name="otp_code" required class="form-control mt-2 mb-2">
                             <button class="btn btn-success">Confirm & Mark Disbursed</button>
                         </form>
                     @endif
-                @elseif ($patient->budgetAllocation && $patient->budgetAllocation->budget_status === 'Disbursed')
-                    <div class="alert alert-success mt-4">
-                        <strong>Status:</strong> Disbursed
-                    </div>
                 @endif
 
                 <div class="modal fade" id="quickDisburseModal" tabindex="-1" aria-labelledby="quickDisburseModalLabel"
@@ -673,19 +779,20 @@
 
                                     <div class="form-group mb-3">
                                         <label for="quickDisburseRemarks">Remarks (Optional)</label>
-                                        <textarea name="remarks" id="quickDisburseRemarks" class="form-control form-control-lg"
-                                            rows="3" placeholder="Enter any remarks..."></textarea>
+                                        <textarea name="remarks" id="quickDisburseRemarks" class="form-control form-control-lg" rows="3"
+                                            placeholder="Enter any remarks..."></textarea>
                                     </div>
                                 </div>
 
                                 <div class="modal-footer d-flex flex-column gap-2">
-                                    <button type="button" class="btn btn-success w-100" onclick="
-                                                    const btn = this;
-                                                    const form = btn.closest('form');
-                                                    btn.disabled = true;
-                                                    btn.innerHTML = '<i class=\'fas fa-spinner fa-spin me-1\'></i> Processing...';
-                                                    form.submit();
-                                                ">
+                                    <button type="button" class="btn btn-danger w-100"
+                                        onclick="
+                            const btn = this;
+                            const form = btn.closest('form');
+                            btn.disabled = true;
+                            btn.innerHTML = '<i class=\'fas fa-spinner fa-spin me-1\'></i> Processing...';
+                            form.submit();
+                        ">
                                         <i class="fas fa-check-circle me-1"></i> Confirm Disbursement
                                     </button>
 
@@ -701,66 +808,74 @@
             @endcan
             @php
                 $latestStatusValue = optional($latestStatus)->status;
-                $isLocked = !in_array($latestStatusValue, [null, 'Rejected', 'Processing']);
+                $isLocked = !in_array($latestStatusValue, [null, 'Rejected', 'Processing', 'Draft']);
             @endphp
+            @if ($latestStatusValue != 'Disbursed')
+                @can('submit_patient_application')
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <i class="fas fa-paper-plane mr-2"></i> Submit Application
+                        </div>
 
-            @can('submit_patient_application')
-                <div class="card mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <i class="fas fa-paper-plane mr-2"></i> Submit Application
-                    </div>
+                        <div class="card-body">
+                            <form method="POST">
+                                @csrf
+                                <input type="hidden" name="status" value="Submitted">
 
-                    <div class="card-body">
-                        <form method="POST">
-                            @csrf
-                            <input type="hidden" name="status" value="Submitted">
+                                <div class="form-group">
+                                    <label for="submitted_date">Submitted Date</label>
+                                    <input type="datetime-local" name="submitted_date" id="submitted_date"
+                                        class="form-control mb-3" value="{{ now()->toDateTimeLocalString() }}"
+                                        @if ($isLocked) disabled @endif>
 
-                            <div class="form-group">
-                                <label for="submitted_date">Submitted Date</label>
-                                <input type="datetime-local" name="submitted_date" id="submitted_date" class="form-control mb-3"
-                                    value="{{ now()->toDateTimeLocalString() }}" @if($isLocked) disabled @endif>
-
-                                <label for="remarks">Remarks</label>
-                                <textarea name="remarks" id="remarks" rows="4" class="form-control" @if($isLocked) disabled
-                                @endif></textarea>
-                            </div>
-
-                            <div class="d-flex justify-content-between">
-                                {{-- Normal Submit --}}
-                                <button type="button" class="btn btn-primary" @if ($isLocked) disabled @endif onclick="
-                                                                        const form = this.closest('form');
-                                                                        this.disabled = true;
-                                                                        this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Submitting...';
-                                                                        form.action='{{ route('admin.patient-records.submit', $patient->id) }}';
-                                                                        form.submit();
-                                                                    ">
-                                    Submit
-                                </button>
-
-                                {{-- Emergency Submit --}}
-                                <button type="button" class="btn btn-danger" @if ($isLocked) disabled @endif onclick="
-                                                                        const form = this.closest('form');
-                                                                        this.disabled = true;
-                                                                        this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Submitting...';
-                                                                        form.action='{{ route('admin.patient-records.submit-emergency', $patient->id) }}';
-                                                                        form.submit();
-                                                                    ">
-                                    Submit [Emergency]
-                                </button>
-                            </div>
-
-                            @if($isLocked)
-                                <div class="alert alert-info mt-3">
-                                    This application has already been submitted and is currently in process.
+                                    <label for="remarks">Remarks</label>
+                                    <textarea name="remarks" id="remarks" rows="4" class="form-control"
+                                        @if ($isLocked) disabled @endif></textarea>
                                 </div>
-                            @endif
-                        </form>
+
+                                <div class="d-flex justify-content-between">
+                                    {{-- Normal Submit --}}
+                                    <button type="button" class="btn btn-primary"
+                                        @if ($isLocked) disabled @endif
+                                        onclick="
+                                                const form = this.closest('form');
+                                                this.disabled = true;
+                                                this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Submitting...';
+                                                form.action='{{ route('admin.patient-records.submit', $patient->id) }}';
+                                                form.submit();
+                                            ">
+                                        Submit
+                                    </button>
+
+                                    {{-- Emergency Submit --}}
+                                    <button type="button" class="btn btn-danger"
+                                        @if ($isLocked) disabled @endif
+                                        onclick="
+                                                const form = this.closest('form');
+                                                this.disabled = true;
+                                                this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Submitting...';
+                                                form.action='{{ route('admin.patient-records.submit-emergency', $patient->id) }}';
+                                                form.submit();
+                                            ">
+                                        Submit [Emergency]
+                                    </button>
+                                </div>
+
+                                @if ($isLocked)
+                                    <div class="alert alert-info mt-3">
+                                        This application has already been submitted and is currently in process.
+                                    </div>
+                                @endif
+                            </form>
+                        </div>
                     </div>
+                @endcan
+            @endif
+            @if ($patient->budgetAllocation && $patient->budgetAllocation->budget_status === 'Disbursed')
+                <div class="alert alert-success mt-4">
+                    <strong>Status:</strong> Disbursed
                 </div>
-            @endcan
-
-        
-
+            @endif
             <div class="form-group mt-4">
                 <div class="left-buttons">
                     <a class="btn btn-secondary" href="{{ route('admin.process-tracking.index') }}">
@@ -777,64 +892,63 @@
                     </a>
                 </div>
             </div>
-
         </div>
+    </div>
 @endsection
-    @push('scripts')
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var toastEl = document.getElementById('liveToast');
+            var timerEl = document.getElementById('toast-timer');
 
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                var toastEl = document.getElementById('liveToast');
-                var timerEl = document.getElementById('toast-timer');
+            if (toastEl) {
+                var toast = new bootstrap.Toast(toastEl, {
+                    autohide: true,
+                    delay: 5000
+                });
+                toast.show();
 
-                if (toastEl) {
-                    var toast = new bootstrap.Toast(toastEl, {
-                        autohide: true,
-                        delay: 5000
-                    });
-                    toast.show();
+                let remaining = 5;
+                const interval = setInterval(() => {
+                    remaining--;
+                    if (timerEl) {
+                        timerEl.textContent = `Closing in ${remaining}s`;
+                    }
+                    if (remaining <= 0) {
+                        clearInterval(interval);
+                    }
+                }, 1000);
+            }
+        });
+    </script>
+    <script>
+        // setTimeout(() => {
+        //     Echo.channel('process-tracking')
+        //         .listen('.patient.process.updated', (e) => {
+        //             console.log("Status changed:", e);
 
-                    let remaining = 5;
-                    const interval = setInterval(() => {
-                        remaining--;
-                        if (timerEl) {
-                            timerEl.textContent = `Closing in ${remaining}s`;
-                        }
-                        if (remaining <= 0) {
-                            clearInterval(interval);
-                        }
-                    }, 1000);
-                }
-            });
-        </script>
-        <script>
-            // setTimeout(() => {
-            //     Echo.channel('process-tracking')
-            //         .listen('.patient.process.updated', (e) => {
-            //             console.log("Status changed:", e);
-
-            //         });
-
+        //         });
 
 
-            // }, 300);
+
+        // }, 300);
 
 
-            document.addEventListener('DOMContentLoaded', function () {
-                const amountInput = document.getElementById('amount');
-                const buttons = document.querySelectorAll('.suggested-amount');
+        document.addEventListener('DOMContentLoaded', function() {
+            const amountInput = document.getElementById('amount');
+            const buttons = document.querySelectorAll('.suggested-amount');
 
-                buttons.forEach(btn => {
-                    btn.addEventListener('click', function () {
-                        const value = this.dataset.value;
-                        amountInput.value = value;
-                        amountInput.focus();
-                        amountInput.classList.add('bg-success', 'text-white');
-                        setTimeout(() => {
-                            amountInput.classList.remove('bg-success', 'text-white');
-                        }, 500);
-                    });
+            buttons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const value = this.dataset.value;
+                    amountInput.value = value;
+                    amountInput.focus();
+                    amountInput.classList.add('bg-success', 'text-white');
+                    setTimeout(() => {
+                        amountInput.classList.remove('bg-success', 'text-white');
+                    }, 500);
                 });
             });
-        </script>
-    @endpush
+        });
+    </script>
+@endpush
