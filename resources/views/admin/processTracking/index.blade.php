@@ -402,7 +402,142 @@
 @section('scripts')
     @parent
     <script>
+
+        function initializeRealTimeUpdates() {
+            console.log('📡 Initializing real-time updates...');
+            
+            // Connection status handling
+            if (window.Echo && window.Echo.connector && window.Echo.connector.pusher) {
+                window.Echo.connector.pusher.connection.bind('connected', function() {
+                    console.log('✅ Connected to Pusher');
+                });
+
+                window.Echo.connector.pusher.connection.bind('disconnected', function() {
+                    console.log('❌ Disconnected from Pusher');
+                });
+
+                window.Echo.connector.pusher.connection.bind('error', function(error) {
+                    console.error('Pusher error:', error);
+                });
+            }
+
+            // Listen for patient status changes
+            if (window.Echo) {
+                window.Echo.channel('process-tracking')
+                    .listen('.patient.status.changed', function(e) {
+                        console.log('📢 Patient status changed:', e);
+                        updatePatientTable(e);
+                    });
+            } else {
+                console.error('Echo is not defined');
+            }
+        }
+
+            function updatePatientTable(e) {
+                const table = $('.datatable-ProcessTracking').DataTable();
+                const badge = generateBadge(e.status);
+                const department = getDepartment(e.status);
+                const rowSelector = `tr[data-entry-id="${e.id}"]`;
+                const existingRow = $(rowSelector);
+
+                if (e.action === 'submitted' && existingRow.length === 0) {
+                    // Add new row
+                    const newRow = table.row.add([
+                        '',
+                        e.control_number,
+                        formatDate(e.date_processed),
+                        e.claimant_name,
+                        e.case_worker,
+                        badge,
+                        department,
+                        generateActionLink(e.id),
+                    ]).draw(false).node();
+
+                    $(newRow).attr('data-entry-id', e.id);
+                    $(newRow).addClass('table-success');
+                    setTimeout(() => $(newRow).removeClass('table-success'), 3000);
+
+                    console.log('✅ Added new row for patient:', e.claimant_name);
+                } else if (existingRow.length > 0) {
+                    // Update status badge
+                    existingRow.find('td').eq(5).html(badge);
+                    // Update department responsible
+                    existingRow.find('td').eq(6).html(department);
+
+                    console.log('✅ Updated row for patient:', e.claimant_name);
+                }
+            }
+
+            // Your existing helper functions remain the same...
+            function getDepartment(status) {
+                const cleanStatus = status.replace('[ROLLED BACK]', '').trim();
+                const statusMap = {
+                    'Submitted': "Mayor's Office",
+                    'Submitted[Emergency]': "Mayor's Office",
+                    'Approved': 'Budget Office',
+                    'Rejected': 'CSWD Office',
+                    'Budget Allocated': 'Accounting Office',
+                    'DV Submitted': 'Treasury Office',
+                    'Disbursed': 'Completed',
+                    'Ready for Disbursement': 'Treasury Office',
+                };
+                return statusMap[cleanStatus] || 'N/A';
+            }
+
+            function formatDate(input) {
+                const date = new Date(input);
+                return date.toLocaleString('en-PH', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                });
+            }
+
+            function generateActionLink(id) {
+                return `<a href="/admin/process-tracking/${id}" title="View"><i class="fas fa-eye"></i></a>`;
+            }
+
+            function generateBadge(status) {
+                const icons = {
+                    'Submitted': 'fa-paper-plane',
+                    'Submitted[Emergency]': 'fa-exclamation-triangle',
+                    'Approved': 'fa-thumbs-up',
+                    'Rejected': 'fa-ban',
+                    'Budget Allocated': 'fa-money-bill-wave',
+                    'DV Submitted': 'fa-file',
+                    'Disbursed': 'fa-money-bill-wave',
+                    'Ready for Disbursement': 'fa-paper-plane',
+                };
+
+                const colors = {
+                    'Submitted': '#007BFF',
+                    'Submitted[Emergency]': '#dc3545',
+                    'Approved': '#2e7d32',
+                    'Rejected': '#c62828',
+                    'Budget Allocated': '#ffc107',
+                    'DV Submitted': '#17a2b8',
+                    'Disbursed': '#6f42c1',
+                    'Ready for Disbursement': '#6f42c1',
+                };
+
+                const isRollback = status.includes('[ROLLED BACK]');
+                const baseStatus = status.replace('[ROLLED BACK]', '').trim();
+
+                const icon = icons[baseStatus] || 'fa-question-circle';
+                const color = colors[baseStatus] || '#6c757d';
+
+                const textColor = baseStatus === 'Budget Allocated' ? 'black' : 'white';
+
+                return `<span class="badge d-inline-flex align-items-center"
+        style="background-color: ${color}; padding: 6px 12px; border-radius: 50px; color: ${textColor};">
+        <i class="fas ${icon} me-2"></i> ${baseStatus}${isRollback ? ' <small>[ROLLED BACK]</small>' : ''}
+    </span>`;
+            }
         document.addEventListener('DOMContentLoaded', function() {
+            initializeRealTimeUpdates();
             var toastEl = document.getElementById('liveToast');
             var timerEl = document.getElementById('toast-timer');
 
@@ -682,114 +817,6 @@
                 });
             @endcan
 
-
-            setTimeout(() => {
-                Echo.channel('process-tracking')
-                    .listen('.patient.status.changed', function(e) {
-                        console.log('Patient status changed:', e);
-
-                        const table = $('.datatable-ProcessTracking').DataTable();
-
-                        const badge = generateBadge(e.status);
-                        const department = getDepartment(e.status); // new helper
-
-                        const rowSelector = `tr[data-entry-id="${e.id}"]`;
-                        const existingRow = $(rowSelector);
-
-                        if (e.action === 'submitted' && existingRow.length === 0) {
-                            // Add new row
-                            const newRow = table.row.add([
-                                '',
-                                e.control_number,
-                                formatDate(e.date_processed),
-                                e.claimant_name,
-                                e.case_worker,
-                                badge,
-                                department,
-                                generateActionLink(e.id),
-                            ]).draw(false).node();
-
-                            $(newRow).attr('data-entry-id', e.id);
-                            $(newRow).addClass('table-success');
-                            setTimeout(() => $(newRow).removeClass('table-success'), 3000);
-                        } else if (existingRow.length > 0) {
-                            // Update status badge
-                            existingRow.find('td').eq(5).html(badge);
-
-                            // Update department responsible
-                            existingRow.find('td').eq(6).html(department);
-                        }
-                    });
-
-                function getDepartment(status) {
-                    const cleanStatus = status.replace('[ROLLED BACK]', '').trim();
-                    const statusMap = {
-                        'Submitted': "Mayor's Office",
-                        'Submitted[Emergency]': "Mayor's Office",
-                        'Approved': 'Budget Office',
-                        'Rejected': 'CSWD Office',
-                        'Budget Allocated': 'Accounting Office',
-                        'DV Submitted': 'Treasury Office',
-                        'Disbursed': 'Completed',
-                        'Ready for Disbursement': 'Treasury Office',
-                    };
-                    return statusMap[cleanStatus] || 'N/A';
-                }
-
-                function formatDate(input) {
-                    const date = new Date(input);
-                    return date.toLocaleString('en-PH', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        hour12: true
-                    });
-                }
-
-                function generateActionLink(id) {
-                    return `<a href="/admin/process-tracking/${id}" title="View"><i class="fas fa-eye"></i></a>`;
-                }
-
-                function generateBadge(status) {
-                    const icons = {
-                        'Submitted': 'fa-paper-plane',
-                        'Submitted[Emergency]': 'fa-exclamation-triangle',
-                        'Approved': 'fa-thumbs-up',
-                        'Rejected': 'fa-ban',
-                        'Budget Allocated': 'fa-money-bill-wave',
-                        'DV Submitted': 'fa-file',
-                        'Disbursed': 'fa-money-bill-wave',
-                        'Ready for Disbursement': 'fa-paper-plane',
-                    };
-
-                    const colors = {
-                        'Submitted': '#007BFF',
-                        'Submitted[Emergency]': '#dc3545',
-                        'Approved': '#2e7d32',
-                        'Rejected': '#c62828',
-                        'Budget Allocated': '#ffc107',
-                        'DV Submitted': '#17a2b8',
-                        'Disbursed': '#6f42c1',
-                        'Ready for Disbursement': '#6f42c1',
-                    };
-
-                    const isRollback = status.includes('[ROLLED BACK]');
-                    const baseStatus = status.replace('[ROLLED BACK]', '').trim();
-
-                    const icon = icons[baseStatus] || 'fa-question-circle';
-                    const color = colors[baseStatus] || '#6c757d';
-
-                    const textColor = baseStatus === 'Budget Allocated' ? 'black' : 'white';
-
-                    return `<span class="badge d-inline-flex align-items-center"
-                                                                                                                        style="background-color: ${color}; padding: 6px 12px; border-radius: 50px; color: ${textColor};">
-                                                                                                                        <i class="fas ${icon} me-2"></i> ${baseStatus}${isRollback ? ' <small>[ROLLED BACK]</small>' : ''}
-                                                                                                                    </span>`;
-                }
-
-            }, 300);
 
             @can('budget_allocate')
                 let selectedBudgetIds = [];

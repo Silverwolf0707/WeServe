@@ -13,7 +13,7 @@ class PatientStatusChanged implements ShouldBroadcast
     use InteractsWithSockets, SerializesModels;
 
     public $patient;
-    public $action; // submitted | updated
+    public $action;
 
     public function __construct(PatientRecord $patient, $action)
     {

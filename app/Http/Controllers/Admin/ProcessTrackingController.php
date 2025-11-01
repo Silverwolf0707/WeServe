@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -55,13 +56,18 @@ class ProcessTrackingController extends Controller
     {
         abort_if(Gate::denies('approve_patient'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
+        Log::info("🎯 DECISION METHOD STARTED", [
+            'patient_id' => $id,
+            'action' => $request->action,
+            'user_id' => Auth::id()
+        ]);
+
         $rules = [
             'remarks' => 'nullable|string|max:1000',
             'action'  => 'required|in:approve,reject',
             'status_date' => 'required|date',
         ];
 
-        // Multi-select validation if rejecting
         if ($request->action === 'reject') {
             $rules['reasons']       = 'nullable|array|min:1';
             $rules['reasons.*']     = 'string|max:255';
@@ -69,8 +75,10 @@ class ProcessTrackingController extends Controller
         }
 
         $validated = $request->validate($rules);
+        Log::info("✅ Validation passed", $validated);
 
         $patient = PatientRecord::findOrFail($id);
+        Log::info("✅ Patient found", ['patient_name' => $patient->claimant_name]);
 
         $status = $request->action === 'approve'
             ? PatientStatusLog::STATUS_APPROVED
@@ -85,10 +93,10 @@ class ProcessTrackingController extends Controller
             'created_at' => now(),
         ]);
 
+        Log::info("✅ Status log created", ['status_log_id' => $statusLog->id, 'status' => $status]);
+
         if ($request->action === 'reject') {
             $reasons = $validated['reasons'] ?? [];
-
-            // Append "Other Reason" if filled
             if (!empty($validated['other_reason'])) {
                 $reasons[] = $validated['other_reason'];
             }
@@ -100,17 +108,33 @@ class ProcessTrackingController extends Controller
                     'reason'                => $reason,
                 ]);
             }
+            Log::info("✅ Rejection reasons added", ['reasons_count' => count($reasons)]);
         }
 
         // Reload patient with latest status log and user
         $patient->load('latestStatusLog');
+        Log::info("✅ Patient reloaded with latest status", ['latest_status' => $patient->latestStatusLog->status ?? 'None']);
 
         // Broadcast updates
         $action = $request->action === 'approve' ? 'approved' : 'rejected';
 
-        broadcast(new PatientStatusChanged($patient, $action));
+        Log::info("🚀 ABOUT TO BROADCAST EVENT", [
+            'patient_id' => $patient->id,
+            'action' => $action,
+            'status' => $patient->latestStatusLog->status ?? 'Unknown'
+        ]);
 
+        try {
+            broadcast(new PatientStatusChanged($patient, $action));
+            Log::info("✅ EVENT BROADCAST SUCCESSFUL - Should appear in Pusher dashboard");
+        } catch (\Exception $e) {
+            Log::error("❌ EVENT BROADCAST FAILED", [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
 
+        Log::info("🎯 DECISION METHOD COMPLETED");
 
         return redirect()->route('admin.process-tracking.show', $id)->with('toast', [
             'type' => 'success',

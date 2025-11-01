@@ -100,7 +100,7 @@ class PatientRecordsController extends Controller
             'created_at' => now(),
             'status_date' => now(),
         ]);
-        broadcast(new PatientRecordCreated($patientRecord))->toOthers();
+
 
         do {
             $trackingNumber = 'WS' . now()->format('YmdHis') . rand(100, 999);
@@ -111,6 +111,11 @@ class PatientRecordsController extends Controller
             'patient_id' => $patientRecord->id,
             'tracking_number' => $trackingNumber,
         ]);
+        // Store the created record ID in session to avoid self-broadcasting issues
+        $recentlyCreated = session('recently_created_records', []);
+        $recentlyCreated[] = $patientRecord->id;
+        session(['recently_created_records' => array_slice($recentlyCreated, -10)]); // Keep last 10
+        broadcast(new PatientRecordCreated($patientRecord))->toOthers();
 
         return redirect()->route('admin.patient-records.index')->with('toast', [
             'type' => 'success',

@@ -71,9 +71,11 @@
                         @endphp
                         <tr data-entry-id="{{ $patientRecord->id }}" data-status="{{ $statusValue }}">
                             <td></td>
-                            <td data-order="{{ \Carbon\Carbon::parse($patientRecord->date_processed)->timestamp }}">
-    {{ \Carbon\Carbon::parse($patientRecord->date_processed)->format('F j, Y g:i A') }}
-</td>
+                            <td>
+                                <span data-order="{{ \Carbon\Carbon::parse($patientRecord->date_processed)->timestamp }}">
+                                    {{ \Carbon\Carbon::parse($patientRecord->date_processed)->format('F j, Y g:i A') }}
+                                </span>
+                            </td>
 
                             <td>{{ $patientRecord->case_type ?? '' }}</td>
                             <td>{{ $patientRecord->control_number ?? '' }}</td>
@@ -174,28 +176,41 @@
 
         $(function() {
             let dtButtons = $.extend(true, [], $.fn.dataTable.defaults.buttons)
-            // --- Status Filter for DataTable ---
-            $(document).ready(function() {
-                let table = $('.datatable-PatientRecord:not(.ajaxTable)').DataTable();
 
-                // Custom filter for status
-                $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
-                    let selectedStatus = $('#statusFilter').val(); // value from dropdown
-                    let rowStatus = $(table.row(dataIndex).node()).data(
-                        'status'); // read data-status
-
-                    // If nothing selected, show all
-                    if (!selectedStatus) return true;
-
-                    return rowStatus === selectedStatus;
-                });
-
-                // Trigger filter when dropdown changes
-                $('#statusFilter').on('change', function() {
-                    table.draw();
-                });
+            let table = $('.datatable-PatientRecord:not(.ajaxTable)').DataTable({
+                buttons: dtButtons,
+                order: [
+                    [1, 'desc']
+                ],
+                pageLength: 100,
+                orderCellsTop: true,
+                columnDefs: [{
+                    targets: 0,
+                    orderable: false,
+                    searchable: false,
+                    className: 'select-checkbox'
+                }],
+                select: {
+                    style: 'multi',
+                    selector: 'td:first-child'
+                }
             });
 
+            // Custom filter for status
+            $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+                let selectedStatus = $('#statusFilter').val(); // value from dropdown
+                let rowStatus = $(table.row(dataIndex).node()).data('status'); // read data-status
+
+                // If nothing selected, show all
+                if (!selectedStatus) return true;
+
+                return rowStatus === selectedStatus;
+            });
+
+            // Trigger filter when dropdown changes
+            $('#statusFilter').on('change', function() {
+                table.draw();
+            });
 
             @can('patient_record_delete')
                 let deleteButtonTrans = '{{ trans('global.datatables.delete') }}';
@@ -261,8 +276,6 @@
                 dtButtons.push(deleteButton);
             @endcan
 
-
-
             @can('submit_patient_application')
                 let selectedIds = [];
 
@@ -307,7 +320,7 @@
                             type: 'hidden',
                             name: 'submitted_date',
                             value: $('#massSubmitDate').val()
-                        })); // 👈 ADD THIS
+                        }));
 
                     // Add each selected patient ID
                     selectedIds.forEach(function(id) {
@@ -322,82 +335,78 @@
                 });
             @endcan
 
-
-            $.extend(true, $.fn.dataTable.defaults, {
-                orderCellsTop: true,
-                order: [
-                    [1, 'desc']
-                ],
-                pageLength: 100,
-            });
-
-            let table = $('.datatable-PatientRecord:not(.ajaxTable)').DataTable({
-                buttons: dtButtons
-            });
-
             $('a[data-toggle="tab"]').on('shown.bs.tab click', function() {
                 $($.fn.dataTable.tables(true)).DataTable().columns.adjust();
             });
         });
-        document.addEventListener('DOMContentLoaded', function() {
-            var toastEl = document.getElementById('liveToast');
-            var timerEl = document.getElementById('toast-timer');
 
-            if (toastEl) {
-                var toast = new bootstrap.Toast(toastEl, {
-                    autohide: true,
-                    delay: 5000
-                });
-                toast.show();
-
-                // Countdown timer for display
-                let remaining = 5;
-                const interval = setInterval(() => {
-                    remaining--;
-                    if (timerEl) {
-                        timerEl.textContent = `Closing in ${remaining}s`;
-                    }
-                    if (remaining <= 0) {
-                        clearInterval(interval);
-                    }
-                }, 1000);
-            }
-        });
-
-
+        // Real-time updates
         setTimeout(() => {
             Echo.channel('patients')
                 .listen('.patientRecord.changed', function(e) {
                     console.log('Patient Record added:', e);
-
                     const table = $('.datatable-PatientRecord').DataTable();
 
-                    const newRow = table.row.add([
-                        '', // For checkbox or placeholder
-                        formatDate(e.date_processed),
-                        e.case_type ?? '',
-                        e.control_number ?? '',
-                        e.claimant_name ?? '',
-                        caseCategoryLabel(e.case_category),
-                        e.patient_name ?? '',
-                        `<span class="text-truncate" style="max-width: 200px; display: inline-block; overflow: hidden; white-space: nowrap;">${e.diagnosis ?? ''}</span>`,
-                        e.age ?? '',
-                        e.address ?? '',
-                        e.contact_number ?? '',
-                        e.case_worker ?? '',
+                    const rowData = [
+                        '', 
+                        `<span data-order="${new Date(e.date_processed).getTime()}">${safeValue(formatDate(e.date_processed))}</span>`,
+                        safeValue(e.case_type),
+                        safeValue(e.control_number),
+                        safeValue(e.claimant_name),
+                        safeValue(caseCategoryLabel(e.case_category)),
+                        safeValue(e.patient_name),
+                        `<span class="text-truncate" style="max-width:200px;">${safeValue(e.diagnosis)}</span>`,
+                        safeValue(e.age),
+                        safeValue(e.address),
+                        safeValue(e.contact_number),
+                        safeValue(e.case_worker),
                         generateActions(e.id)
-                    ]).draw(false).node();
+                    ];
+
+                    const expectedCols = table.columns().count();
+                    while (rowData.length < expectedCols) rowData.unshift('');
+                    while (rowData.length > expectedCols) rowData.pop();
+
+                    console.log('Final rowData count:', rowData.length, 'Expected:', expectedCols);
+
+                    const newRow = table.row.add(rowData).draw(false).node();
+
                     table.order([1, 'desc']).draw();
 
-                    // Optional: Remove the highlight after a few seconds
-                    setTimeout(() => {
-                        $(newRow).removeClass('table-success');
-                    }, 3000);
+                    $(newRow).addClass('table-success');
+                    setTimeout(() => $(newRow).removeClass('table-success'), 3000);
                 });
 
+            function safeValue(v) {
+                if (v === null || v === undefined) return '';
+                if (typeof v === 'object') return JSON.stringify(v);
+                return String(v);
+            }
+
             function formatDate(input) {
-                const date = new Date(input);
-                return date.toLocaleString('en-PH', {
+                if (!input) return '';
+
+                // Handle "YYYY-MM-DD HH:mm:ss" manually
+                if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(input)) {
+                    const [datePart, timePart] = input.split(' ');
+                    const [y, m, d] = datePart.split('-').map(Number);
+                    const [hh, mm, ss] = timePart.split(':').map(Number);
+                    const date = new Date(y, m - 1, d, hh, mm, ss);
+
+                    return date.toLocaleString('en-PH', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                    });
+                }
+
+                const parsed = new Date(input);
+                if (isNaN(parsed)) return input;
+
+                return parsed.toLocaleString('en-PH', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
@@ -409,22 +418,24 @@
 
             function caseCategoryLabel(code) {
                 const categoryMap = @json(App\Models\PatientRecord::CASE_CATEGORY_SELECT);
-                return categoryMap[code] ?? code;
+                return categoryMap && typeof categoryMap === 'object' ?
+                    categoryMap[code] ?? code :
+                    code;
             }
 
             function generateActions(id) {
                 return `
-                                        <div class="d-flex align-items-center">
-                                            <a href="/admin/patient-records/${id}" class="mr-3" title="View"><i class="fas fa-eye"></i></a>
-                                            <a href="/admin/patient-records/${id}/edit" class="mr-3" title="Edit"><i class="fas fa-edit"></i></a>
-                                            <form method="POST" action="/admin/patient-records/${id}" class="m-0 p-0 delete-form" style="display:inline;">
-                                                <input type="hidden" name="_method" value="DELETE">
-                                                <input type="hidden" name="_token" value="${_token}">
-                                                <button type="submit" class="btn p-0 border-0 bg-transparent mr-3 delete-button" title="Delete">
-                                                    <i class="fas fa-trash-alt text-danger"></i>
-                                                </button>
-                                            </form>
-                                        </div>`;
+    <div class="d-flex align-items-center">
+        <a href="/admin/patient-records/${id}" class="mr-3" title="View"><i class="fas fa-eye"></i></a>
+        <a href="/admin/patient-records/${id}/edit" class="mr-3" title="Edit"><i class="fas fa-edit"></i></a>
+        <form method="POST" action="/admin/patient-records/${id}" class="m-0 p-0 delete-form" style="display:inline;">
+            <input type="hidden" name="_method" value="DELETE">
+            <input type="hidden" name="_token" value="${_token}">
+            <button type="submit" class="btn p-0 border-0 bg-transparent mr-3 delete-button" title="Delete">
+                <i class="fas fa-trash-alt text-danger"></i>
+            </button>
+        </form>
+    </div>`;
             }
         }, 500);
     </script>
