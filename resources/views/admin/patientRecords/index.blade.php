@@ -22,9 +22,6 @@
         </div>
     </div>
 
-
-
-
     @can('patient_record_create')
         @include('csvImport.modal', [
             'model' => 'PatientRecord',
@@ -33,8 +30,6 @@
     @endcan
 
     <div class="card-body">
-
-
         <div class="mb-3">
             <label for="statusFilter" class="form-label fw-bold">Filter Status:</label>
             <select id="statusFilter" class="form-select w-auto d-inline-block">
@@ -150,7 +145,136 @@
     @parent
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        function initializeRealTimeUpdates() {
+            console.log('📡 Initializing real-time updates for patient records...');
+            
+            // Connection status handling
+            if (window.Echo && window.Echo.connector && window.Echo.connector.pusher) {
+                window.Echo.connector.pusher.connection.bind('connected', function() {
+                    console.log('✅ Connected to Pusher');
+                });
+
+                window.Echo.connector.pusher.connection.bind('disconnected', function() {
+                    console.log('❌ Disconnected from Pusher');
+                });
+
+                window.Echo.connector.pusher.connection.bind('error', function(error) {
+                    console.error('Pusher error:', error);
+                });
+            }
+
+            // Listen for patient record changes
+            if (window.Echo) {
+                window.Echo.channel('patients')
+                    .listen('.patientRecord.changed', function(e) {
+                        console.log('📢 Patient Record added:', e);
+                        updatePatientTable(e);
+                    });
+            } else {
+                console.error('Echo is not defined');
+            }
+        }
+
+        function updatePatientTable(e) {
+            const table = $('.datatable-PatientRecord').DataTable();
+            const rowData = [
+                '', 
+                `<span data-order="${new Date(e.date_processed).getTime()}">${safeValue(formatDate(e.date_processed))}</span>`,
+                safeValue(e.case_type),
+                safeValue(e.control_number),
+                safeValue(e.claimant_name),
+                safeValue(caseCategoryLabel(e.case_category)),
+                safeValue(e.patient_name),
+                `<span class="text-truncate" style="max-width:200px;">${safeValue(e.diagnosis)}</span>`,
+                safeValue(e.age),
+                safeValue(e.address),
+                safeValue(e.contact_number),
+                safeValue(e.case_worker),
+                generateActions(e.id)
+            ];
+
+            const expectedCols = table.columns().count();
+            while (rowData.length < expectedCols) rowData.unshift('');
+            while (rowData.length > expectedCols) rowData.pop();
+
+            console.log('Final rowData count:', rowData.length, 'Expected:', expectedCols);
+
+            const newRow = table.row.add(rowData).draw(false).node();
+
+            table.order([1, 'desc']).draw();
+
+            $(newRow).attr('data-entry-id', e.id);
+            $(newRow).attr('data-status', e.latest_status || 'Processing');
+            $(newRow).addClass('table-success');
+            setTimeout(() => $(newRow).removeClass('table-success'), 3000);
+
+            console.log('✅ Added new row for patient:', e.patient_name);
+        }
+
+        function safeValue(v) {
+            if (v === null || v === undefined) return '';
+            if (typeof v === 'object') return JSON.stringify(v);
+            return String(v);
+        }
+
+        function formatDate(input) {
+            if (!input) return '';
+
+            // Handle "YYYY-MM-DD HH:mm:ss" manually
+            if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(input)) {
+                const [datePart, timePart] = input.split(' ');
+                const [y, m, d] = datePart.split('-').map(Number);
+                const [hh, mm, ss] = timePart.split(':').map(Number);
+                const date = new Date(y, m - 1, d, hh, mm, ss);
+
+                return date.toLocaleString('en-PH', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                });
+            }
+
+            const parsed = new Date(input);
+            if (isNaN(parsed)) return input;
+
+            return parsed.toLocaleString('en-PH', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
+        }
+
+        function caseCategoryLabel(code) {
+            const categoryMap = @json(App\Models\PatientRecord::CASE_CATEGORY_SELECT);
+            return categoryMap && typeof categoryMap === 'object' ?
+                categoryMap[code] ?? code :
+                code;
+        }
+
+        function generateActions(id) {
+            return `
+                <div class="d-flex align-items-center">
+                    <a href="/admin/patient-records/${id}" class="mr-3" title="View"><i class="fas fa-eye"></i></a>
+                    <a href="/admin/patient-records/${id}/edit" class="mr-3" title="Edit"><i class="fas fa-edit"></i></a>
+                    <form method="POST" action="/admin/patient-records/${id}" class="m-0 p-0 delete-form" style="display:inline;">
+                        <input type="hidden" name="_method" value="DELETE">
+                        <input type="hidden" name="_token" value="${_token}">
+                        <button type="submit" class="btn p-0 border-0 bg-transparent mr-3 delete-button" title="Delete">
+                            <i class="fas fa-trash-alt text-danger"></i>
+                        </button>
+                    </form>
+                </div>`;
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
+            initializeRealTimeUpdates();
+            
             var toastEl = document.getElementById('liveToast');
             var timerEl = document.getElementById('toast-timer');
 
@@ -339,104 +463,5 @@
                 $($.fn.dataTable.tables(true)).DataTable().columns.adjust();
             });
         });
-
-        // Real-time updates
-        setTimeout(() => {
-            Echo.channel('patients')
-                .listen('.patientRecord.changed', function(e) {
-                    console.log('Patient Record added:', e);
-                    const table = $('.datatable-PatientRecord').DataTable();
-
-                    const rowData = [
-                        '', 
-                        `<span data-order="${new Date(e.date_processed).getTime()}">${safeValue(formatDate(e.date_processed))}</span>`,
-                        safeValue(e.case_type),
-                        safeValue(e.control_number),
-                        safeValue(e.claimant_name),
-                        safeValue(caseCategoryLabel(e.case_category)),
-                        safeValue(e.patient_name),
-                        `<span class="text-truncate" style="max-width:200px;">${safeValue(e.diagnosis)}</span>`,
-                        safeValue(e.age),
-                        safeValue(e.address),
-                        safeValue(e.contact_number),
-                        safeValue(e.case_worker),
-                        generateActions(e.id)
-                    ];
-
-                    const expectedCols = table.columns().count();
-                    while (rowData.length < expectedCols) rowData.unshift('');
-                    while (rowData.length > expectedCols) rowData.pop();
-
-                    console.log('Final rowData count:', rowData.length, 'Expected:', expectedCols);
-
-                    const newRow = table.row.add(rowData).draw(false).node();
-
-                    table.order([1, 'desc']).draw();
-
-                    $(newRow).addClass('table-success');
-                    setTimeout(() => $(newRow).removeClass('table-success'), 3000);
-                });
-
-            function safeValue(v) {
-                if (v === null || v === undefined) return '';
-                if (typeof v === 'object') return JSON.stringify(v);
-                return String(v);
-            }
-
-            function formatDate(input) {
-                if (!input) return '';
-
-                // Handle "YYYY-MM-DD HH:mm:ss" manually
-                if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(input)) {
-                    const [datePart, timePart] = input.split(' ');
-                    const [y, m, d] = datePart.split('-').map(Number);
-                    const [hh, mm, ss] = timePart.split(':').map(Number);
-                    const date = new Date(y, m - 1, d, hh, mm, ss);
-
-                    return date.toLocaleString('en-PH', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        hour12: true
-                    });
-                }
-
-                const parsed = new Date(input);
-                if (isNaN(parsed)) return input;
-
-                return parsed.toLocaleString('en-PH', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true
-                });
-            }
-
-            function caseCategoryLabel(code) {
-                const categoryMap = @json(App\Models\PatientRecord::CASE_CATEGORY_SELECT);
-                return categoryMap && typeof categoryMap === 'object' ?
-                    categoryMap[code] ?? code :
-                    code;
-            }
-
-            function generateActions(id) {
-                return `
-    <div class="d-flex align-items-center">
-        <a href="/admin/patient-records/${id}" class="mr-3" title="View"><i class="fas fa-eye"></i></a>
-        <a href="/admin/patient-records/${id}/edit" class="mr-3" title="Edit"><i class="fas fa-edit"></i></a>
-        <form method="POST" action="/admin/patient-records/${id}" class="m-0 p-0 delete-form" style="display:inline;">
-            <input type="hidden" name="_method" value="DELETE">
-            <input type="hidden" name="_token" value="${_token}">
-            <button type="submit" class="btn p-0 border-0 bg-transparent mr-3 delete-button" title="Delete">
-                <i class="fas fa-trash-alt text-danger"></i>
-            </button>
-        </form>
-    </div>`;
-            }
-        }, 500);
     </script>
 @endsection

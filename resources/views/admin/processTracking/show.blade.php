@@ -551,8 +551,9 @@
                                     <select class="form-control" name="rollback_to" id="rollback_to" required>
                                         @php
                                             $statusToOffice = [
-                                                'Draft' => 'CSWD Office',
+                                                'Processing' => 'CSWD Office',
                                                 'Submitted' => 'Mayor\'s Office',
+                                                'Submitted[Emergency]' => 'Mayor\'s Office',
                                                 'Approved' => 'Budget Office',
                                                 // 'Rejected'           => skip
                                                 'Budget Allocated' => 'Accounting Office',
@@ -821,6 +822,7 @@
                             <form method="POST">
                                 @csrf
                                 <input type="hidden" name="status" value="Submitted">
+                                <input type="hidden" name="redirect_to_process_tracking" value="1">
 
                                 <div class="form-group">
                                     <label for="submitted_date">Submitted Date</label>
@@ -895,7 +897,7 @@
         </div>
     </div>
 @endsection
-@push('scripts')
+@section('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             var toastEl = document.getElementById('liveToast');
@@ -920,21 +922,8 @@
                 }, 1000);
             }
         });
-    </script>
-    <script>
-        // setTimeout(() => {
-        //     Echo.channel('process-tracking')
-        //         .listen('.patient.process.updated', (e) => {
-        //             console.log("Status changed:", e);
 
-        //         });
-
-
-
-        // }, 300);
-
-
-        document.addEventListener('DOMContentLoaded', function() {
+         document.addEventListener('DOMContentLoaded', function() {
             const amountInput = document.getElementById('amount');
             const buttons = document.querySelectorAll('.suggested-amount');
 
@@ -951,4 +940,5 @@
             });
         });
     </script>
-@endpush
+@endsection
+

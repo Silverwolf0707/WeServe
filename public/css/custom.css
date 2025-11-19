@@ -1420,3 +1420,69 @@ body.dark-mode ::-webkit-scrollbar-thumb {
 body.dark-mode ::-webkit-scrollbar-track {
     background-color: #1a1a1a;
 }
+
+/* toast css */
+/* Custom Toast Styles */
+.custom-toast {
+    min-width: 350px;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    backdrop-filter: blur(10px);
+}
+
+.toast-success {
+    background: linear-gradient(135deg, #28a745, #20c997) !important;
+    border-left: 4px solid #1e7e34;
+}
+
+.toast-danger {
+    background: linear-gradient(135deg, #dc3545, #e83e8c) !important;
+    border-left: 4px solid #bd2130;
+}
+
+.toast-warning {
+    background: linear-gradient(135deg, #ffc107, #fd7e14) !important;
+    border-left: 4px solid #d39e00;
+}
+
+.toast-info {
+    background: linear-gradient(135deg, #17a2b8, #6f42c1) !important;
+    border-left: 4px solid #138496;
+}
+
+.toast-header {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px 12px 0 0 !important;
+    padding: 12px 16px;
+}
+
+.toast-body {
+    padding: 16px;
+    color: white;
+    font-weight: 500;
+    border-radius: 0 0 12px 12px;
+}
+
+.toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.8);
+    width: 100%;
+    animation: progressBar 5s linear forwards;
+}
+
+@keyframes progressBar {
+    0% { width: 100%; }
+    100% { width: 0%; }
+}
+
+/* Toast icons */
+.toast-icon {
+    margin-right: 8px;
+    font-size: 1.1em;
+}
+/* end of toast css */

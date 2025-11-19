@@ -164,8 +164,8 @@ class PatientRecordsController extends Controller
         $patientRecord->delete();
 
         return redirect()->route('admin.patient-records.index')->with('toast', [
-            'type' => 'warning',
-            'title' => 'Patient Deleted',
+            'type' => 'danger',
+            'title' => 'Patient Record Deleted',
             'message' => 'The patient record has been deleted.<br><strong>Control No:</strong> ' . $patientRecord->control_number,
             'time' => now()->diffForHumans(),
         ]);
@@ -239,9 +239,25 @@ class PatientRecordsController extends Controller
         $action = $status === 'Submitted' ? 'submitted' : 'updated';
         broadcast(new PatientStatusChanged($patientRecord, $action))->toOthers();
 
+        if ($request->has('redirect_to_process_tracking')) {
+            return redirect()
+                ->route('admin.process-tracking.show', $id)
+                ->with('toast', [
+                    'type' => 'success',
+                    'title' => 'Patient Submitted Successfully',
+                    'message' => 'Application submitted successfully',
+                    'time' => now()->diffForHumans(),
+                ]);
+        }
+
         return redirect()
             ->route('admin.patient-records.show', $id)
-            ->with('success', 'Application submitted successfully with remarks.');
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'Patient Submitted Successfully',
+                'message' => 'Application submitted successfully',
+                'time' => now()->diffForHumans(),
+            ]);
     }
     public function massSubmit(Request $request)
     {
@@ -332,10 +348,25 @@ class PatientRecordsController extends Controller
         $patientRecord = PatientRecord::with('latestStatusLog')->findOrFail($id);
 
         broadcast(new PatientStatusChanged($patientRecord, 'submitted-emergency'))->toOthers();
+        if ($request->has('redirect_to_process_tracking')) {
+            return redirect()
+                ->route('admin.process-tracking.show', $id)
+                ->with('toast', [
+                    'type' => 'success',
+                    'title' => 'Patient Submitted Successfully (Emergency)',
+                    'message' => 'Application submitted successfully',
+                    'time' => now()->diffForHumans(),
+                ]);
+        }
 
         return redirect()
             ->route('admin.patient-records.show', $id)
-            ->with('success', 'Emergency application submitted successfully with remarks.');
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'Patient Submitted Successfully (Emergency)',
+                'message' => 'Application submitted successfully',
+                'time' => now()->diffForHumans(),
+            ]);
     }
 
     public function csvTemplate($type)

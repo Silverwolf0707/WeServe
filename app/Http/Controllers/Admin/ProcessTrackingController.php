@@ -75,10 +75,8 @@ class ProcessTrackingController extends Controller
         }
 
         $validated = $request->validate($rules);
-        Log::info("✅ Validation passed", $validated);
-
+    
         $patient = PatientRecord::findOrFail($id);
-        Log::info("✅ Patient found", ['patient_name' => $patient->claimant_name]);
 
         $status = $request->action === 'approve'
             ? PatientStatusLog::STATUS_APPROVED
@@ -93,8 +91,6 @@ class ProcessTrackingController extends Controller
             'created_at' => now(),
         ]);
 
-        Log::info("✅ Status log created", ['status_log_id' => $statusLog->id, 'status' => $status]);
-
         if ($request->action === 'reject') {
             $reasons = $validated['reasons'] ?? [];
             if (!empty($validated['other_reason'])) {
@@ -108,33 +104,22 @@ class ProcessTrackingController extends Controller
                     'reason'                => $reason,
                 ]);
             }
-            Log::info("✅ Rejection reasons added", ['reasons_count' => count($reasons)]);
         }
 
         // Reload patient with latest status log and user
         $patient->load('latestStatusLog');
-        Log::info("✅ Patient reloaded with latest status", ['latest_status' => $patient->latestStatusLog->status ?? 'None']);
 
         // Broadcast updates
         $action = $request->action === 'approve' ? 'approved' : 'rejected';
 
-        Log::info("🚀 ABOUT TO BROADCAST EVENT", [
-            'patient_id' => $patient->id,
-            'action' => $action,
-            'status' => $patient->latestStatusLog->status ?? 'Unknown'
-        ]);
-
         try {
             broadcast(new PatientStatusChanged($patient, $action));
-            Log::info("✅ EVENT BROADCAST SUCCESSFUL - Should appear in Pusher dashboard");
         } catch (\Exception $e) {
             Log::error("❌ EVENT BROADCAST FAILED", [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
         }
-
-        Log::info("🎯 DECISION METHOD COMPLETED");
 
         return redirect()->route('admin.process-tracking.show', $id)->with('toast', [
             'type' => 'success',
@@ -181,7 +166,7 @@ class ProcessTrackingController extends Controller
                 $latestStatus = $patient->statusLogs()->latest()->first();
 
                 // Skip if not submitted or already approved/rejected
-                if (!$latestStatus || $latestStatus->status !== PatientStatusLog::STATUS_SUBMITTED) {
+                if (!$latestStatus || !in_array($latestStatus->status, [PatientStatusLog::STATUS_SUBMITTED, PatientStatusLog::STATUS_SUBMITTED_EMERGENCY])) {
                     $skipped[] = $patient->control_number;
                     continue;
                 }
@@ -569,7 +554,12 @@ class ProcessTrackingController extends Controller
         broadcast(new PatientStatusChanged($patient, 'budget_allocated'));
 
         return redirect()->route('admin.process-tracking.show', $id)
-            ->with('status', 'Budget allocated successfully.');
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'Budget Allocated',
+                'message' => 'Successfully allocated budget.',
+                'time' => now()->diffForHumans(),
+            ]);
     }
 
     public function updateBudget(Request $request, $id)
@@ -633,7 +623,13 @@ class ProcessTrackingController extends Controller
         $patient->load('latestStatusLog');
         broadcast(new PatientStatusChanged($patient, 'budget_allocated'));
 
-        return back()->with('success', 'Budget updated and OBRE PDF regenerated.');
+        return redirect()->route('admin.process-tracking.show', $id)
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'Budget Allocated Updated',
+                'message' => 'Successfully updated allocated budget.',
+                'time' => now()->diffForHumans(),
+            ]);
     }
 
 
@@ -751,7 +747,12 @@ class ProcessTrackingController extends Controller
         broadcast(new PatientStatusChanged($patient, 'disbursed'));
 
         return redirect()->route('admin.process-tracking.show', $id)
-            ->with('status', 'Budget status updated to Disbursed.');
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'Successfully Disbursed',
+                'message' => 'Successfully Disbursed.',
+                'time' => now()->diffForHumans(),
+            ]);
     }
     public function quickDisburse(Request $request, $id)
     {
@@ -775,7 +776,12 @@ class ProcessTrackingController extends Controller
         broadcast(new PatientStatusChanged($patient, 'disbursed'));
 
         return redirect()->route('admin.process-tracking.show', $id)
-            ->with('status', 'Budget status updated to Disbursed (no OTP).');
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'Successfully Disbursed',
+                'message' => 'Successfully Disbursed.',
+                'time' => now()->diffForHumans(),
+            ]);
     }
 
     public function massQuickDisburse(Request $request)
@@ -996,7 +1002,12 @@ class ProcessTrackingController extends Controller
         // Broadcast base status only (for UI logic)
         broadcast(new PatientStatusChanged($patient, strtolower($rollbackTo)));
 
-        return redirect()->back()->with('success', 'Process rolled back to ' . $rolledBackStatus);
+        return redirect()->back()->with('toast', [
+                'type' => 'danger',
+                'title' => 'Successfully Rolled Back',
+                'message' => 'Rolled Back Successfully to ' . $rollbackTo,
+                'time' => now()->diffForHumans(),
+            ]);
     }
 
     public function returnToRollbacker($id)
@@ -1024,7 +1035,12 @@ class ProcessTrackingController extends Controller
 
         broadcast(new PatientStatusChanged($patient, strtolower($previousLog->status)));
 
-        return back()->with('status', 'Case returned to previous rollbacker.');
+        return back()->with('toast', [
+                'type' => 'success',
+                'title' => 'Returned to Rollbacker',
+                'message' => 'Successfully returned to previous status: ' . $previousLog->status,
+                'time' => now()->diffForHumans(),
+            ]);
     }
     public function submit(Request $request, $id)
     {
@@ -1054,8 +1070,25 @@ class ProcessTrackingController extends Controller
         $action = $status === 'Submitted' ? 'submitted' : 'updated';
         broadcast(new PatientStatusChanged($patient, $action))->toOthers();
 
+       
+        if ($request->has('redirect_to_process_tracking')) {
+            return redirect()
+                ->route('admin.process-tracking.show', $id)
+                ->with('toast', [
+                    'type' => 'success',
+                    'title' => 'Patient Submitted Successfully',
+                    'message' => 'Application submitted successfully',
+                    'time' => now()->diffForHumans(),
+                ]);
+        }
+
         return redirect()
-            ->route('admin.process-tracking.show', $id)
-            ->with('success', 'Application submitted successfully with remarks.');
+            ->route('admin.patient-records.show', $id)
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'Patient Submitted Successfully',
+                'message' => 'Application submitted successfully',
+                'time' => now()->diffForHumans(),
+            ]);
     }
 }

@@ -10,85 +10,60 @@ use Illuminate\Support\Facades\Storage;
 
 class StatisticsController extends Controller
 {
-public function index()
-{
-    $type = request('type'); // cswd, budget, treasury, accounting
+    public function index()
+    {
+        $type = request('type'); // cswd, budget, treasury, accounting
 
-    $analyticsViews = [
-        'cswd' => [
-            'permission'   => 'CSWD-ANALYTICS',
-            'csv_path'     => storage_path('app/public/patient_records_year.csv'),
-            'json_path'    => storage_path('app/public/age_stats_output.json'),
-            'meta_path'    => storage_path('app/public/age_stats_meta.json'),
-            'python_script' => base_path('python/age_statistics.py'),
-            'runner'       => 'runPythonAgeStats',
-        ],
-        'budget' => [
-            'permission'   => 'BUDGET-ANALYTICS',
-            'csv_path'     => storage_path('app/public/full_patient_data.csv'),
-            'json_path'    => storage_path('app/public/budget_stats_output.json'),
-            'meta_path'    => storage_path('app/public/budget_stats_meta.json'),
-            'python_script' => base_path('python/budget_statistics.py'),
-            'runner'       => 'runPythonBudgetStats',
-        ],
-        'treasury' => [
-            'permission' => 'TREASURY-ANALYTICS',
-        ],
-        'accounting' => [
-            'permission' => 'ACCOUNTING-ANALYTICS',
-        ],
-    ];
+        $analyticsViews = [
+            'cswd' => [
+                'permission'   => 'CSWD-ANALYTICS',
+                'csv_path'     => storage_path('app/public/patient_records_year.csv'),
+                'json_path'    => storage_path('app/public/age_stats_output.json'),
+                'python_script' => base_path('python/age_statistics.py'),
+                'runner'       => 'runPythonAgeStats',
+            ],
+            'budget' => [
+                'permission'   => 'BUDGET-ANALYTICS',
+                'csv_path'     => storage_path('app/public/full_patient_data.csv'),
+                'json_path'    => storage_path('app/public/budget_stats_output.json'),
+                'python_script' => base_path('python/budget_statistics.py'),
+                'runner'       => 'runPythonBudgetStats',
+            ],
+            'treasury' => [
+                'permission' => 'TREASURY-ANALYTICS',
+            ],
+            'accounting' => [
+                'permission' => 'ACCOUNTING-ANALYTICS',
+            ],
+        ];
 
-    if (!isset($analyticsViews[$type])) {
-        abort(404, 'Invalid analytics type.');
-    }
+        if (!isset($analyticsViews[$type])) {
+            abort(404, 'Invalid analytics type.');
+        }
 
-    $config = $analyticsViews[$type];
+        $config = $analyticsViews[$type];
 
-    if (!Gate::allows($config['permission'])) {
-        abort(403, 'You do not have permission to view this statistics.');
-    }
+        if (!Gate::allows($config['permission'])) {
+            abort(403, 'You do not have permission to view this statistics.');
+        }
 
-    // 🔹 Always refresh CSV before hash check
-    if ($type === 'budget') {
-        app(TimeSeriesController::class)->exportToCsvFile();
-    }
-
-    if (isset($config['python_script'])) {
-        $csvPath = $config['csv_path'];
-        $jsonPath = $config['json_path'];
-        $metaPath = $config['meta_path'];
-        $pythonScript = $config['python_script'];
-        $runnerMethod = $config['runner'];
-
-        $shouldRunPython = false;
-
-        if (!file_exists($jsonPath)) {
-            $shouldRunPython = true;
-        } else {
-            $currentHash = file_exists($csvPath) ? md5_file($csvPath) : null;
-            $lastHash = file_exists($metaPath) ? json_decode(file_get_contents($metaPath), true)['file_hash'] ?? null : null;
-
-            if ($currentHash !== $lastHash) {
-                $shouldRunPython = true;
-
-                file_put_contents($metaPath, json_encode([
-                    'file_hash'  => $currentHash,
-                    'updated_at' => now()->toDateTimeString(),
-                ]));
+        // Always run Python script when statistics page is accessed
+        if (isset($config['python_script'])) {
+            // Ensure CSV is updated for budget type
+            if ($type === 'budget') {
+                app(TimeSeriesController::class)->exportToCsvFile();
             }
+            
+            $runnerMethod = $config['runner'];
+            if (method_exists($this, $runnerMethod)) {
+                $this->$runnerMethod();
+            }
+
+            return $this->getPythonJsonOutput($config['json_path']);
         }
 
-        if ($shouldRunPython && method_exists($this, $runnerMethod)) {
-            $this->$runnerMethod();
-        }
-
-        return $this->getPythonJsonOutput($jsonPath);
+        abort(404, 'No analytics script configured for this type.');
     }
-
-    abort(404, 'No analytics script configured for this type.');
-}
-
 
     protected function runPythonBudgetStats()
     {
@@ -104,8 +79,8 @@ public function index()
 
     protected function runPythonAgeStats()
     {
-        $pythonPath = base_path('venv/Scripts/python.exe');  // Adjust path to your python executable
-        $scriptPath = base_path('python/age_statistics.py'); // Your Python script path
+        $pythonPath = base_path('venv/Scripts/python.exe');
+        $scriptPath = base_path('python/age_statistics.py');
 
         exec("\"$pythonPath\" \"$scriptPath\"", $output, $return_var);
 

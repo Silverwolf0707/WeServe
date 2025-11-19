@@ -73,7 +73,7 @@
                                             'Disbursed' => 3,
                                             'DV Submitted' => 1,
                                         ],
-                                        'Mayor\'s Office' => [
+                                        'Mayors Office' => [
                                             'Submitted' => 2,
                                             'Submitted[Emergency]' => 1,
                                             'Submitted[ROLLED BACK]' => 3,
@@ -246,7 +246,7 @@
                         <div class="mb-3">
                             <label for="massDecisionRemarks" class="form-label">Remarks</label>
                             <textarea name="remarks" id="massDecisionRemarks" class="form-control" rows="3"
-                                placeholder="Enter remarks..." required></textarea>
+                                placeholder="Enter remarks..."></textarea>
                         </div>
                     </div>
 
@@ -540,7 +540,6 @@
             initializeRealTimeUpdates();
             var toastEl = document.getElementById('liveToast');
             var timerEl = document.getElementById('toast-timer');
-
             if (toastEl) {
                 var toast = new bootstrap.Toast(toastEl, {
                     autohide: true,

@@ -15,40 +15,14 @@ class TimeSeriesController extends Controller
     {
         $type = request('type');
 
+        // Always export CSV first
         $csvPath = $this->exportToCsvFile();
 
-        $jsonFiles = [
-            'cswd'   => 'stl_output.json',
-            'budget' => 'stl_budget_output.json',
-        ];
-
-        $jsonPath = storage_path('app/public/' . ($jsonFiles[$type] ?? 'stl_output.json'));
-
-        $shouldRunPython = false;
-
-        if (!file_exists($jsonPath)) {
-            $shouldRunPython = true;
+        // Always run Python script when analytics page is accessed
+        if ($type === 'budget') {
+            $this->runBudgetPython();
         } else {
-            $metaPath = str_replace('.json', '_meta.json', $jsonPath);
-            $currentHash = file_exists($csvPath) ? md5_file($csvPath) : null;
-            $lastHash = file_exists($metaPath) ? json_decode(file_get_contents($metaPath), true)['file_hash'] ?? null : null;
-
-            if ($currentHash !== $lastHash) {
-                $shouldRunPython = true;
-
-                file_put_contents($metaPath, json_encode([
-                    'file_hash'  => $currentHash,
-                    'updated_at' => now()->toDateTimeString(),
-                ]));
-            }
-        }
-
-        if ($shouldRunPython) {
-            if ($type === 'budget') {
-                $this->runBudgetPython();
-            } else {
-                $this->runPythonStl();
-            }
+            $this->runPythonStl();
         }
 
         $analyticsViews = [

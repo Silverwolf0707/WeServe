@@ -56,27 +56,36 @@
   @php
     $toast = session('toast');
     $bgClass = match ($toast['type']) {
-    'success' => 'bg-success text-white',
-    'danger' => 'bg-danger text-white',
-    'warning' => 'bg-warning text-dark',
-    'info' => 'bg-info text-dark',
-    default => 'bg-secondary text-white',
+        'success' => 'toast-success',
+        'danger' => 'toast-danger',
+        'warning' => 'toast-warning',
+        'info' => 'toast-info',
+        default => 'bg-secondary',
     };
+    
+    $icons = [
+        'success' => 'fas fa-check-circle',
+        'danger' => 'fas fa-exclamation-triangle',
+        'warning' => 'fas fa-exclamation-circle',
+        'info' => 'fas fa-info-circle'
+    ];
+    $icon = $icons[$toast['type']] ?? 'fas fa-bell';
   @endphp
 
-  <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1055">
-    <div id="liveToast" class="toast {{ $bgClass }} hide" role="alert" aria-live="assertive" aria-atomic="true">
-    <div class="toast-header bg-white text-dark">
-      <strong class="me-auto">{{ $toast['title'] ?? 'Notice' }}</strong>
-      <small id="toast-timer">Closing in 5s</small>
-      <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-    </div>
-    <div class="toast-body">
-      {!! session('toast')['message'] !!}
-    </div>
+  <div class="position-fixed top-0 end-0 p-3" style="z-index: 1055">
+    <div id="liveToast" class="toast custom-toast {{ $bgClass }}" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="toast-progress"></div>
+      <div class="toast-header bg-white text-dark">
+        <i class="{{ $icon }} toast-icon text-{{ $toast['type'] }}"></i>
+        <strong class="me-auto">{{ $toast['title'] ?? 'Notification' }}</strong>
+        <small class="text-muted" id="toast-timer">Just now</small>
+        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div class="toast-body">
+        {!! session('toast')['message'] !!}
+      </div>
     </div>
   </div>
-
 @endif
 
 
@@ -146,6 +155,40 @@
     <form id="logoutform" action="{{ route('logout') }}" method="POST" style="display: none;">
       {{ csrf_field() }}
     </form>
+    <!-- Logout Confirmation Modal -->
+<div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="logoutModalLabel">
+                    <i class="fas fa-sign-out-alt text-danger me-2"></i>
+                    Confirm Logout
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to logout?</p>
+                <p class="text-muted small">You will need to login again to access the system.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-danger" 
+                        onclick="
+                            const btn = this;
+                            btn.disabled = true;
+                            btn.innerHTML = '<i class=\'fas fa-spinner fa-spin me-1\'></i> Logging out...';
+                            setTimeout(() => {
+                                document.getElementById('logoutform').submit();
+                            }, 500);
+                        ">
+                    <i class="fas fa-sign-out-alt me-1"></i> Yes, Logout
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
   </div>
 
   <!-- jQuery -->
@@ -189,14 +232,14 @@
 
   <script src="{{ asset('js/main.js') }}"></script>
 
-  <script>
+  {{-- <script>
     $(document).ready(function () {
       $('.suggested-amount').on('click', function () {
         const value = $(this).data('value');
         $('#amount').val(value); 
       });
     });
-  </script>
+  </script> --}}
 
   <script>
     $(function () {
@@ -364,6 +407,7 @@
         document.body.classList.toggle('dark-mode', savedTheme === 'dark');
     });
     </script>
+    @stack('scripts')
 
 </body>
 

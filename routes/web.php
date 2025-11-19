@@ -14,15 +14,13 @@ use App\Http\Controllers\Admin\AuditLogsController;
 use App\Http\Controllers\Admin\OnlinePatientApplicationController;
 use App\Http\Controllers\Admin\PatientRecordsController;
 use App\Http\Controllers\Admin\ProcessTrackingController;
-use App\Http\Controllers\Traits\CsvImportTrait;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\Auth\ChangePasswordController;
-use App\Models\PatientRecord;
+
 
 Route::get('/online-application', [OnlineApplicationController::class, 'index'])->name('online-application.index');
-
 
 Route::post('/applications/store', [OnlineApplicationController::class, 'store'])
     ->name('applications.store');
@@ -41,6 +39,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     // Home route
     Route::get('/', [HomeController::class, 'index'])->name('home');
     Route::redirect('/login', '/login');
+    
     // Permissions
     Route::delete('permissions/destroy', [PermissionsController::class, 'massDestroy'])->name('permissions.massDestroy');
     Route::resource('permissions', PermissionsController::class);

@@ -122,7 +122,10 @@
                     </li>
                 @endcan
 
-                @if(auth()->user()->can('CSWD-ANALYTICS') || auth()->user()->can('BUDGET-ANALYTICS') || auth()->user()->can('TREASURY-ANALYTICS') || auth()->user()->can('ACCOUNTING-ANALYTICS'))
+                @if (auth()->user()->can('CSWD-ANALYTICS') ||
+                        auth()->user()->can('BUDGET-ANALYTICS') ||
+                        auth()->user()->can('TREASURY-ANALYTICS') ||
+                        auth()->user()->can('ACCOUNTING-ANALYTICS'))
                     <li class="nav-item has-treeview {{ request()->is('admin/time-series*') ? 'menu-open' : '' }}">
                         <a href="#" class="nav-link {{ request()->is('admin/time-series*') ? 'active' : '' }}">
                             <i class="nav-icon fas fa-chart-line"></i>
@@ -180,7 +183,7 @@
                     </li>
                 @endcan
 
-                @if(file_exists(app_path('Http/Controllers/Auth/ChangePasswordController.php')))
+                @if (file_exists(app_path('Http/Controllers/Auth/ChangePasswordController.php')))
                     @can('profile_password_edit')
                         <li class="nav-item">
                             <a href="{{ route('profile.password.edit') }}"
@@ -200,8 +203,8 @@
                 </li>
 
                 <li class="nav-item">
-                    <a href="#" class="nav-link text-danger"
-                        onclick="event.preventDefault(); document.getElementById('logoutform').submit();">
+                    <a href="#" class="nav-link text-danger" data-bs-toggle="modal"
+                        data-bs-target="#logoutModal">
                         <i class="fas fa-sign-out-alt nav-icon"></i>
                         <p>Logout</p>
                     </a>

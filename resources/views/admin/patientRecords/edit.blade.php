@@ -8,7 +8,7 @@
 
         <div class="card-body">
             <form method="POST" action="{{ route('admin.patient-records.update', [$patientRecord->id]) }}"
-                enctype="multipart/form-data">
+                enctype="multipart/form-data" id="patientForm">
                 @method('PUT')
                 @csrf
 
@@ -35,11 +35,19 @@
                             @error('control_number') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
 
-                        <div class="mb-3">
-                            <label for="case_type" class="form-label">Case Type <span class="text-danger">*</span></label>
-                            <input type="text" name="case_type" id="case_type"
-                                class="form-control {{ $errors->has('case_type') ? 'is-invalid' : '' }}"
-                                value="{{ old('case_type', $patientRecord->case_type) }}" required>
+                         <div class="mb-3">
+                            <label for="case_type" class="form-label">Case Type<span
+                                    class="text-danger">*</span></label>
+                            <select name="case_type" id="case_type"
+                                class="form-control {{ $errors->has('case_type') ? 'is-invalid' : '' }}" required>
+                                <option value disabled {{ old('case_type', null) === null ? 'selected' : '' }}>Please
+                                    select</option>
+                                @foreach(App\Models\PatientRecord::CASE_TYPE_SELECT as $key => $label)
+                                    <option value="{{ $key }}" {{ old('case_type', $patientRecord->case_type) === (string) $key ? 'selected' : '' }}>
+                                        {{ $label }}
+                                    </option>
+                                @endforeach
+                            </select>
                             @error('case_type') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
 
@@ -129,7 +137,7 @@
                 </div>
 
                 <div class="mt-4">
-                    <button type="submit" class="btn btn-success">
+                    <button type="button" class="btn btn-success" id="saveButton">
                         <i class="fas fa-save me-1"></i> Save
                     </button>
                     <a href="{{ route('admin.patient-records.index') }}" class="btn btn-secondary ms-2">
@@ -139,7 +147,47 @@
             </form>
         </div>
     </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title" id="confirmationModalLabel">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Confirm Changes
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="fw-bold mb-4">Are you sure you want to modify this patient record? Please review the changes below:</p>
+                    
+                    <div class="alert alert-info d-flex align-items-center mb-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <span>Only fields with changes are shown below</span>
+                    </div>
+                    
+                    <div id="changesContainer">
+                        <!-- Changes will be dynamically inserted here -->
+                    </div>
+
+                    <div id="noChangesMessage" class="alert alert-success text-center" style="display: none;">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <strong>No changes detected.</strong> All fields remain the same.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Cancel
+                    </button>
+                    <button type="button" class="btn btn-primary" id="confirmSave">
+                        <i class="fas fa-check me-1"></i> Yes, Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
+
 @section('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -166,6 +214,206 @@
                     }
                 }, 1000);
             }
+
+            // Confirmation modal functionality
+            const saveButton = document.getElementById('saveButton');
+            const confirmSaveButton = document.getElementById('confirmSave');
+            const patientForm = document.getElementById('patientForm');
+            const confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
+            const changesContainer = document.getElementById('changesContainer');
+            const noChangesMessage = document.getElementById('noChangesMessage');
+
+            // Store original values
+            const originalValues = {
+                date_processed: '{{ $patientRecord->date_processed }}',
+                control_number: '{{ $patientRecord->control_number }}',
+                case_type: '{{ $patientRecord->case_type }}',
+                claimant_name: '{{ $patientRecord->claimant_name }}',
+                case_category: '{{ $patientRecord->case_category }}',
+                diagnosis: '{{ $patientRecord->diagnosis }}',
+                patient_name: '{{ $patientRecord->patient_name }}',
+                age: '{{ $patientRecord->age }}',
+                contact_number: '{{ $patientRecord->contact_number }}',
+                address: '{{ $patientRecord->address }}',
+                case_worker: '{{ $patientRecord->case_worker }}'
+            };
+
+            saveButton.addEventListener('click', function() {
+                // Update modal with comparison
+                updateModalComparison();
+                
+                // Show confirmation modal
+                confirmationModal.show();
+            });
+
+            confirmSaveButton.addEventListener('click', function() {
+                // Disable the confirm button and show loading
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving...';
+                
+                // Disable the original save button and show loading
+                saveButton.disabled = true;
+                saveButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving...';
+                
+                // Hide modal and submit form
+                confirmationModal.hide();
+                
+                // Submit the form
+                patientForm.submit();
+            });
+
+            function updateModalComparison() {
+                const fields = [
+                    'date_processed', 'control_number', 'case_type', 'claimant_name', 
+                    'case_category', 'diagnosis', 'patient_name', 'age', 
+                    'contact_number', 'address', 'case_worker'
+                ];
+
+                let hasChanges = false;
+                let changesHTML = '';
+
+                // Group fields by section
+                const caseDetailsFields = ['date_processed', 'control_number', 'case_type', 'claimant_name', 'case_category', 'diagnosis'];
+                const patientInfoFields = ['patient_name', 'age', 'contact_number', 'address', 'case_worker'];
+
+                // Check for changes in Case Details
+                let caseDetailsChanges = '';
+                caseDetailsFields.forEach(field => {
+                    const originalValue = originalValues[field];
+                    const newValue = document.getElementById(field).value;
+                    
+                    if (originalValue !== newValue) {
+                        hasChanges = true;
+                        caseDetailsChanges += `
+                            <div class="mb-3 field-comparison changed">
+                                <strong>${formatFieldName(field)}:</strong><br>
+                                <span class="text-danger"><del>${escapeHtml(originalValue)}</del></span> 
+                                <i class="fas fa-arrow-right mx-2 text-muted"></i>
+                                <span class="text-success"><ins>${escapeHtml(newValue)}</ins></span>
+                            </div>
+                        `;
+                    }
+                });
+
+                // Check for changes in Patient Information
+                let patientInfoChanges = '';
+                patientInfoFields.forEach(field => {
+                    const originalValue = originalValues[field];
+                    const newValue = document.getElementById(field).value;
+                    
+                    if (originalValue !== newValue) {
+                        hasChanges = true;
+                        patientInfoChanges += `
+                            <div class="mb-3 field-comparison changed">
+                                <strong>${formatFieldName(field)}:</strong><br>
+                                <span class="text-danger"><del>${escapeHtml(originalValue)}</del></span> 
+                                <i class="fas fa-arrow-right mx-2 text-muted"></i>
+                                <span class="text-success"><ins>${escapeHtml(newValue)}</ins></span>
+                            </div>
+                        `;
+                    }
+                });
+
+                // Build the final HTML
+                if (hasChanges) {
+                    changesHTML = `
+                        <div class="row">
+                            ${caseDetailsChanges ? `
+                                <div class="col-md-6">
+                                    <h6 class="text-primary border-bottom pb-2">Case Details Changes</h6>
+                                    ${caseDetailsChanges}
+                                </div>
+                            ` : ''}
+                            
+                            ${patientInfoChanges ? `
+                                <div class="col-md-6">
+                                    <h6 class="text-primary border-bottom pb-2">Patient Information Changes</h6>
+                                    ${patientInfoChanges}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                    
+                    changesContainer.innerHTML = changesHTML;
+                    noChangesMessage.style.display = 'none';
+                    changesContainer.style.display = 'block';
+                } else {
+                    changesContainer.style.display = 'none';
+                    noChangesMessage.style.display = 'block';
+                }
+            }
+
+            function formatFieldName(field) {
+                const names = {
+                    date_processed: 'Date Processed',
+                    control_number: 'Control Number',
+                    case_type: 'Case Type',
+                    claimant_name: 'Claimant Name',
+                    case_category: 'Case Category',
+                    diagnosis: 'Diagnosis',
+                    patient_name: 'Patient Name',
+                    age: 'Age',
+                    contact_number: 'Contact Number',
+                    address: 'Address',
+                    case_worker: 'Case Worker'
+                };
+                return names[field] || field;
+            }
+
+            function escapeHtml(unsafe) {
+                return unsafe
+                    .toString()
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
+
+            // Reset button state if modal is closed without confirming
+            document.getElementById('confirmationModal').addEventListener('hidden.bs.modal', function() {
+                confirmSaveButton.disabled = false;
+                confirmSaveButton.innerHTML = '<i class="fas fa-check me-1"></i> Yes, Save Changes';
+                
+                // Only reset save button if form wasn't submitted
+                if (!saveButton.disabled) {
+                    saveButton.innerHTML = '<i class="fas fa-save me-1"></i> Save';
+                }
+            });
         });
     </script>
+
+    <style>
+        .field-comparison.changed {
+            background-color: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 4px solid #28a745;
+            transition: all 0.3s ease;
+            margin-bottom: 12px;
+        }
+        del {
+            text-decoration: line-through;
+            color: #dc3545;
+            background-color: #f8d7da;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        ins {
+            text-decoration: none;
+            color: #155724;
+            background-color: #d4edda;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+        .field-comparison strong {
+            color: #495057;
+            margin-bottom: 4px;
+            display: block;
+        }
+        .text-primary {
+            color: #2c5aa0 !important;
+        }
+    </style>
 @endsection
