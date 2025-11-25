@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\StatisticsController;
 use App\Http\Controllers\Admin\TimeSeriesController;
 use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\Admin\AuditLogsController;
+use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\OnlinePatientApplicationController;
 use App\Http\Controllers\Admin\PatientRecordsController;
 use App\Http\Controllers\Admin\ProcessTrackingController;
@@ -121,6 +122,15 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     Route::get('statistics/deficiencies', [StatisticsController::class, 'getDeficiencyData'])->name('statistics.deficiencies');
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::delete('settings/delete-all', [SettingsController::class, 'deleteAll'])->name('settings.deleteAll');
+// Add this to your admin routes group in web.php
+Route::group(['prefix' => 'notifications', 'as' => 'notifications.'], function () {
+    Route::get('/unread-count', [NotificationController::class, 'getUnreadCount'])->name('unread-count');
+    Route::get('/list', [NotificationController::class, 'getNotifications'])->name('list');
+    Route::post('/{id}/read', [NotificationController::class, 'markAsRead'])->name('mark-read');
+    Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('mark-all-read');
+    Route::get('/', [NotificationController::class, 'index'])->name('index');
+});
+    
 });
 
 

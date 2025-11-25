@@ -12,12 +12,14 @@ use App\Http\Requests\UpdatePatientRecordRequest;
 use App\Models\PatientRecord;
 use App\Models\PatientStatusLog;
 use App\Models\PatientTrackingNumber;
+use App\Services\NotificationService;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Mockery\Matcher\Not;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -93,13 +95,14 @@ class PatientRecordsController extends Controller
         // Create the patient record if eligible
         $patientRecord = PatientRecord::create($request->all());
 
-        PatientStatusLog::create([
+        $statusLog = PatientStatusLog::create([
             'patient_id' => $patientRecord->id,
             'status' => PatientStatusLog::STATUS_PROCESSING,
             'user_id' => Auth::id(),
             'created_at' => now(),
             'status_date' => now(),
         ]);
+        NotificationService::createNewPatientNotifications($statusLog);
 
 
         do {
@@ -225,7 +228,7 @@ class PatientRecordsController extends Controller
         $statusDate = $request->input('submitted_date');
 
         // Create status log
-        PatientStatusLog::create([
+       $statusLog = PatientStatusLog::create([
             'patient_id' => $id,
             'status' => $status,
             'user_id' => Auth::id(),
@@ -233,6 +236,7 @@ class PatientRecordsController extends Controller
             'remarks' => $request->remarks,
             'created_at' => now(),
         ]);
+        NotificationService::createStatusLogNotifications($statusLog);
 
         $patientRecord = PatientRecord::with('latestStatusLog')->findOrFail($id);
 
@@ -336,7 +340,7 @@ class PatientRecordsController extends Controller
 
         $statusDate = $request->input('submitted_date');
 
-        PatientStatusLog::create([
+        $statusLog = PatientStatusLog::create([
             'patient_id'  => $id,
             'status'      => 'Submitted[Emergency]',
             'user_id'     => Auth::id(),
@@ -344,6 +348,7 @@ class PatientRecordsController extends Controller
             'remarks'     => $request->remarks,
             'created_at'  => now(),
         ]);
+        NotificationService::createStatusLogNotifications($statusLog);
 
         $patientRecord = PatientRecord::with('latestStatusLog')->findOrFail($id);
 

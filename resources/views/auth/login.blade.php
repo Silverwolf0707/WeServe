@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>WeServe Login</title>
-  <link rel="icon" href="{{ asset('WeServe Logo.png') }}" type="image/x-icon" />
+  <link rel="icon" type="image/png+xml" href="{{ asset('logo.png') }}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -251,7 +251,7 @@
     <div class="login-card">
       <div class="brand-section-inside">
         <div class="logo-circle">
-          <img src="{{ asset('WeServe Logo.png') }}" alt="WeServe Logo" width="42" height="42" />
+          <img src="{{ asset('logo.png') }}?v=1.0" alt="WeServe Logo" width="42" height="42" />
         </div>
         <h1 class="brand-title">WeServe</h1>
         <p class="brand-subtitle">Financial Aid Management System</p>

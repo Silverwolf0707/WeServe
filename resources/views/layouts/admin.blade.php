@@ -10,7 +10,7 @@
 
   <title>WeServe</title>
   <!-- Favicon -->
-  <link rel="icon" type="image/png+xml" href="{{ asset('WeServe Logo.png') }}">
+  <link rel="icon" type="image/png+xml" href="{{ asset('logo.png') }}">
 
   <!-- Bootstrap 5.3 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -40,7 +40,13 @@
   <!-- AdminLTE and Custom Styles -->
   <link href="{{ asset('css/adminltev3.css') }}" rel="stylesheet">
   <link href="{{ asset('css/custom.css') }}" rel="stylesheet">
-  @vite(['resources/js/app.js', 'resources/css/app.css'])
+  @if(app()->isLocal())
+    @vite(['resources/js/app.js', 'resources/css/app.css'])
+@else
+    <!-- Production assets -->
+    <link rel="stylesheet" href="{{ asset('resources/css/app.css') }}">
+    <script src="{{ asset('resources/js/app.js') }}" defer></script>
+@endif
 
 
   @yield('styles')
@@ -98,13 +104,85 @@
         </div>
     </div>
   <div class="wrapper">
-    <nav class="main-header navbar navbar-expand bg-white navbar-light border-bottom">
-      <!-- Left navbar links -->
-      <ul class="navbar-nav">
+<nav class="main-header navbar navbar-expand bg-white navbar-light border-bottom">
+    <!-- Left navbar links -->
+    <ul class="navbar-nav">
         <li class="nav-item">
-          <a class="nav-link" data-widget="pushmenu" href="#"><i class="fa fa-bars"></i></a>
+            <a class="nav-link" data-widget="pushmenu" href="#"><i class="fa fa-bars"></i></a>
         </li>
-      </ul>
+    </ul>
+
+<!-- Right navbar links -->
+<ul class="navbar-nav ms-auto">
+    <!-- Notification Bell -->
+    <li class="nav-item dropdown">
+        <a class="nav-link" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false" id="notificationDropdown">
+            <i class="fa fa-bell"></i>
+            <!-- Notification Badge -->
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notification-badge" id="notification-badge" style="display: none;">
+                0
+                <span class="visually-hidden">unread notifications</span>
+            </span>
+        </a>
+        <div class="dropdown-menu dropdown-menu-end dropdown-menu-lg notification-dropdown" style="width: 400px;">
+            <!-- Dropdown Header -->
+            <div class="dropdown-header bg-light py-3 notification-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-bell me-2"></i>Notifications<span class="beta-tag">BETA</span></h6>
+                    <div>
+                        <span class="badge bg-primary" id="notification-count" style="display: none;">0 new</span>
+                        <button class="btn btn-sm btn-outline-secondary ms-2" id="refresh-notifications" title="Refresh">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- Add this right after the notification header div -->
+<div class="dropdown-header bg-light py-2 border-bottom">
+    <div class="d-flex justify-content-between align-items-center">
+        <small class="text-muted">Filter by Department</small>
+        <button class="btn btn-sm btn-outline-secondary" id="clear-filter" style="display: none;">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+</div>
+
+<div class="px-3 py-2">
+    <select class="form-select form-select-sm" id="department-filter">
+        <option value="">All Departments</option>
+        <option value="CSWD Office">CSWD Office</option>
+        <option value="Mayor's Office">Mayor's Office</option>
+        <option value="Budget Office">Budget Office</option>
+        <option value="Accounting Office">Accounting Office</option>
+        <option value="Treasury Office">Treasury Office</option>
+    </select>
+</div>
+            
+            <!-- Notification Items Container with Scroll -->
+            <div class="notification-items-container">
+                <div class="notification-items">
+                    <!-- Notifications will be dynamically loaded here -->
+                    <div class="dropdown-item text-center py-4 notification-loading">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+            
+           
+            <div class="dropdown-divider"></div>
+            <div class="d-flex justify-content-between px-3 py-2 notification-actions">
+                
+                <button class="btn btn-sm btn-outline-secondary" id="mark-all-read">
+                    <i class="fas fa-check-double me-1"></i> Mark All Read
+                </button>
+            </div>
+        </div>
+    </li>
+</ul>
+</nav>
 
       <!-- Right navbar links -->
       @if(count(config('panel.available_languages', [])) > 1)
@@ -407,6 +485,267 @@
         document.body.classList.toggle('dark-mode', savedTheme === 'dark');
     });
     </script>
+ <script>
+class NotificationManager {
+    constructor() {
+        this.notificationBadge = document.getElementById('notification-badge');
+        this.notificationCount = document.getElementById('notification-count');
+        this.notificationItemsContainer = document.querySelector('.notification-items');
+        this.departmentFilter = document.getElementById('department-filter');
+        this.clearFilterBtn = document.getElementById('clear-filter');
+        this.currentFilter = '';
+        
+        this.init();
+    }
+
+    init() {
+        this.loadNotifications();
+        this.setupEventListeners();
+        this.startPolling();
+    }
+
+    setupEventListeners() {
+        // Handle notification click - redirect to process tracking
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.notification-item')) {
+                e.preventDefault();
+                const notificationItem = e.target.closest('.notification-item');
+                const notificationId = notificationItem.dataset.id;
+                const patientId = notificationItem.dataset.patientId;
+                
+                // Mark as read first
+                this.markAsRead(notificationId);
+                
+                // Then redirect to process tracking
+                if (patientId) {
+                    window.location.href = `/admin/process-tracking/${patientId}`;
+                }
+            }
+        });
+
+        // Department filter change
+        if (this.departmentFilter) {
+            this.departmentFilter.addEventListener('change', (e) => {
+                this.applyFilter(e.target.value);
+            });
+        }
+
+        // Clear filter button
+        if (this.clearFilterBtn) {
+            this.clearFilterBtn.addEventListener('click', () => {
+                this.clearFilter();
+            });
+        }
+
+        // Mark all as read
+        const markAllReadBtn = document.getElementById('mark-all-read');
+        if (markAllReadBtn) {
+            markAllReadBtn.addEventListener('click', () => this.markAllAsRead());
+        }
+
+        // Refresh notifications
+        const refreshNotificationsBtn = document.getElementById('refresh-notifications');
+        if (refreshNotificationsBtn) {
+            refreshNotificationsBtn.addEventListener('click', () => this.loadNotifications());
+        }
+    }
+
+    applyFilter(filterValue) {
+        this.currentFilter = filterValue;
+        
+        // Update UI
+        if (this.departmentFilter) {
+            this.departmentFilter.value = filterValue;
+        }
+        
+        // Show/hide clear filter button
+        if (this.clearFilterBtn) {
+            this.clearFilterBtn.style.display = filterValue ? 'block' : 'none';
+        }
+        
+        // Reload notifications with filter
+        this.loadNotifications();
+    }
+
+    clearFilter() {
+        this.applyFilter('');
+    }
+
+    async loadNotifications() {
+        try {
+            const params = new URLSearchParams();
+            if (this.currentFilter) {
+                params.append('department', this.currentFilter);
+            }
+
+            const response = await fetch(`/admin/notifications/list?${params}`);
+            const notifications = await response.json();
+            
+            this.updateNotificationBadge(notifications);
+            this.renderNotifications(notifications);
+        } catch (error) {
+            console.error('Failed to load notifications:', error);
+            this.showErrorMessage();
+        }
+    }
+
+    updateNotificationBadge(notifications) {
+        const unreadCount = notifications.filter(n => !n.is_read).length;
+        
+        if (this.notificationBadge) {
+            this.notificationBadge.textContent = unreadCount;
+            this.notificationBadge.style.display = unreadCount > 0 ? 'block' : 'none';
+        }
+        
+        if (this.notificationCount) {
+            this.notificationCount.textContent = `${unreadCount} new`;
+            this.notificationCount.style.display = unreadCount > 0 ? 'inline-block' : 'none';
+        }
+    }
+
+    renderNotifications(notifications) {
+        if (!this.notificationItemsContainer) {
+            console.error('Notification items container not found');
+            return;
+        }
+
+        // Clear existing content
+        this.notificationItemsContainer.innerHTML = '';
+
+        if (notifications.length === 0) {
+            this.showEmptyMessage();
+            return;
+        }
+
+        notifications.forEach(notification => {
+            const notificationEl = this.createNotificationElement(notification);
+            this.notificationItemsContainer.insertAdjacentHTML('beforeend', notificationEl);
+        });
+    }
+
+    createNotificationElement(notification) {
+        const readClass = notification.is_read ? '' : 'unread-notification';
+        const iconClass = `bg-${notification.icon_color} rounded-circle d-flex align-items-center justify-content-center`;
+        
+        return `
+            <a href="/admin/process-tracking/${notification.patient_id}" class="dropdown-item d-flex align-items-start py-3 notification-item ${readClass}" data-id="${notification.id}" data-patient-id="${notification.patient_id}">
+                <div class="flex-shrink-0 me-3">
+                    <div class="${iconClass}" style="width: 40px; height: 40px;">
+                        <i class="${notification.icon} text-white"></i>
+                    </div>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h6 class="mb-1">${this.escapeHtml(notification.title)}</h6>
+                        <small class="text-muted">${this.escapeHtml(notification.time_ago)}</small>
+                    </div>
+                    <p class="mb-0 text-muted small">${this.escapeHtml(notification.message)}</p>
+                    <div class="d-flex justify-content-between align-items-center mt-1">
+                        <small class="text-muted">By: ${this.escapeHtml(notification.user_name)}</small>
+                        <span class="badge bg-light text-dark border">${this.escapeHtml(notification.department)}</span>
+                    </div>
+                </div>
+            </a>
+            <div class="dropdown-divider"></div>
+        `;
+    }
+
+    showEmptyMessage() {
+        const filterMessage = this.currentFilter 
+            ? `No notifications for ${this.currentFilter}`
+            : 'No notifications';
+
+        this.notificationItemsContainer.innerHTML = `
+            <div class="dropdown-item text-center py-4">
+                <i class="fas fa-bell-slash text-muted mb-2" style="font-size: 2rem;"></i>
+                <p class="text-muted mb-0">${filterMessage}</p>
+                ${this.currentFilter ? `
+                    <button class="btn btn-sm btn-outline-primary mt-2" onclick="notificationManager.clearFilter()">
+                        <i class="fas fa-eye me-1"></i> Show All
+                    </button>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    showErrorMessage() {
+        if (this.notificationItemsContainer) {
+            this.notificationItemsContainer.innerHTML = `
+                <div class="dropdown-item text-center py-4">
+                    <i class="fas fa-exclamation-triangle text-warning mb-2" style="font-size: 2rem;"></i>
+                    <p class="text-muted mb-0">Failed to load notifications</p>
+                    <button class="btn btn-sm btn-primary mt-2" onclick="notificationManager.loadNotifications()">
+                        <i class="fas fa-redo me-1"></i> Retry
+                    </button>
+                </div>
+            `;
+        }
+    }
+
+    escapeHtml(unsafe) {
+        if (!unsafe) return '';
+        return unsafe
+            .toString()
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    async markAsRead(notificationId) {
+        try {
+            await fetch(`/admin/notifications/${notificationId}/read`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            });
+            
+            // Update UI immediately
+            const notificationEl = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
+            if (notificationEl) {
+                notificationEl.classList.remove('unread-notification');
+            }
+            
+            // Reload notifications to update counts
+            this.loadNotifications();
+        } catch (error) {
+            console.error('Failed to mark notification as read:', error);
+        }
+    }
+
+    async markAllAsRead() {
+        try {
+            await fetch('/admin/notifications/mark-all-read', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            });
+            
+            this.loadNotifications();
+        } catch (error) {
+            console.error('Failed to mark all notifications as read:', error);
+        }
+    }
+
+    startPolling() {
+        // Refresh notifications every 30 seconds
+        setInterval(() => {
+            this.loadNotifications();
+        }, 30000);
+    }
+}
+
+// Initialize when DOM is loaded
+let notificationManager;
+document.addEventListener('DOMContentLoaded', function() {
+    notificationManager = new NotificationManager();
+});
+</script>
     @stack('scripts')
 
 </body>

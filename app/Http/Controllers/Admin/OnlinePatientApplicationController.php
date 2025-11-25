@@ -7,6 +7,7 @@ use App\Models\OnlinePatientApplication;
 use App\Models\PatientRecord;
 use App\Models\PatientStatusLog;
 use App\Models\PatientTrackingNumber;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -60,7 +61,7 @@ class OnlinePatientApplicationController extends Controller
                 'tracking_created_at' => $application->created_at,
             ]);
 
-            PatientStatusLog::create([
+            $statusLog = PatientStatusLog::create([
                 'patient_id' => $patient->id,
                 'status' => 'Processing',
                 'remarks' => 'Application accepted please go to the CSWD office for further processing.',
@@ -68,11 +69,17 @@ class OnlinePatientApplicationController extends Controller
                 'user_id' => Auth::id(),
                 'created_at' => now(),
             ]);
+            NotificationService::createNewPatientNotifications($statusLog);
 
             $application->delete();
         });
 
         return redirect()->route('admin.online-applications.index')
-            ->with('success', 'Application transferred successfully.');
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'Transfer Successful',
+                'message' => 'Application transferred successfully.',
+                'time' => now()->diffForHumans(),
+            ]);
     }
 }

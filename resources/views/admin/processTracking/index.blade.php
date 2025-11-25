@@ -472,6 +472,7 @@
             function getDepartment(status) {
                 const cleanStatus = status.replace('[ROLLED BACK]', '').trim();
                 const statusMap = {
+                    'Processing': 'CSWD Office',
                     'Submitted': "Mayor's Office",
                     'Submitted[Emergency]': "Mayor's Office",
                     'Approved': 'Budget Office',
@@ -502,6 +503,7 @@
 
             function generateBadge(status) {
                 const icons = {
+                    'Processing': 'fa-spinner',
                     'Submitted': 'fa-paper-plane',
                     'Submitted[Emergency]': 'fa-exclamation-triangle',
                     'Approved': 'fa-thumbs-up',

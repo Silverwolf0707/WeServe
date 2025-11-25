@@ -3,11 +3,10 @@
         class="brand-link d-flex align-items-center py-3 px-3 border-bottom text-decoration-none">
 
         <span class="brand-icon d-flex align-items-center justify-content-center">
-            <img src="{{ asset('WeServe Logo.png') }}" alt="Logo" class="rounded-circle border border-2"
-                style="height: 40px; width: 40px; object-fit: cover;">
+            <img src="{{ asset('logo.png') }}" alt="Logo" style="height: 40px; width: 40px; object-fit: cover;">
         </span>
-        <span class="brand-text fw-bold ms-3 fs-5 text-light" style="letter-spacing: 0.5px;">
-            {{ trans('panel.site_title') }}
+        <span class="brand-text fw-bold ms-3 fs-5 text-light" style="margin-left: 1rem;">
+            <img src="{{ asset('WeServe1.png') }}" alt="WeServe Logo" class="logo-full" loading="eager">
         </span>
     </a>
 
@@ -76,7 +75,7 @@
                     <li class="nav-item">
                         <a href="{{ route('admin.patient-records.index') }}"
                             class="nav-link {{ request()->is('admin/patient-records*') ? 'active' : '' }}">
-                            <i class="nav-icon fas fa-cogs"></i>
+                            <i class="nav-icon fas fa-briefcase"></i>
                             <p>Patient Records</p>
                         </a>
                     </li>
@@ -85,11 +84,35 @@
                     <li class="nav-item">
                         <a href="{{ route('admin.online-applications.index') }}"
                             class="nav-link {{ request()->is('admin/online-applications*') ? 'active' : '' }}">
-                            <i class="nav-icon fas fa-cogs"></i>
-                            <p>Online Application</p>
+                            <i class="nav-icon fas fa-globe"></i>
+                            <p>
+                                Online Records
+                                <span class="beta-tag">BETA</span>
+                            </p>
                         </a>
                     </li>
                 @endcan
+                <style>
+                    .beta-tag {
+                        background: #ffc107;
+                        color: #000;
+                        font-size: 0.6rem;
+                        font-weight: bold;
+                        padding: 2px 6px;
+                        border-radius: 4px;
+                        margin-left: 8px;
+                        text-transform: uppercase;
+                        position: relative;
+                        top: -2px;
+                    }
+
+                    /* Or if using Bootstrap classes */
+                    .beta-badge {
+                        font-size: 0.6rem;
+                        margin-left: 8px;
+                        vertical-align: top;
+                    }
+                </style>
 
                 @can('process_tracking_access')
                     <li class="nav-item">
@@ -107,7 +130,7 @@
                     <li class="nav-item">
                         <a href="{{ route('admin.document-management.index') }}"
                             class="nav-link {{ request()->is('admin/document-management*') ? 'active' : '' }}">
-                            <i class="nav-icon fas fa-briefcase"></i>
+                            <i class="nav-icon fas fa-folder"></i>
                             <p>Documents</p>
                         </a>
                     </li>
@@ -122,10 +145,12 @@
                     </li>
                 @endcan
 
-                @if (auth()->user()->can('CSWD-ANALYTICS') ||
+                @if (
+                        auth()->user()->can('CSWD-ANALYTICS') ||
                         auth()->user()->can('BUDGET-ANALYTICS') ||
                         auth()->user()->can('TREASURY-ANALYTICS') ||
-                        auth()->user()->can('ACCOUNTING-ANALYTICS'))
+                        auth()->user()->can('ACCOUNTING-ANALYTICS')
+                    )
                     <li class="nav-item has-treeview {{ request()->is('admin/time-series*') ? 'menu-open' : '' }}">
                         <a href="#" class="nav-link {{ request()->is('admin/time-series*') ? 'active' : '' }}">
                             <i class="nav-icon fas fa-chart-line"></i>
@@ -203,8 +228,7 @@
                 </li>
 
                 <li class="nav-item">
-                    <a href="#" class="nav-link text-danger" data-bs-toggle="modal"
-                        data-bs-target="#logoutModal">
+                    <a href="#" class="nav-link text-danger" data-bs-toggle="modal" data-bs-target="#logoutModal">
                         <i class="fas fa-sign-out-alt nav-icon"></i>
                         <p>Logout</p>
                     </a>
@@ -224,17 +248,28 @@
         justify-content: flex-start;
         padding: 0.75rem 1rem;
         overflow: hidden;
+        border-bottom: 2px solid;
+
+        background: white !important;
     }
 
     .brand-icon img {
-        width: 40px;
-        height: 40px;
+        width: 45px !important;
+        height: 45px !important;
         border-radius: 50%;
         border: 2px solid #fff;
         object-fit: cover;
         flex-shrink: 0;
         transition: transform 0.3s ease;
+
     }
+
+    .logo-full {
+        transform: translateX(-10px);
+        height: 35px;
+        width: auto;
+    }
+
 
     .brand-text {
         margin-left: 12px;
@@ -303,6 +338,19 @@
         overflow-y: auto;
         overflow-x: hidden;
         transition: all 0.3s ease;
+
+        /* Hide scrollbar but keep functionality */
+        scrollbar-width: none;
+        /* Firefox */
+        -ms-overflow-style: none;
+        /* IE and Edge */
+    }
+
+    /* Hide scrollbar for Chrome, Safari and Opera */
+    .main-sidebar::-webkit-scrollbar {
+        display: none;
+        width: 0;
+        height: 0;
     }
 
     .main-sidebar .sidebar {
@@ -318,18 +366,13 @@
     body.sidebar-collapse .main-sidebar:hover {
         width: 250px;
         overflow-y: auto !important;
+
+        /* Hide scrollbar on hover too */
+        scrollbar-width: none;
+        -ms-overflow-style: none;
     }
 
-    .main-sidebar::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .main-sidebar::-webkit-scrollbar-thumb {
-        background-color: rgba(255, 255, 255, 0.2);
-        border-radius: 10px;
-    }
-
-    .main-sidebar::-webkit-scrollbar-track {
-        background: transparent;
+    body.sidebar-collapse .main-sidebar:hover::-webkit-scrollbar {
+        display: none;
     }
 </style>

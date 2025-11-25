@@ -1,21 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WeServe - Financial Assistance</title>
-    <link rel="stylesheet" href="{{ asset('css/onlineApplication.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
-
-<body class="body">
-
+@extends('layouts.home')
+@section('content')
     <header class="header" role="banner">
         <div class="header-container">
             <a href="#home" class="logo-title" aria-label="WeServe Home">
-                <img src="{{ asset('WeServe Logo.png') }}" alt="WeServe Logo" class="logo" loading="eager">
-                <span class="logo-text">WeServe</span>
+                <img src="{{ asset('WeServe.png') }}" alt="WeServe Logo" class="logo-full" loading="eager">
             </a>
 
             <button class="burger" onclick="toggleMenu()" aria-label="Toggle Menu">
@@ -32,6 +20,7 @@
     </header>
 
 
+
     <main id="home">
         <section class="hero">
             <div class="container hero-container">
@@ -42,7 +31,7 @@
                         facing
                         emergencies or difficult situations. Apply now to check if you qualify for assistance.
                     </p>
-                    <button onclick="openModal('applicationModal')" class="btn btn-green"
+                    <button type="button" class="btn btn-green" data-bs-toggle="modal" data-bs-target="#applicationModal"
                         aria-label="Start Application">
                         Start Application
                     </button>
@@ -57,7 +46,6 @@
         <!-- About Us Section -->
         <section id="about" class="about">
             <div class="about-container">
-
                 <div class="about-text">
                     <h2>About Us</h2>
                     <p>
@@ -75,12 +63,9 @@
 
                 <div class="about-slider-wrapper">
                     <div id="aboutSlider" class="about-slider">
-                        <img class="slide" src="cswd1.jpg" alt="Community Work"
-                            loading="lazy">
-                        <img class="slide" src="cswd2.jpg" alt="CSWD Office"
-                            loading="lazy">
-                        <img class="slide" src="cswd3.jpg" alt="Support Services"
-                            loading="lazy">
+                        <img class="slide" src="cswd1.jpg" alt="Community Work" loading="lazy">
+                        <img class="slide" src="cswd2.jpg" alt="CSWD Office" loading="lazy">
+                        <img class="slide" src="cswd3.jpg" alt="Support Services" loading="lazy">
                     </div>
 
                     <div id="sliderDots" class="slider-dots"></div>
@@ -92,7 +77,6 @@
             <div class="container">
                 <h2>Service Categories</h2>
                 <div class="categories-grid">
-
                     <div class="category-card educational">
                         <div class="category-icon-circle">
                             <i class="fas fa-graduation-cap"></i>
@@ -124,7 +108,6 @@
                         <h3>Emergency</h3>
                         <p>Immediate support during emergencies and disasters.</p>
                     </div>
-
                 </div>
             </div>
         </section>
@@ -133,15 +116,14 @@
             <div class="container text-center">
                 <h2>Application Process</h2>
                 <div class="grid-3">
-
                     <div class="process-card">
                         <div class="step-circle step-1">
                             <i class="fas fa-file-alt"></i>
                         </div>
                         <h3>Complete Application</h3>
                         <p>Fill out our simple online form with your info and financial needs.</p>
-                        <button onclick="openModal('applicationModal')" class="btn btn-green"
-                            aria-label="Open Application Form">
+                        <button type="button" class="btn btn-green" data-bs-toggle="modal"
+                            data-bs-target="#applicationModal" aria-label="Open Application Form">
                             Start Application
                         </button>
                     </div>
@@ -152,11 +134,11 @@
                         </div>
                         <h3>Review Process</h3>
                         <p>Our team reviews your application and may contact you for more info.</p>
-                        <button onclick="openModal('trackModal')" class="btn btn-blue" aria-label="Track Application">
+                        <button type="button" class="btn btn-blue" data-bs-toggle="modal" data-bs-target="#trackModal"
+                            aria-label="Track Application">
                             Track Process
                         </button>
                     </div>
-
 
                     <div class="process-card">
                         <div class="step-circle step-3">
@@ -165,7 +147,6 @@
                         <h3>Receive Assistance</h3>
                         <p>If approved, assistance is sent directly to your medical provider.</p>
                     </div>
-
                 </div>
             </div>
         </section>
@@ -184,241 +165,395 @@
             </div>
             <div class="copyright">&copy; 2023 WeServe. All rights reserved.</div>
         </footer>
+    </main>
 
-        <div id="applicationModal" class="modal hidden" role="dialog" aria-modal="true"
-            aria-labelledby="applicationModalTitle">
-            <div class="modal-dialog">
-                <button onclick="closeModal('applicationModal')" class="modal-close" aria-label="Close">
-                    <i class="fas fa-times" aria-hidden="true"></i>
-                </button>
-                <h2 class="modal-title" id="applicationModalTitle">📑 Application Form</h2>
+    <!-- Application Modal - Bootstrap -->
+    <div class="modal fade" id="applicationModal" tabindex="-1" aria-labelledby="applicationModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="applicationModalTitle">📑 Application Form</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="applicationForm" action="{{ route('applications.store') }}" method="POST">
+                        @csrf
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Applicant Name</label>
+                                <input type="text" name="applicant_name" id="applicant_name" class="form-control" required>
+                                <div class="form-text">Applicant's Full Name.</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Age</label>
+                                <input type="number" name="age" id="age" class="form-control" required>
+                                <div class="form-text">Applicant's Age.</div>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label class="form-label">Address</label>
+                                <input type="text" name="address" id="address" class="form-control" required>
+                                <div class="form-text">Applicant's Full Address.</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Contact Number</label>
+                                <input type="tel" name="contact_number" id="contact_number" class="form-control"
+                                    maxlength="11" pattern="[0-9]{11}"
+                                    oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);"
+                                    title="Please enter exactly 11 digits" required>
+                                <div class="form-text">Enter 11-digit mobile number.</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Claimant Name</label>
+                                <input type="text" name="claimant_name" id="claimant_name" class="form-control" required>
+                                <div class="form-text">Claimant's Full Name.</div>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label class="form-label">Diagnosis (Optional)</label>
+                                <input type="text" name="diagnosis" id="diagnosis" class="form-control">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Type</label>
+                                <select name="case_type" id="case_type" class="form-select" required>
+                                    <option value disabled selected>Please select</option>
+                                    @foreach (App\Models\PatientRecord::CASE_TYPE_SELECT as $key => $label)
+                                        <option value="{{ $key }}">{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Service Category</label>
+                                <select name="case_category" id="serviceCategory" class="form-select"
+                                    onchange="showRequirements()" required>
+                                    <option value disabled selected>Please select</option>
+                                    @foreach (App\Models\PatientRecord::CASE_CATEGORY_SELECT as $key => $label)
+                                        <option value="{{ $key }}">{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
 
-                <form id="applicationForm" action="{{ route('applications.store') }}" method="POST"
-                    class="modal-form">
-                    @csrf
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>Applicant Name</label>
-                            <input type="text" name="applicant_name" required>
+                        <!-- Requirements -->
+                        <div id="requirements" class="requirements d-none mt-3 p-3 bg-light rounded">
+                            <h6>📂 Required Documents</h6>
+                            <ul id="requirementsList" class="mb-0"></ul>
                         </div>
-                        <div class="form-group">
-                            <label>Age</label>
-                            <input type="number" name="age" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Address</label>
-                            <input type="text" name="address" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Contact Number</label>
-                            <input type="text" name="contact_number" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Claimant Name</label>
-                            <input type="text" name="claimant_name" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Diagnosis (Optional)</label>
-                            <input type="text" name="diagnosis">
-                        </div>
-                        <div class="form-group">
-                            <label>Type</label>
-                            <select name="case_type" required>
-                                <option value="">-- Select --</option>
-                                <option value="Student">Student</option>
-                                <option value="PWD">PWD</option>
-                                <option value="Senior">Senior</option>
-                                <option value="Solo Parent">Solo Parent</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Service Category</label>
-                            <select name="case_category" id="serviceCategory" onchange="showRequirements()" required>
-                                <option value="">-- Select --</option>
-                                <option value="Educational Assistance">Educational Assistance</option>
-                                <option value="Medical Assistance">Medical Assistance</option>
-                                <option value="Burial Assistance">Burial Assistance</option>
-                                <option value="Emergency Assistance">Emergency Assistance</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Requirements -->
-                    <div id="requirements" class="requirements hidden">
-                        <h4>📂 Required Documents</h4>
-                        <ul id="requirementsList"></ul>
-                    </div>
-
-                    <div class="modal-actions">
-                        <button type="button" class="btn btn-gray"
-                            onclick="closeModal('applicationModal')">Cancel</button>
-                        <button type="submit" class="btn btn-green">Submit</button>
-                    </div>
-                </form>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="showConfirmation()">Review & Submit</button>
+                </div>
             </div>
         </div>
+    </div>
 
-        <!-- Tracking Number Modal -->
-        <div id="trackingNumberModal" class="modal hidden" role="dialog" aria-modal="true"
-            aria-labelledby="trackingNumberModalTitle">
-            <div class="modal-dialog text-center">
-                <button onclick="closeModal('trackingNumberModal')" class="modal-close" aria-label="Close">
-                    <i class="fas fa-times" aria-hidden="true"></i>
-                </button>
-
-                <h2 class="modal-title sr-only" id="trackingNumberModalTitle">Application Submitted</h2>
-
-                <div class="tracking-success">
-                    <div class="success-icon"><i class="fas fa-check-circle" aria-hidden="true"></i></div>
-                    <div class="tracking-success-text">🎉 Application Submitted!</div>
+    <!-- Confirmation Modal - Bootstrap -->
+    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalTitle"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmationModalTitle">📋 Confirm Application Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
+                <div class="modal-body">
+                    <div class="confirmation-details">
+                        <h6>Please review your application details:</h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Applicant Name:</strong></td>
+                                        <td id="confirm_applicant_name"></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Age:</strong></td>
+                                        <td id="confirm_age"></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Address:</strong></td>
+                                        <td id="confirm_address"></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Contact Number:</strong></td>
+                                        <td id="confirm_contact_number"></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Claimant Name:</strong></td>
+                                        <td id="confirm_claimant_name"></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Diagnosis:</strong></td>
+                                        <td id="confirm_diagnosis"></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Case Type:</strong></td>
+                                        <td id="confirm_case_type"></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Service Category:</strong></td>
+                                        <td id="confirm_case_category"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Edit Details</button>
+                    <button type="button" class="btn btn-success" onclick="submitApplication()">Confirm & Submit</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                <p class="tracking-label">Your tracking number is:</p>
-                <div class="tracking-display">
-                    <span id="trackingNumberDisplay"></span>
-                    <button onclick="copyTrackingNumber()" class="btn btn-blue" aria-label="Copy Tracking Number">
-                        <i class="fas fa-copy" aria-hidden="true"></i> Copy
+    <!-- Tracking Number Modal - Bootstrap -->
+    <div class="modal fade" id="trackingNumberModal" tabindex="-1" aria-labelledby="trackingNumberModalTitle"
+        aria-hidden="true">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content text-center">
+                <div class="modal-body py-4">
+                    <div class="success-icon mb-3">
+                        <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="text-success mb-3">🎉 Application Submitted!</h5>
+                    <p class="mb-2">Your tracking number is:</p>
+                    <div class="tracking-display mb-3">
+                        <code id="trackingNumberDisplay" class="fs-5 fw-bold d-block p-2 bg-light rounded"></code>
+                    </div>
+                    <button type="button" onclick="copyTrackingNumber()" class="btn btn-primary w-100">
+                        <i class="fas fa-copy"></i> Copy Tracking Number
                     </button>
                 </div>
             </div>
         </div>
+    </div>
 
-        <div id="trackModal" class="modal hidden" role="dialog" aria-modal="true"
-            aria-labelledby="trackModalTitle">
-            <div class="modal-dialog">
-                <button onclick="closeModal('trackModal')" class="modal-close" aria-label="Close">
-                    <i class="fas fa-times" aria-hidden="true"></i>
-                </button>
-                <h2 class="modal-title" id="trackModalTitle">🔍 Track Application</h2>
-                <form action="{{ route('track.application') }}" method="GET" class="modal-form">
-                    <div class="form-group">
-                        <label>Tracking Number</label>
-                        <input type="text" name="tracking_number" required>
-                    </div>
-                    <div class="modal-actions">
-                        <button type="button" class="btn btn-gray"
-                            onclick="closeModal('trackModal')">Cancel</button>
-                        <button type="submit" class="btn btn-blue">Track Now</button>
-                    </div>
-                </form>
+    <!-- Track Modal - Bootstrap -->
+    <div class="modal fade" id="trackModal" tabindex="-1" aria-labelledby="trackModalTitle" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="trackModalTitle">🔍 Track Application</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form action="{{ route('track.application') }}" method="GET">
+                        <div class="mb-3">
+                            <label class="form-label">Tracking Number</label>
+                            <input type="text" name="tracking_number" class="form-control" required>
+                        </div>
+                        <div class="modal-footer px-0 pb-0">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Track Now</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
+    </div>
 
-        @if (session('tracking_number'))
-            <script>
-                document.addEventListener("DOMContentLoaded", function() {
-                    document.getElementById("trackingNumberDisplay").innerText = "{{ session('tracking_number') }}";
-                    openModal("trackingNumberModal");
-                });
-            </script>
-        @endif
-
+    @if (session('tracking_number'))
         <script>
-            let currentSlide = 0;
-            const slides = document.querySelectorAll(".about-slider .slide");
-            const dotsContainer = document.getElementById("sliderDots");
+            document.addEventListener("DOMContentLoaded", function () {
+                document.getElementById("trackingNumberDisplay").innerText = "{{ session('tracking_number') }}";
+                var trackingModal = new bootstrap.Modal(document.getElementById('trackingNumberModal'));
+                trackingModal.show();
+            });
+        </script>
+    @endif
 
-            // Create dots
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll(".about-slider .slide");
+        const dotsContainer = document.getElementById("sliderDots");
+
+        // Create dots
+        if (slides.length > 0 && dotsContainer) {
             slides.forEach((_, i) => {
                 const dot = document.createElement("span");
                 dot.className = "dot";
                 dot.addEventListener("click", () => goToSlide(i));
                 dotsContainer.appendChild(dot);
             });
+        }
 
-            function updateDots() {
-                document.querySelectorAll(".dot").forEach((dot, idx) => {
-                    dot.classList.toggle("active", idx === currentSlide);
-                });
-            }
+        function updateDots() {
+            document.querySelectorAll(".dot").forEach((dot, idx) => {
+                dot.classList.toggle("active", idx === currentSlide);
+            });
+        }
 
-            function goToSlide(index) {
+        function goToSlide(index) {
+            if (slides.length > 0) {
                 currentSlide = (index + slides.length) % slides.length;
                 document.querySelector(".about-slider").style.transform = `translateX(-${currentSlide * 100}%)`;
                 updateDots();
             }
+        }
 
+        if (slides.length > 0) {
             setInterval(() => goToSlide(currentSlide + 1), 4000);
-
             goToSlide(0);
+        }
 
-            function openModal(modalId) {
-                const modal = document.getElementById(modalId);
-                if (modal) modal.classList.remove("hidden");
+        // Modal functions for Bootstrap
+        function openModal(modalId) {
+            const modalElement = document.getElementById(modalId);
+            if (modalElement) {
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
             }
+        }
 
-            function closeModal(modalId) {
-                const modal = document.getElementById(modalId);
-                if (modal) modal.classList.add("hidden");
-            }
-
-            function showRequirements() {
-                const category = document.getElementById("serviceCategory").value;
-                const list = document.getElementById("requirementsList");
-                const wrapper = document.getElementById("requirements");
-
-                list.innerHTML = "";
-                let docs = [];
-
-                if (category === "Medical Assistance") {
-                    docs = [
-                        "Letter Request (Original & Receiving Copy)",
-                        "Certificate of Indigency (Original)",
-                        "Voter’s Certification OR COMELEC Verification",
-                        "Valid ID (Photocopy for claimant/patient)",
-                        "Medical Abstract/Certificate (Original or Certified True Copy)",
-                        "Supporting medical documents (Prescription, Lab request, Operation quotation, Hospital bill – Photocopy)"
-                    ];
-                } else if (category === "Burial Assistance") {
-                    docs = [
-                        "Letter Request (Original & Receiving Copy)",
-                        "Certificate of Indigency (Original)",
-                        "Voter’s Certification OR COMELEC Verification",
-                        "Valid ID (Photocopy for claimant/deceased)",
-                        "Funeral Contract (Original or Certified True Copy)",
-                        "Death Certificate (Original or Certified True Copy)"
-                    ];
-                } else if (category === "Educational Assistance") {
-                    docs = [
-                        "Letter Request (Original & Receiving Copy)",
-                        "Certificate of Indigency (Original)",
-                        "Valid ID (Photocopy)",
-                        "School Assessment/Registration Form",
-                        "Certificate of Enrollment"
-                    ];
-                } else if (category === "Emergency Assistance") {
-                    docs = [
-                        "Letter Request (Original & Receiving Copy)",
-                        "Certificate of Indigency (Original)",
-                        "Valid ID (Photocopy)",
-                        "Supporting Emergency Proof (e.g., Police Report, Fire Report, etc.)"
-                    ];
+        function closeModal(modalId) {
+            const modalElement = document.getElementById(modalId);
+            if (modalElement) {
+                const modal = bootstrap.Modal.getInstance(modalElement);
+                if (modal) {
+                    modal.hide();
                 }
+            }
+        }
 
-                docs.forEach(doc => {
-                    const li = document.createElement("li");
-                    li.textContent = doc;
-                    list.appendChild(li);
+        function showRequirements() {
+            const category = document.getElementById("serviceCategory").value;
+            const list = document.getElementById("requirementsList");
+            const wrapper = document.getElementById("requirements");
+
+            list.innerHTML = "";
+            let docs = [];
+
+            if (category === "Medical Assistance") {
+                docs = [
+                    "Letter Request (Original & Receiving Copy)",
+                    "Certificate of Indigency (Original)",
+                    "Voter's Certification OR COMELEC Verification",
+                    "Valid ID (Photocopy for claimant/patient)",
+                    "Medical Abstract/Certificate (Original or Certified True Copy)",
+                    "Supporting medical documents (Prescription, Lab request, Operation quotation, Hospital bill – Photocopy)"
+                ];
+            } else if (category === "Burial Assistance") {
+                docs = [
+                    "Letter Request (Original & Receiving Copy)",
+                    "Certificate of Indigency (Original)",
+                    "Voter's Certification OR COMELEC Verification",
+                    "Valid ID (Photocopy for claimant/deceased)",
+                    "Funeral Contract (Original or Certified True Copy)",
+                    "Death Certificate (Original or Certified True Copy)"
+                ];
+            } else if (category === "Educational Assistance") {
+                docs = [
+                    "Letter Request (Original & Receiving Copy)",
+                    "Certificate of Indigency (Original)",
+                    "Valid ID (Photocopy)",
+                    "School Assessment/Registration Form",
+                    "Certificate of Enrollment"
+                ];
+            } else if (category === "Emergency Assistance") {
+                docs = [
+                    "Letter Request (Original & Receiving Copy)",
+                    "Certificate of Indigency (Original)",
+                    "Valid ID (Photocopy)",
+                    "Supporting Emergency Proof (e.g., Police Report, Fire Report, etc.)"
+                ];
+            }
+
+            docs.forEach(doc => {
+                const li = document.createElement("li");
+                li.className = "mb-1";
+                li.textContent = doc;
+                list.appendChild(li);
+            });
+
+            // Use Bootstrap's d-none/d-block classes
+            if (docs.length > 0) {
+                wrapper.classList.remove('d-none');
+                wrapper.classList.add('d-block');
+            } else {
+                wrapper.classList.remove('d-block');
+                wrapper.classList.add('d-none');
+            }
+        }
+
+        function toggleMenu() {
+            const navMenu = document.getElementById("navMenu");
+            navMenu.classList.toggle("show");
+        }
+
+        function copyTrackingNumber() {
+            const track = document.getElementById("trackingNumberDisplay");
+            if (track) {
+                navigator.clipboard.writeText(track.innerText).then(() => {
+                    toastMessage('success', 'Copied!', 'Tracking number copied to clipboard.');
                 });
+            }
+        }
 
-                wrapper.classList.toggle("hidden", docs.length === 0);
+        function showConfirmation() {
+            // Get all form values
+            const applicantName = document.getElementById('applicant_name').value;
+            const age = document.getElementById('age').value;
+            const address = document.getElementById('address').value;
+            const contactNumber = document.getElementById('contact_number').value;
+            const claimantName = document.getElementById('claimant_name').value;
+            const diagnosis = document.getElementById('diagnosis').value || 'Not provided';
+            const caseType = document.getElementById('case_type');
+            const caseCategory = document.getElementById('serviceCategory');
+
+            // Get selected option text
+            const caseTypeText = caseType.options[caseType.selectedIndex].text;
+            const caseCategoryText = caseCategory.options[caseCategory.selectedIndex].text;
+
+            // Populate confirmation modal
+            document.getElementById('confirm_applicant_name').textContent = applicantName;
+            document.getElementById('confirm_age').textContent = age;
+            document.getElementById('confirm_address').textContent = address;
+            document.getElementById('confirm_contact_number').textContent = contactNumber;
+            document.getElementById('confirm_claimant_name').textContent = claimantName;
+            document.getElementById('confirm_diagnosis').textContent = diagnosis;
+            document.getElementById('confirm_case_type').textContent = caseTypeText;
+            document.getElementById('confirm_case_category').textContent = caseCategoryText;
+
+            // Close application modal and open confirmation modal
+            const applicationModal = bootstrap.Modal.getInstance(document.getElementById('applicationModal'));
+            if (applicationModal) {
+                applicationModal.hide();
             }
 
-            function toggleMenu() {
-                const navMenu = document.getElementById("navMenu");
-                navMenu.classList.toggle("show");
+            // Small delay to ensure modal is closed before opening new one
+            setTimeout(() => {
+                const confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
+                confirmationModal.show();
+            }, 300);
+        }
+
+        function submitApplication() {
+            document.getElementById('applicationForm').submit();
+        }
+
+        // Toast initialization
+        document.addEventListener('DOMContentLoaded', function () {
+            var toastEl = document.getElementById('liveToast');
+            var timerEl = document.getElementById('toast-timer');
+            if (toastEl) {
+                var toast = new bootstrap.Toast(toastEl, {
+                    autohide: true,
+                    delay: 5000
+                });
+                toast.show();
+
+                let remaining = 5;
+                const interval = setInterval(() => {
+                    remaining--;
+                    if (timerEl) {
+                        timerEl.textContent = `Closing in ${remaining}s`;
+                    }
+                    if (remaining <= 0) {
+                        clearInterval(interval);
+                    }
+                }, 1000);
             }
-
-            function copyTrackingNumber() {
-                const track = document.getElementById("trackingNumberDisplay");
-                if (track) {
-                    navigator.clipboard.writeText(track.innerText).then(() => {
-                        alert("Tracking number copied!");
-                    });
-                }
-            }
-        </script>
-
-</body>
-
-</html>
+        });
+    </script>
+@endsection

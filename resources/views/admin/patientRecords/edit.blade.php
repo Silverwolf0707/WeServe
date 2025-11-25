@@ -35,9 +35,8 @@
                             @error('control_number') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
 
-                         <div class="mb-3">
-                            <label for="case_type" class="form-label">Case Type<span
-                                    class="text-danger">*</span></label>
+                        <div class="mb-3">
+                            <label for="case_type" class="form-label">Case Type<span class="text-danger">*</span></label>
                             <select name="case_type" id="case_type"
                                 class="form-control {{ $errors->has('case_type') ? 'is-invalid' : '' }}" required>
                                 <option value disabled {{ old('case_type', null) === null ? 'selected' : '' }}>Please
@@ -80,10 +79,10 @@
                         </div>
 
                         <div class="mb-3">
-                            <label for="diagnosis" class="form-label">Diagnosis <span class="text-danger">*</span></label>
+                            <label for="diagnosis" class="form-label">Diagnosis</label> {{-- Removed * --}}
                             <textarea name="diagnosis" id="diagnosis"
-                                class="form-control {{ $errors->has('diagnosis') ? 'is-invalid' : '' }}" rows="2"
-                                style="resize: none;" required>{{ old('diagnosis', $patientRecord->diagnosis) }}</textarea>
+                                class="form-control diagnosis-textarea {{ $errors->has('diagnosis') ? 'is-invalid' : '' }}" rows="2"
+                                style="resize: none;">{{ old('diagnosis', $patientRecord->diagnosis) }}</textarea>
                             @error('diagnosis') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                     </div>
@@ -113,9 +112,10 @@
                     <div class="col-md-3 mb-3">
                         <label for="contact_number" class="form-label">Contact Number <span
                                 class="text-danger">*</span></label>
-                        <input type="text" name="contact_number" id="contact_number"
+                        <input type="tel" name="contact_number" id="contact_number"
                             class="form-control {{ $errors->has('contact_number') ? 'is-invalid' : '' }}"
-                            value="{{ old('contact_number', $patientRecord->contact_number) }}" required>
+                            value="{{ old('contact_number', $patientRecord->contact_number) }}" maxlength="11" pattern="[0-9]{11}"
+                                    oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);" required>
                         @error('contact_number') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
 
@@ -149,7 +149,8 @@
     </div>
 
     <!-- Confirmation Modal -->
-    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header bg-warning">
@@ -159,13 +160,14 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="fw-bold mb-4">Are you sure you want to modify this patient record? Please review the changes below:</p>
-                    
+                    <p class="fw-bold mb-4">Are you sure you want to modify this patient record? Please review the changes
+                        below:</p>
+
                     <div class="alert alert-info d-flex align-items-center mb-4">
                         <i class="fas fa-info-circle me-2"></i>
                         <span>Only fields with changes are shown below</span>
                     </div>
-                    
+
                     <div id="changesContainer">
                         <!-- Changes will be dynamically inserted here -->
                     </div>
@@ -238,34 +240,34 @@
                 case_worker: '{{ $patientRecord->case_worker }}'
             };
 
-            saveButton.addEventListener('click', function() {
+            saveButton.addEventListener('click', function () {
                 // Update modal with comparison
                 updateModalComparison();
-                
+
                 // Show confirmation modal
                 confirmationModal.show();
             });
 
-            confirmSaveButton.addEventListener('click', function() {
+            confirmSaveButton.addEventListener('click', function () {
                 // Disable the confirm button and show loading
                 this.disabled = true;
                 this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving...';
-                
+
                 // Disable the original save button and show loading
                 saveButton.disabled = true;
                 saveButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving...';
-                
+
                 // Hide modal and submit form
                 confirmationModal.hide();
-                
+
                 // Submit the form
                 patientForm.submit();
             });
 
             function updateModalComparison() {
                 const fields = [
-                    'date_processed', 'control_number', 'case_type', 'claimant_name', 
-                    'case_category', 'diagnosis', 'patient_name', 'age', 
+                    'date_processed', 'control_number', 'case_type', 'claimant_name',
+                    'case_category', 'diagnosis', 'patient_name', 'age',
                     'contact_number', 'address', 'case_worker'
                 ];
 
@@ -281,17 +283,17 @@
                 caseDetailsFields.forEach(field => {
                     const originalValue = originalValues[field];
                     const newValue = document.getElementById(field).value;
-                    
+
                     if (originalValue !== newValue) {
                         hasChanges = true;
                         caseDetailsChanges += `
-                            <div class="mb-3 field-comparison changed">
-                                <strong>${formatFieldName(field)}:</strong><br>
-                                <span class="text-danger"><del>${escapeHtml(originalValue)}</del></span> 
-                                <i class="fas fa-arrow-right mx-2 text-muted"></i>
-                                <span class="text-success"><ins>${escapeHtml(newValue)}</ins></span>
-                            </div>
-                        `;
+                                <div class="mb-3 field-comparison changed">
+                                    <strong>${formatFieldName(field)}:</strong><br>
+                                    <span class="text-danger"><del>${escapeHtml(originalValue)}</del></span> 
+                                    <i class="fas fa-arrow-right mx-2 text-muted"></i>
+                                    <span class="text-success"><ins>${escapeHtml(newValue)}</ins></span>
+                                </div>
+                            `;
                     }
                 });
 
@@ -300,40 +302,40 @@
                 patientInfoFields.forEach(field => {
                     const originalValue = originalValues[field];
                     const newValue = document.getElementById(field).value;
-                    
+
                     if (originalValue !== newValue) {
                         hasChanges = true;
                         patientInfoChanges += `
-                            <div class="mb-3 field-comparison changed">
-                                <strong>${formatFieldName(field)}:</strong><br>
-                                <span class="text-danger"><del>${escapeHtml(originalValue)}</del></span> 
-                                <i class="fas fa-arrow-right mx-2 text-muted"></i>
-                                <span class="text-success"><ins>${escapeHtml(newValue)}</ins></span>
-                            </div>
-                        `;
+                                <div class="mb-3 field-comparison changed">
+                                    <strong>${formatFieldName(field)}:</strong><br>
+                                    <span class="text-danger"><del>${escapeHtml(originalValue)}</del></span> 
+                                    <i class="fas fa-arrow-right mx-2 text-muted"></i>
+                                    <span class="text-success"><ins>${escapeHtml(newValue)}</ins></span>
+                                </div>
+                            `;
                     }
                 });
 
                 // Build the final HTML
                 if (hasChanges) {
                     changesHTML = `
-                        <div class="row">
-                            ${caseDetailsChanges ? `
-                                <div class="col-md-6">
-                                    <h6 class="text-primary border-bottom pb-2">Case Details Changes</h6>
-                                    ${caseDetailsChanges}
-                                </div>
-                            ` : ''}
-                            
-                            ${patientInfoChanges ? `
-                                <div class="col-md-6">
-                                    <h6 class="text-primary border-bottom pb-2">Patient Information Changes</h6>
-                                    ${patientInfoChanges}
-                                </div>
-                            ` : ''}
-                        </div>
-                    `;
-                    
+                            <div class="row">
+                                ${caseDetailsChanges ? `
+                                    <div class="col-md-6">
+                                        <h6 class="text-primary border-bottom pb-2">Case Details Changes</h6>
+                                        ${caseDetailsChanges}
+                                    </div>
+                                ` : ''}
+
+                                ${patientInfoChanges ? `
+                                    <div class="col-md-6">
+                                        <h6 class="text-primary border-bottom pb-2">Patient Information Changes</h6>
+                                        ${patientInfoChanges}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
+
                     changesContainer.innerHTML = changesHTML;
                     noChangesMessage.style.display = 'none';
                     changesContainer.style.display = 'block';
@@ -371,10 +373,10 @@
             }
 
             // Reset button state if modal is closed without confirming
-            document.getElementById('confirmationModal').addEventListener('hidden.bs.modal', function() {
+            document.getElementById('confirmationModal').addEventListener('hidden.bs.modal', function () {
                 confirmSaveButton.disabled = false;
                 confirmSaveButton.innerHTML = '<i class="fas fa-check me-1"></i> Yes, Save Changes';
-                
+
                 // Only reset save button if form wasn't submitted
                 if (!saveButton.disabled) {
                     saveButton.innerHTML = '<i class="fas fa-save me-1"></i> Save';
@@ -392,6 +394,7 @@
             transition: all 0.3s ease;
             margin-bottom: 12px;
         }
+
         del {
             text-decoration: line-through;
             color: #dc3545;
@@ -399,6 +402,7 @@
             padding: 2px 4px;
             border-radius: 3px;
         }
+
         ins {
             text-decoration: none;
             color: #155724;
@@ -407,11 +411,13 @@
             border-radius: 3px;
             font-weight: 500;
         }
+
         .field-comparison strong {
             color: #495057;
             margin-bottom: 4px;
             display: block;
         }
+
         .text-primary {
             color: #2c5aa0 !important;
         }

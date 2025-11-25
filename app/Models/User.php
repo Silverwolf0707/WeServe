@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class User extends Authenticatable
@@ -81,7 +82,7 @@ class User extends Authenticatable
     public function isOnline()
     {
         // Assuming you are using the default `sessions` table to track active users
-        return \DB::table('sessions')
+        return DB::table('sessions')
             ->where('user_id', $this->id)
             ->where('last_activity', '>=', now()->subMinutes(config('session.lifetime'))->timestamp)
             ->exists();
