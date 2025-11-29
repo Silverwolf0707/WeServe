@@ -12,7 +12,7 @@
 
             <div class="modal-body">
                 {{-- Directly submit to processCsvImport --}}
-                <form method="POST" action="{{ route('admin.patient-records.processCsvImport') }}" enctype="multipart/form-data">
+                <form method="POST" action="{{ route('admin.patient-records.processCsvImport') }}" enctype="multipart/form-data" id="csvImportForm">
                     @csrf
                     <input type="hidden" name="modelName" value="PatientRecord">
 
@@ -63,8 +63,12 @@
                             <i class="fas fa-arrow-left me-1"></i> Back to List
                         </a>
 
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-file-import me-1"></i> Import CSV
+                        <button type="submit" class="btn btn-primary" id="importButton">
+                            <i class="fas fa-file-import me-1"></i> 
+                            <span id="importButtonText">Import CSV</span>
+                            <div id="importButtonSpinner" class="spinner-border spinner-border-sm d-none" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
                         </button>
                     </div>
                 </form>
@@ -72,3 +76,53 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const csvImportForm = document.getElementById('csvImportForm');
+    const importButton = document.getElementById('importButton');
+    const importButtonText = document.getElementById('importButtonText');
+    const importButtonSpinner = document.getElementById('importButtonSpinner');
+    let isSubmitting = false;
+
+    csvImportForm.addEventListener('submit', function(e) {
+        if (isSubmitting) {
+            e.preventDefault();
+            return;
+        }
+
+        // Basic validation - check if file is selected
+        const fileInput = document.getElementById('csv_file');
+        if (!fileInput.files.length) {
+            e.preventDefault();
+            alert('Please select a CSV file to import.');
+            return;
+        }
+
+        // Show loading state
+        isSubmitting = true;
+        importButton.disabled = true;
+        importButtonText.textContent = 'Importing...';
+        importButtonSpinner.classList.remove('d-none');
+        
+        // Change button style to indicate loading
+        importButton.classList.remove('btn-primary');
+        importButton.classList.add('btn-secondary');
+    });
+
+    // Re-enable button if modal is closed during submission
+    const modal = document.getElementById('csvImportModal');
+    modal.addEventListener('hidden.bs.modal', function() {
+        resetImportButton();
+    });
+
+    function resetImportButton() {
+        isSubmitting = false;
+        importButton.disabled = false;
+        importButtonText.textContent = 'Import CSV';
+        importButtonSpinner.classList.add('d-none');
+        importButton.classList.remove('btn-secondary');
+        importButton.classList.add('btn-primary');
+    }
+});
+</script>

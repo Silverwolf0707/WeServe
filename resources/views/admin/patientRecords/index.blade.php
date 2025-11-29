@@ -75,7 +75,7 @@
                             <td>{{ $patientRecord->case_type ?? '' }}</td>
                             <td>{{ $patientRecord->control_number ?? '' }}</td>
                             <td>{{ $patientRecord->claimant_name ?? '' }}</td>
-                            <td>{{ App\Models\PatientRecord::CASE_CATEGORY_SELECT[$patientRecord->case_category] ?? '' }}
+                            <td>{{ $patientRecord->case_category ?? '' }}
                             </td>
                             <td>{{ $patientRecord->patient_name ?? '' }}</td>
                             <td class="text-truncate" style="max-width: 200px">{{ $patientRecord->diagnosis ?? '' }}</td>

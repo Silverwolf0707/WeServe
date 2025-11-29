@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>@yield('title', 'WeServe Login - Financial Aid Management System')</title>
+    <link rel="icon" type="image/png+xml" href="{{ asset('logo.png') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; 
+                   script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; 
+                   style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://cdn.jsdelivr.net; 
+                   font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com;
+                   img-src 'self' data: https:;
+                   connect-src 'self';">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #e8f5e9;
+            overflow: hidden;
+        }
+
+        .background {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+        }
+
+        .background-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .background-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom right, rgba(11, 83, 45, 0.85), rgba(0, 0, 0, 0.6));
+            backdrop-filter: blur(6px);
+        }
+
+        .content {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 460px;
+            animation: fadeUp 0.7s ease forwards;
+        }
+
+        @keyframes fadeUp {
+            0% {
+                transform: translateY(15px);
+                opacity: 0;
+            }
+
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .login-card {
+            backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .login-card:hover {
+            box-shadow: 0 0 50px rgba(46, 204, 113, 0.25);
+        }
+
+        .brand-section-inside {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .logo-circle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 70px;
+            height: 70px;
+            border-radius: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            margin-bottom: 14px;
+            box-shadow: 0 0 25px rgba(46, 204, 113, 0.3);
+        }
+
+        .brand-title {
+            font-size: 34px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #aef1c5, #2ecc71);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .brand-subtitle {
+            font-size: 15px;
+            color: rgba(255, 255, 255, 0.85);
+            font-weight: 400;
+        }
+
+        /* Alert Styles */
+        .alert {
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .alert-error {
+            background: rgba(231, 76, 60, 0.1);
+            border: 1px solid rgba(231, 76, 60, 0.3);
+            color: #e74c3c;
+        }
+
+        .alert-success {
+            background: rgba(46, 204, 113, 0.1);
+            border: 1px solid rgba(46, 204, 113, 0.3);
+            color: #2ecc71;
+        }
+
+        .alert-warning {
+            background: rgba(241, 196, 15, 0.1);
+            border: 1px solid rgba(241, 196, 15, 0.3);
+            color: #f1c40f;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(-10px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            animation: fadeUp 0.6s ease forwards;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: white;
+            margin-bottom: 8px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 15px;
+            transition: color 0.3s ease;
+        }
+
+        .form-input {
+            width: 100%;
+            height: 48px;
+            padding: 0 12px 0 40px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .form-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #2ecc71;
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.4);
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .form-input:focus+.input-icon {
+            color: #2ecc71;
+        }
+
+        .form-input.error {
+            border-color: #e74c3c;
+            box-shadow: 0 0 10px rgba(231, 76, 60, 0.4);
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.7);
+            transition: all 0.3s ease;
+            font-size: 15px;
+            background: none;
+            border: none;
+            padding: 0;
+        }
+
+        .toggle-password:hover {
+            color: #2ecc71;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        /* Fix for duplicate password toggle icons */
+        .toggle-password {
+            background: none;
+            border: none;
+            padding: 0;
+            margin: 0;
+            outline: none;
+        }
+
+        .toggle-password i {
+            display: block;
+            /* Ensure only one icon shows */
+        }
+
+        /* Remove any duplicate styling */
+        .input-wrapper .fa-eye:not(.toggle-password i),
+        .input-wrapper .fa-eye-slash:not(.toggle-password i) {
+            display: none;
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .remember-me input {
+            margin-right: 8px;
+            accent-color: #2ecc71;
+        }
+
+        .remember-me label {
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .forgot-password {
+            text-align: right;
+            margin-bottom: 14px;
+        }
+
+        .support-link {
+            color: #aef1c5;
+            font-weight: 500;
+            text-decoration: none;
+            transition: 0.3s;
+            font-size: 14px;
+        }
+
+        .support-link:hover {
+            text-decoration: underline;
+            color: #2ecc71;
+        }
+
+        .submit-button {
+            width: 100%;
+            height: 50px;
+            margin-top: 10px;
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(46, 204, 113, 0.3);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(39, 174, 96, 0.5);
+        }
+
+        .submit-button:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+            transform: none;
+        }
+
+        .button-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .button-spinner {
+            display: none;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .card-footer {
+            margin-top: 26px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+
+        .footer-text {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .bottom-text {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            margin-top: 22px;
+            line-height: 1.5;
+        }
+
+        .attempts-warning {
+            text-align: center;
+            color: #f1c40f;
+            font-size: 12px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        /* ===================== */
+        /* TOAST STYLES - FIXED */
+        /* ===================== */
+        .custom-toast {
+            min-width: 350px;
+            border: none !important;
+            border-radius: 12px !important;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+            /* This prevents content from overflowing the border radius */
+        }
+
+        /* Toast header - fixed border radius */
+        .toast-header {
+            background: rgba(255, 255, 255, 0.95) !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: 12px 12px 0 0 !important;
+            padding: 12px 16px !important;
+            margin: 0 !important;
+            border: none !important;
+        }
+
+        /* Toast body - fixed border radius */
+        .toast-body {
+            padding: 16px !important;
+            color: white !important;
+            font-weight: 500 !important;
+            border-radius: 0 0 12px 12px !important;
+            margin: 0 !important;
+            border: none !important;
+        }
+
+        /* Success toast */
+        .toast-success {
+            background: linear-gradient(135deg, #10b981, #059669) !important;
+        }
+
+        .toast-success .toast-body {
+            background: linear-gradient(135deg, #10b981, #059669) !important;
+        }
+
+        /* Danger toast */
+        .toast-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+        }
+
+        .toast-danger .toast-body {
+            background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+        }
+
+        /* Warning toast */
+        .toast-warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+        }
+
+        .toast-warning .toast-body {
+            background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+        }
+
+        /* Info toast */
+        .toast-info {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+        }
+
+        .toast-info .toast-body {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+        }
+
+        /* Toast progress bar */
+        .toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.8);
+            width: 100%;
+            animation: progressBar 5s linear forwards;
+            border-radius: 0 0 12px 12px;
+        }
+
+        @keyframes progressBar {
+            0% {
+                width: 100%;
+            }
+
+            100% {
+                width: 0%;
+            }
+        }
+
+        /* Toast icons */
+        .toast-icon {
+            margin-right: 8px;
+            font-size: 1.1em;
+        }
+
+        /* Close button styling */
+        .toast-header .btn-close {
+            padding: 0.5rem !important;
+            margin: 0 !important;
+            filter: invert(0) !important;
+        }
+
+        /* Toast container positioning */
+        .toast-container {
+            z-index: 9999 !important;
+        }
+
+        /* Responsive toast */
+        @media (max-width: 576px) {
+            .custom-toast {
+                min-width: 280px;
+                max-width: 90vw;
+                margin: 0 auto;
+            }
+
+            .toast-header,
+            .toast-body {
+                padding: 10px 12px !important;
+            }
+        }
+
+        /* Alternative simpler toast design */
+        .toast-modern {
+            border: none !important;
+            border-radius: 12px !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .toast-modern .toast-header {
+            background: rgba(255, 255, 255, 0.98) !important;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+            border-radius: 12px 12px 0 0 !important;
+            padding: 12px 16px !important;
+        }
+
+        .toast-modern .toast-body {
+            border-radius: 0 0 12px 12px !important;
+            padding: 14px 16px !important;
+            font-weight: 500;
+        }
+
+        /* Modern color variants */
+        .toast-modern.toast-success .toast-body {
+            background: linear-gradient(135deg, #10b981, #059669) !important;
+            color: white !important;
+        }
+
+        .toast-modern.toast-danger .toast-body {
+            background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+            color: white !important;
+        }
+
+        .toast-modern.toast-warning .toast-body {
+            background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+            color: white !important;
+        }
+
+        .toast-modern.toast-info .toast-body {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+            color: white !important;
+        }
+
+        /* Minimal toast design option */
+        .toast-minimal {
+            border: none !important;
+            border-radius: 10px !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+            border-left: 4px solid !important;
+            overflow: hidden;
+        }
+
+        .toast-minimal.toast-success {
+            border-left-color: #10b981 !important;
+        }
+
+        .toast-minimal.toast-danger {
+            border-left-color: #ef4444 !important;
+        }
+
+        .toast-minimal.toast-warning {
+            border-left-color: #f59e0b !important;
+        }
+
+        .toast-minimal.toast-info {
+            border-left-color: #3b82f6 !important;
+        }
+
+        .toast-minimal .toast-header {
+            background: white !important;
+            border-bottom: 1px solid #e5e7eb !important;
+            border-radius: 10px 10px 0 0 !important;
+        }
+
+        .toast-minimal .toast-body {
+            background: white !important;
+            color: #374151 !important;
+            border-radius: 0 0 10px 10px !important;
+        }
+
+        @media (max-width: 768px) {
+            .login-card {
+                padding: 30px 25px;
+                margin: 20px;
+            }
+
+            .content {
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 25px 20px;
+            }
+
+            .brand-title {
+                font-size: 28px;
+            }
+        }
+    </style>
+
+    @stack('styles')
+</head>
+
+<body>
+    <!-- Toast Notification -->
+    @if(session('toast'))
+        @php
+            $toast = session('toast');
+            $bgClass = match ($toast['type']) {
+                'success' => 'toast-success',
+                'danger' => 'toast-danger',
+                'warning' => 'toast-warning',
+                'info' => 'toast-info',
+                default => 'bg-secondary',
+            };
+
+            $icons = [
+                'success' => 'fas fa-check-circle',
+                'danger' => 'fas fa-exclamation-triangle',
+                'warning' => 'fas fa-exclamation-circle',
+                'info' => 'fas fa-info-circle'
+            ];
+            $icon = $icons[$toast['type']] ?? 'fas fa-bell';
+        @endphp
+
+        <div class="position-fixed top-0 end-0 p-3" style="z-index: 9999">
+            <div id="liveToast" class="toast custom-toast {{ $bgClass }}" role="alert" aria-live="assertive"
+                aria-atomic="true">
+                <div class="toast-progress"></div>
+                <div class="toast-header bg-white text-dark">
+                    <i class="{{ $icon }} toast-icon text-{{ $toast['type'] }}"></i>
+                    <strong class="me-auto">{{ $toast['title'] ?? 'Notification' }}</strong>
+                    <small class="text-muted" id="toast-timer">Just now</small>
+                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body">
+                    {!! session('toast')['message'] !!}
+                </div>
+            </div>
+        </div>
+    @endif
+
+    <!-- Background -->
+    <div class="background">
+        <img src="{{ asset('municipal.jpg') }}" alt="Municipal Building" class="background-image" />
+        <div class="background-overlay"></div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content">
+        @yield('content')
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Initialize toast if exists
+        document.addEventListener('DOMContentLoaded', function () {
+            const toastEl = document.getElementById('liveToast');
+            if (toastEl) {
+                const toast = new bootstrap.Toast(toastEl, {
+                    autohide: true,
+                    delay: 5000
+                });
+                toast.show();
+
+                // Update timer every second
+                const timerElement = document.getElementById('toast-timer');
+                if (timerElement) {
+                    let seconds = 0;
+                    setInterval(() => {
+                        seconds++;
+                        if (seconds < 60) {
+                            timerElement.textContent = `${seconds}s ago`;
+                        } else {
+                            timerElement.textContent = `${Math.floor(seconds / 60)}m ago`;
+                        }
+                    }, 1000);
+                }
+            }
+        });
+    </script>
+
+    @stack('scripts')
+</body>
+
+</html>

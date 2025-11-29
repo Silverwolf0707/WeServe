@@ -16,6 +16,10 @@ class UsersTableSeeder extends Seeder
                 'email'          => 'admin@admin.com',
                 'password'       => bcrypt('12345678'),
                 'remember_token' => null,
+                'status'         => 'active',
+                'email_verified_at'  => now(),
+                'created_at'     => now(),
+
             ],
             [
                 'id'             => 2,
@@ -23,6 +27,9 @@ class UsersTableSeeder extends Seeder
                 'email'          => 'cswd@weserve.gov',
                 'password'       => bcrypt('12345678'),
                 'remember_token' => null,
+                'status'         => 'active',
+                'email_verified_at'  => now(),
+                'created_at'     => now(),
             ],
             [
                 'id'             => 3,
@@ -30,6 +37,9 @@ class UsersTableSeeder extends Seeder
                 'email'          => 'mayor@weserve.gov',
                 'password'       => bcrypt('12345678'),
                 'remember_token' => null,
+                'status'         => 'active',
+                'email_verified_at'  => now(),
+                'created_at'     => now(),
             ],
             [
                 'id'             => 4,
@@ -37,6 +47,9 @@ class UsersTableSeeder extends Seeder
                 'email'          => 'budget@weserve.gov',
                 'password'       => bcrypt('12345678'),
                 'remember_token' => null,
+                'status'         => 'active',
+                'email_verified_at'  => now(),
+                'created_at'     => now(),
             ],
             [
                 'id'             => 5,
@@ -44,6 +57,9 @@ class UsersTableSeeder extends Seeder
                 'email'          => 'accounting@weserve.gov',
                 'password'       => bcrypt('12345678'),
                 'remember_token' => null,
+                'status'         => 'active',
+                'email_verified_at'  => now(),
+                'created_at'     => now(),
             ],
             [
                 'id'             => 6,
@@ -51,6 +67,9 @@ class UsersTableSeeder extends Seeder
                 'email'          => 'treasury@weserve.gov',
                 'password'       => bcrypt('12345678'),
                 'remember_token' => null,
+                'status'         => 'active',
+                'email_verified_at'  => now(),
+                'created_at'     => now(),
             ],
         ];
 

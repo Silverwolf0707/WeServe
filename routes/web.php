@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\DocumentManagementController;
 use App\Http\Controllers\Admin\HomeController;
 use App\Http\Controllers\Admin\OnlineApplicationController;
 use App\Http\Controllers\Admin\PermissionsController;
+use App\Http\Controllers\Admin\ProfileImageController;
 use App\Http\Controllers\Admin\RolesController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\StatisticsController;
@@ -130,6 +131,11 @@ Route::group(['prefix' => 'notifications', 'as' => 'notifications.'], function (
     Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('mark-all-read');
     Route::get('/', [NotificationController::class, 'index'])->name('index');
 });
+
+// In your admin routes group, change these lines:
+Route::post('/profile-image', [ProfileImageController::class, 'store'])->name('profile.image.store');
+Route::put('/profile-image/{profileImage}/set-current', [ProfileImageController::class, 'setCurrent'])->name('profile.image.set-current');
+Route::delete('/profile-image/{profileImage}', [ProfileImageController::class, 'destroy'])->name('profile.image.destroy');
     
 });
 

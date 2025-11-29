@@ -35,10 +35,22 @@ class UsersController extends Controller
 
     public function store(StoreUserRequest $request)
     {
-        $user = User::create($request->all());
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => $request->password,
+            'status' => $request->status,
+            'email_verified_at' => now(),
+        ]);
+
         $user->roles()->sync($request->input('roles', []));
 
-        return redirect()->route('admin.users.index');
+        return redirect()->route('admin.users.index')
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'User Created',
+                'message' => 'User created successfully.'
+            ]);
     }
 
     public function edit(User $user)
@@ -57,7 +69,11 @@ class UsersController extends Controller
         $user->update($request->all());
         $user->roles()->sync($request->input('roles', []));
 
-        return redirect()->route('admin.users.index');
+        return redirect()->route('admin.users.index')->with('toast', [
+            'type' => 'success',
+            'title' => 'User Updated',
+            'message' => 'User updated successfully.'
+        ]);
     }
 
     public function show(User $user)
@@ -73,9 +89,14 @@ class UsersController extends Controller
     {
         abort_if(Gate::denies('user_delete'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        $user->delete();
+        // Permanent delete - bypass soft delete
+        $user->forceDelete();
 
-        return back();
+        return back()->with('toast', [
+            'type' => 'success',
+            'title' => 'User Deleted',
+            'message' => 'User has been deleted.'
+        ]);
     }
 
     public function massDestroy(MassDestroyUserRequest $request)

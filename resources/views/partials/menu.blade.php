@@ -240,139 +240,187 @@
 </aside>
 
 <style>
-    .brand-link {
-        background: #2c3e50;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        justify-content: flex-start;
-        padding: 0.75rem 1rem;
-        overflow: hidden;
-        border-bottom: 2px solid;
+.brand-link {
+    background: #2c3e50;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0.75rem 1rem;
+    overflow: hidden;
+    border-bottom: 2px solid;
+    background: white !important;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
 
-        background: white !important;
-    }
+.brand-icon img {
+    width: 45px !important;
+    height: 45px !important;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    object-fit: cover;
+    flex-shrink: 0;
+    transition: transform 0.3s ease;
+}
 
-    .brand-icon img {
-        width: 45px !important;
-        height: 45px !important;
-        border-radius: 50%;
-        border: 2px solid #fff;
-        object-fit: cover;
-        flex-shrink: 0;
-        transition: transform 0.3s ease;
+.logo-full {
+    transform: translateX(-10px);
+    height: 35px;
+    width: auto;
+}
 
-    }
+.brand-text {
+    margin-left: 12px;
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: #ecf0f1;
+    letter-spacing: 0.5px;
+    opacity: 1;
+    transform: translateX(0);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    white-space: nowrap;
+}
 
-    .logo-full {
-        transform: translateX(-10px);
-        height: 35px;
-        width: auto;
-    }
+body.sidebar-collapse .brand-text {
+    opacity: 0;
+    transform: translateX(-20px);
+    pointer-events: none;
+}
 
+body.sidebar-collapse .main-sidebar:hover .brand-text {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+}
 
-    .brand-text {
-        margin-left: 12px;
-        font-weight: bold;
-        font-size: 1.1rem;
-        color: #ecf0f1;
-        letter-spacing: 0.5px;
-        opacity: 1;
-        transform: translateX(0);
-        transition: opacity 0.3s ease, transform 0.3s ease;
-        white-space: nowrap;
-    }
+body.sidebar-collapse .main-sidebar:hover .brand-icon img {
+    transform: scale(1.05);
+}
 
-    body.sidebar-collapse .brand-text {
-        opacity: 0;
-        transform: translateX(-20px);
-        pointer-events: none;
-    }
+.nav-sidebar {
+    background: #2c3e50;
+}
 
-    body.sidebar-collapse .main-sidebar:hover .brand-text {
-        opacity: 1;
-        transform: translateX(0);
-        pointer-events: auto;
-    }
+.nav-sidebar .nav-link {
+    border-radius: 0.5rem;
+    margin: 2px 0;
+    color: #ecf0f1;
+    transition: all 0.2s ease;
+}
 
-    body.sidebar-collapse .main-sidebar:hover .brand-icon img {
-        transform: scale(1.05);
-    }
+.nav-sidebar .nav-link.active {
+    background-color: #3c8dbc;
+    color: #fff;
+    font-weight: 600;
+}
 
-    .nav-sidebar {
-        background: #2c3e50;
-    }
+.nav-sidebar .nav-link:hover {
+    background: rgba(60, 141, 188, 0.2);
+}
 
-    .nav-sidebar .nav-link {
-        border-radius: 0.5rem;
-        margin: 2px 0;
-        color: #ecf0f1;
-        transition: all 0.2s ease;
-    }
+.nav-header {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #bdc3c7;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 15px 0 5px 15px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
 
-    .nav-sidebar .nav-link.active {
-        background-color: #3c8dbc;
-        color: #fff;
-        font-weight: 600;
-    }
+.main-sidebar {
+    width: 250px;
+    height: 100vh;
+    background: #2c3e50;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: all 0.3s ease;
+    
+    /* Hide scrollbar but keep functionality */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
 
-    .nav-sidebar .nav-link:hover {
-        background: rgba(60, 141, 188, 0.2);
-    }
+/* Hide scrollbar for Chrome, Safari and Opera */
+.main-sidebar::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
+}
 
-    .nav-header {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: #bdc3c7;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin: 15px 0 5px 15px;
-        padding-top: 8px;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-    }
+.main-sidebar::-webkit-scrollbar-thumb {
+    background: transparent;
+}
 
-    .main-sidebar {
-        width: 250px;
-        height: 100vh;
-        background: #2c3e50;
-        overflow-y: auto;
-        overflow-x: hidden;
-        transition: all 0.3s ease;
+.main-sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
 
-        /* Hide scrollbar but keep functionality */
-        scrollbar-width: none;
-        /* Firefox */
-        -ms-overflow-style: none;
-        /* IE and Edge */
-    }
+.main-sidebar .sidebar {
+    min-height: 100vh; /* Changed from height to min-height */
+    padding-bottom: 20px; /* Add some space at the bottom */
+    
+    /* Hide scrollbar but keep functionality */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
 
-    /* Hide scrollbar for Chrome, Safari and Opera */
-    .main-sidebar::-webkit-scrollbar {
-        display: none;
-        width: 0;
-        height: 0;
-    }
+.main-sidebar .sidebar::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
+}
 
-    .main-sidebar .sidebar {
-        height: 100%;
-        overflow: hidden !important;
-    }
+.main-sidebar .sidebar::-webkit-scrollbar-thumb {
+    background: transparent;
+}
 
-    body.sidebar-collapse .main-sidebar {
-        width: 60px;
-        overflow: hidden !important;
-    }
+.main-sidebar .sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
 
-    body.sidebar-collapse .main-sidebar:hover {
-        width: 250px;
-        overflow-y: auto !important;
+/* Make the nav container take full available height */
+.nav nav-pills nav-sidebar flex-column {
+    min-height: 100%;
+}
 
-        /* Hide scrollbar on hover too */
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-    }
+/* Ensure the nav items container can expand */
+.nav-sidebar {
+    padding-bottom: 50px; /* Extra space for scrolling */
+}
 
-    body.sidebar-collapse .main-sidebar:hover::-webkit-scrollbar {
-        display: none;
-    }
+body.sidebar-collapse .main-sidebar {
+    width: 60px;
+}
+
+body.sidebar-collapse .main-sidebar .sidebar {
+    overflow: hidden;
+}
+
+body.sidebar-collapse .main-sidebar:hover {
+    width: 250px;
+}
+
+body.sidebar-collapse .main-sidebar:hover .sidebar {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Smooth scrolling */
+.main-sidebar,
+.main-sidebar .sidebar {
+    scroll-behavior: smooth;
+}
+
+/* Force full viewport height */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.wrapper {
+    min-height: 100vh;
+}
 </style>

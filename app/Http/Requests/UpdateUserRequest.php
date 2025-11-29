@@ -32,6 +32,11 @@ class UpdateUserRequest extends FormRequest
                 'required',
                 'array',
             ],
+             'status' => [
+                'required',
+                'string',
+                'in:active,inactive,suspended',
+            ],
         ];
     }
 }

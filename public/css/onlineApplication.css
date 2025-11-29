@@ -1098,20 +1098,43 @@ header.header {
     display: none;
 }
 
-/* Optional: Adjust header container for the full logo */
+/* ===================== */
+/* MINIMAL LOGO STYLES */
+/* ===================== */
+
 header .logo-title {
-    display: flex;
-    align-items: center;
-    gap: 0; /* Remove gap since we don't have text anymore */
+    display: block;
+    flex-shrink: 0;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .logo-full {
-        height: 40px; /* Slightly smaller on mobile */
+.logo-full {
+    width: 192px;
+    height: 192px;
+    object-fit: contain;
+}
+
+/* Container width controls logo size */
+header .logo-title {
+    width: 192px; /* w-48 = 12rem = 192px */
+}
+
+@media (max-width: 1024px) {
+    header .logo-title {
+        width: 148px; /* lg:w-36 = 9rem = 144px */
     }
 }
 
+@media (max-width: 768px) {
+    header .logo-title {
+        width: 128px; /* md:w-32 = 8rem = 128px */
+    }
+}
+
+@media (max-width: 640px) {
+    header .logo-title {
+        width: 112px; /* sm:w-28 = 7rem = 112px */
+    }
+}
 /* ===================== */
 /* TRACKING PAGE STYLES */
 /* ===================== */
