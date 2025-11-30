@@ -4,9 +4,9 @@
 
 <header class="header" role="banner">
     <div class="header-container">
-        <a href="#home" class="logo-title" aria-label="WeServe Home">
-            <img src="{{ asset('WeServe.png') }}" alt="WeServe Logo" class="logo-full" loading="eager">
-        </a>
+       <a href="#home" class="logo-title block w-50 lg:w-38 md:w-34 sm:w-30" aria-label="WeServe Home">
+                <img src="{{ asset('WeServe.png') }}" alt="WeServe Logo" class="logo-full w-full h-auto" loading="eager">
+            </a>
 
         <button class="burger" onclick="toggleMenu()" aria-label="Toggle Menu">
             <i class="fas fa-bars"></i>

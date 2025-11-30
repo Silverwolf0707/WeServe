@@ -52,6 +52,33 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     @yield('content')
+    <script>
+        // Initialize toast if exists
+        document.addEventListener('DOMContentLoaded', function () {
+            const toastEl = document.getElementById('liveToast');
+            if (toastEl) {
+                const toast = new bootstrap.Toast(toastEl, {
+                    autohide: true,
+                    delay: 5000
+                });
+                toast.show();
+
+                // Update timer every second
+                const timerElement = document.getElementById('toast-timer');
+                if (timerElement) {
+                    let seconds = 0;
+                    setInterval(() => {
+                        seconds++;
+                        if (seconds < 60) {
+                            timerElement.textContent = `${seconds}s ago`;
+                        } else {
+                            timerElement.textContent = `${Math.floor(seconds / 60)}m ago`;
+                        }
+                    }, 1000);
+                }
+            }
+        });
+    </script>
    
     @stack('scripts')
 </body>

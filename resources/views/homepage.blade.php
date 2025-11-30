@@ -19,8 +19,6 @@
         </div>
     </header>
 
-
-
     <main id="home">
         <section class="hero">
             <div class="container hero-container">
@@ -180,55 +178,58 @@
                         @csrf
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Applicant Name</label>
+                                <label class="form-label">Applicant Name <span class="text-danger">*</span></label>
                                 <input type="text" name="applicant_name" id="applicant_name" class="form-control" required>
-                                <div class="form-text">Applicant's Full Name.</div>
+                                <div class="invalid-feedback">Please provide the applicant's full name.</div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Age</label>
-                                <input type="number" name="age" id="age" class="form-control" required>
-                                <div class="form-text">Applicant's Age.</div>
+                                <label class="form-label">Age <span class="text-danger">*</span></label>
+                                <input type="number" name="age" id="age" class="form-control" min="1" max="120" required>
+                                <div class="invalid-feedback">Please provide a valid age (1-120).</div>
                             </div>
                             <div class="col-12 mb-3">
-                                <label class="form-label">Address</label>
+                                <label class="form-label">Address <span class="text-danger">*</span></label>
                                 <input type="text" name="address" id="address" class="form-control" required>
-                                <div class="form-text">Applicant's Full Address.</div>
+                                <div class="invalid-feedback">Please provide the applicant's full address.</div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Contact Number</label>
+                                <label class="form-label">Contact Number <span class="text-danger">*</span></label>
                                 <input type="tel" name="contact_number" id="contact_number" class="form-control"
                                     maxlength="11" pattern="[0-9]{11}"
                                     oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);"
                                     title="Please enter exactly 11 digits" required>
-                                <div class="form-text">Enter 11-digit mobile number.</div>
+                                <div class="invalid-feedback">Please enter a valid 11-digit mobile number.</div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Claimant Name</label>
+                                <label class="form-label">Claimant Name <span class="text-danger">*</span></label>
                                 <input type="text" name="claimant_name" id="claimant_name" class="form-control" required>
-                                <div class="form-text">Claimant's Full Name.</div>
+                                <div class="invalid-feedback">Please provide the claimant's full name.</div>
                             </div>
                             <div class="col-12 mb-3">
                                 <label class="form-label">Diagnosis (Optional)</label>
                                 <input type="text" name="diagnosis" id="diagnosis" class="form-control">
+                                <div class="form-text">Optional medical diagnosis or condition.</div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Type</label>
+                                <label class="form-label">Type <span class="text-danger">*</span></label>
                                 <select name="case_type" id="case_type" class="form-select" required>
-                                    <option value disabled selected>Please select</option>
+                                    <option value="" disabled selected>Please select</option>
                                     @foreach (App\Models\PatientRecord::CASE_TYPE_SELECT as $key => $label)
                                         <option value="{{ $key }}">{{ $label }}</option>
                                     @endforeach
                                 </select>
+                                <div class="invalid-feedback">Please select a case type.</div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Service Category</label>
+                                <label class="form-label">Service Category <span class="text-danger">*</span></label>
                                 <select name="case_category" id="serviceCategory" class="form-select"
                                     onchange="showRequirements()" required>
-                                    <option value disabled selected>Please select</option>
+                                    <option value="" disabled selected>Please select</option>
                                     @foreach (App\Models\PatientRecord::CASE_CATEGORY_SELECT as $key => $label)
                                         <option value="{{ $key }}">{{ $label }}</option>
                                     @endforeach
                                 </select>
+                                <div class="invalid-feedback">Please select a service category.</div>
                             </div>
                         </div>
 
@@ -241,7 +242,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-success" onclick="showConfirmation()">Review & Submit</button>
+                    <button type="button" class="btn btn-success" onclick="validateAndShowConfirmation()">Review & Submit</button>
                 </div>
             </div>
         </div>
@@ -300,7 +301,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Edit Details</button>
+                    <button type="button" class="btn btn-secondary" onclick="editApplication()">Edit Details</button>
                     <button type="button" class="btn btn-success" onclick="submitApplication()">Confirm & Submit</button>
                 </div>
             </div>
@@ -397,23 +398,134 @@
             goToSlide(0);
         }
 
-        // Modal functions for Bootstrap
-        function openModal(modalId) {
-            const modalElement = document.getElementById(modalId);
-            if (modalElement) {
-                const modal = new bootstrap.Modal(modalElement);
-                modal.show();
-            }
-        }
+        // Form validation and modal functions
+        function validateAndShowConfirmation() {
+            // Clear previous validation
+            clearValidation();
 
-        function closeModal(modalId) {
-            const modalElement = document.getElementById(modalId);
-            if (modalElement) {
-                const modal = bootstrap.Modal.getInstance(modalElement);
-                if (modal) {
-                    modal.hide();
+            // Get all required fields
+            const requiredFields = [
+                'applicant_name', 'age', 'address', 'contact_number', 
+                'claimant_name', 'case_type', 'serviceCategory'
+            ];
+
+            let isValid = true;
+            let firstInvalidField = null;
+
+            // Validate each required field
+            requiredFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (!field.value.trim()) {
+                    isValid = false;
+                    field.classList.add('is-invalid');
+                    if (!firstInvalidField) {
+                        firstInvalidField = field;
+                    }
+                } else {
+                    field.classList.remove('is-invalid');
+                    field.classList.add('is-valid');
+                }
+            });
+
+            // Additional validation for contact number
+            const contactNumber = document.getElementById('contact_number');
+            if (contactNumber.value && !/^\d{11}$/.test(contactNumber.value)) {
+                isValid = false;
+                contactNumber.classList.add('is-invalid');
+                if (!firstInvalidField) {
+                    firstInvalidField = contactNumber;
                 }
             }
+
+            // Additional validation for age
+            const age = document.getElementById('age');
+            if (age.value && (age.value < 1 || age.value > 120)) {
+                isValid = false;
+                age.classList.add('is-invalid');
+                if (!firstInvalidField) {
+                    firstInvalidField = age;
+                }
+            }
+
+            if (!isValid) {
+                // Scroll to first invalid field
+                if (firstInvalidField) {
+                    firstInvalidField.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'center' 
+                    });
+                    firstInvalidField.focus();
+                }
+                
+                // Show error message
+                showAlert('Please fill in all required fields correctly.', 'danger');
+                return;
+            }
+
+            // If validation passes, show confirmation
+            showConfirmation();
+        }
+
+        function clearValidation() {
+            const fields = document.querySelectorAll('.form-control, .form-select');
+            fields.forEach(field => {
+                field.classList.remove('is-invalid', 'is-valid');
+            });
+        }
+
+        function showConfirmation() {
+            // Get all form values
+            const applicantName = document.getElementById('applicant_name').value;
+            const age = document.getElementById('age').value;
+            const address = document.getElementById('address').value;
+            const contactNumber = document.getElementById('contact_number').value;
+            const claimantName = document.getElementById('claimant_name').value;
+            const diagnosis = document.getElementById('diagnosis').value || 'Not provided';
+            const caseType = document.getElementById('case_type');
+            const caseCategory = document.getElementById('serviceCategory');
+
+            // Get selected option text
+            const caseTypeText = caseType.options[caseType.selectedIndex].text;
+            const caseCategoryText = caseCategory.options[caseCategory.selectedIndex].text;
+
+            // Populate confirmation modal
+            document.getElementById('confirm_applicant_name').textContent = applicantName;
+            document.getElementById('confirm_age').textContent = age;
+            document.getElementById('confirm_address').textContent = address;
+            document.getElementById('confirm_contact_number').textContent = contactNumber;
+            document.getElementById('confirm_claimant_name').textContent = claimantName;
+            document.getElementById('confirm_diagnosis').textContent = diagnosis;
+            document.getElementById('confirm_case_type').textContent = caseTypeText;
+            document.getElementById('confirm_case_category').textContent = caseCategoryText;
+
+            // Close application modal and open confirmation modal
+            const applicationModal = bootstrap.Modal.getInstance(document.getElementById('applicationModal'));
+            if (applicationModal) {
+                applicationModal.hide();
+            }
+
+            // Small delay to ensure modal is closed before opening new one
+            setTimeout(() => {
+                const confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
+                confirmationModal.show();
+            }, 300);
+        }
+
+        function editApplication() {
+            // Close confirmation modal and reopen application modal
+            const confirmationModal = bootstrap.Modal.getInstance(document.getElementById('confirmationModal'));
+            if (confirmationModal) {
+                confirmationModal.hide();
+            }
+
+            setTimeout(() => {
+                const applicationModal = new bootstrap.Modal(document.getElementById('applicationModal'));
+                applicationModal.show();
+            }, 300);
+        }
+
+        function submitApplication() {
+            document.getElementById('applicationForm').submit();
         }
 
         function showRequirements() {
@@ -485,75 +597,88 @@
             const track = document.getElementById("trackingNumberDisplay");
             if (track) {
                 navigator.clipboard.writeText(track.innerText).then(() => {
-                    toastMessage('success', 'Copied!', 'Tracking number copied to clipboard.');
+                    showAlert('Tracking number copied to clipboard!', 'success');
                 });
             }
         }
 
-        function showConfirmation() {
-            // Get all form values
-            const applicantName = document.getElementById('applicant_name').value;
-            const age = document.getElementById('age').value;
-            const address = document.getElementById('address').value;
-            const contactNumber = document.getElementById('contact_number').value;
-            const claimantName = document.getElementById('claimant_name').value;
-            const diagnosis = document.getElementById('diagnosis').value || 'Not provided';
-            const caseType = document.getElementById('case_type');
-            const caseCategory = document.getElementById('serviceCategory');
+        function showAlert(message, type = 'info') {
+            // Create alert element
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
 
-            // Get selected option text
-            const caseTypeText = caseType.options[caseType.selectedIndex].text;
-            const caseCategoryText = caseCategory.options[caseCategory.selectedIndex].text;
+            // Add to body
+            document.body.appendChild(alertDiv);
 
-            // Populate confirmation modal
-            document.getElementById('confirm_applicant_name').textContent = applicantName;
-            document.getElementById('confirm_age').textContent = age;
-            document.getElementById('confirm_address').textContent = address;
-            document.getElementById('confirm_contact_number').textContent = contactNumber;
-            document.getElementById('confirm_claimant_name').textContent = claimantName;
-            document.getElementById('confirm_diagnosis').textContent = diagnosis;
-            document.getElementById('confirm_case_type').textContent = caseTypeText;
-            document.getElementById('confirm_case_category').textContent = caseCategoryText;
-
-            // Close application modal and open confirmation modal
-            const applicationModal = bootstrap.Modal.getInstance(document.getElementById('applicationModal'));
-            if (applicationModal) {
-                applicationModal.hide();
-            }
-
-            // Small delay to ensure modal is closed before opening new one
+            // Auto remove after 5 seconds
             setTimeout(() => {
-                const confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
-                confirmationModal.show();
-            }, 300);
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 5000);
         }
 
-        function submitApplication() {
-            document.getElementById('applicationForm').submit();
-        }
-
-        // Toast initialization
-        document.addEventListener('DOMContentLoaded', function () {
-            var toastEl = document.getElementById('liveToast');
-            var timerEl = document.getElementById('toast-timer');
-            if (toastEl) {
-                var toast = new bootstrap.Toast(toastEl, {
-                    autohide: true,
-                    delay: 5000
-                });
-                toast.show();
-
-                let remaining = 5;
-                const interval = setInterval(() => {
-                    remaining--;
-                    if (timerEl) {
-                        timerEl.textContent = `Closing in ${remaining}s`;
-                    }
-                    if (remaining <= 0) {
-                        clearInterval(interval);
-                    }
-                }, 1000);
+        // Real-time validation for contact number
+        document.getElementById('contact_number').addEventListener('input', function(e) {
+            const value = e.target.value.replace(/[^0-9]/g, '');
+            e.target.value = value.slice(0, 11);
+            
+            if (value.length === 11) {
+                e.target.classList.remove('is-invalid');
+                e.target.classList.add('is-valid');
+            } else if (value.length > 0) {
+                e.target.classList.add('is-invalid');
+                e.target.classList.remove('is-valid');
+            } else {
+                e.target.classList.remove('is-invalid', 'is-valid');
             }
         });
+
+        // Real-time validation for age
+        document.getElementById('age').addEventListener('input', function(e) {
+            const value = parseInt(e.target.value);
+            if (value >= 1 && value <= 120) {
+                e.target.classList.remove('is-invalid');
+                e.target.classList.add('is-valid');
+            } else if (e.target.value) {
+                e.target.classList.add('is-invalid');
+                e.target.classList.remove('is-valid');
+            } else {
+                e.target.classList.remove('is-invalid', 'is-valid');
+            }
+        });
+
+        // Real-time validation for other required fields
+        const requiredFields = ['applicant_name', 'address', 'claimant_name'];
+        requiredFields.forEach(fieldId => {
+            document.getElementById(fieldId).addEventListener('input', function(e) {
+                if (e.target.value.trim()) {
+                    e.target.classList.remove('is-invalid');
+                    e.target.classList.add('is-valid');
+                } else {
+                    e.target.classList.remove('is-valid');
+                }
+            });
+        });
+
+        // Validation for select fields
+        const selectFields = ['case_type', 'serviceCategory'];
+        selectFields.forEach(fieldId => {
+            document.getElementById(fieldId).addEventListener('change', function(e) {
+                if (e.target.value) {
+                    e.target.classList.remove('is-invalid');
+                    e.target.classList.add('is-valid');
+                } else {
+                    e.target.classList.remove('is-valid');
+                }
+            });
+        });
     </script>
+
+    
 @endsection

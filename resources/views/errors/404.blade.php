@@ -34,7 +34,7 @@
 
                     {{-- Action Buttons --}}
                     <div class="error-actions">
-                        <a href="{{ url('/') }}" class="btn btn-primary btn-lg me-3 pulse-hover">
+                        <a href="{{ url('/login') }}" class="btn btn-primary btn-lg me-3 pulse-hover">
                             <i class="fas fa-home me-2"></i>Go Home
                         </a>
                         <a href="javascript:history.back()" class="btn btn-outline-secondary btn-lg me-3">
