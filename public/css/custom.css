@@ -857,10 +857,10 @@ body.sidebar-collapse #loading-overlay {
     height: 100%;
     border-radius: 50%;
     border: 1px solid transparent;
-    border-top-color: #4eff83;
-    border-right-color: #24f536;
-    border-bottom-color: rgba(106, 0, 255, 0.15);
-    border-left-color: rgba(106, 0, 255, 0.15);
+    border-top-color: #068563;
+    border-right-color: #064e3b;
+    border-bottom-color: rgba(6, 78, 59, 0.15);
+    border-left-color: rgba(6, 78, 59, 0.15);
     animation: spin 1.5s linear infinite;
 }
 
@@ -869,7 +869,7 @@ body.sidebar-collapse #loading-overlay {
     font-family: "Source Sans Pro", sans-serif;
     font-size: 2.5rem;
     font-weight: 700;
-    color: #00ff55;
+    color: #064e3b;
     letter-spacing: 2px;
 }
 

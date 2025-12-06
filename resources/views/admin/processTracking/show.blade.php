@@ -747,23 +747,13 @@ if (strpos($originalStatus, '[ROLLED BACK]') !== false) {
                 <div class="action-section" id="treasury-disburse" data-permission="treasury_disburse"
                     style="display: {{ in_array($baseStatus, ['DV Submitted', 'DV Submitted[ROLLED BACK]', 'Ready for Disbursement']) && auth()->user()->can('treasury_disburse') ? 'block' : 'none' }};">
 
-                    {{-- DV Submitted Status --}}
+                    {{-- DV Submitted Status (STEP 1: Mark as Ready for Disbursement) --}}
                     <div class="text-center dv-submitted-content"
                         style="{{ in_array($baseStatus, ['DV Submitted', 'DV Submitted[ROLLED BACK]']) ? '' : 'display: none;' }}">
-                        {{-- READY FOR DISBURSEMENT --}}
-                        @if (auth()->user()->can('disbursed_message_automation'))
-                            <form action="{{ route('admin.process-tracking.sendOtp', $patient->id) }}" method="POST"
-                                class="d-inline-block">
-                                @csrf
-                                <button class="btn btn-warning btn-lg px-4 text-white mt-4">
-                                    <i class="fas fa-exclamation-circle me-1"></i> Ready for Disbursement
-                                </button>
-                            </form>
-                        @endif
-
-                        <button type="button" class="btn btn-success btn-lg px-4 text-white mt-4" data-bs-toggle="modal"
-                            data-bs-target="#quickDisburseModal">
-                            <i class="fas fa-check-circle me-1"></i> Mark as Disbursed
+                        {{-- READY FOR DISBURSEMENT BUTTON --}}
+                        <button type="button" class="btn btn-warning btn-lg px-4 text-white mt-4" data-bs-toggle="modal"
+                            data-bs-target="#readyForDisbursementModal">
+                            <i class="fas fa-exclamation-circle me-1"></i> Mark as Ready for Disbursement
                         </button>
 
                         <button type="button" class="btn btn-danger btn-lg px-4 text-white mt-4" data-bs-toggle="modal"
@@ -791,26 +781,19 @@ if (strpos($originalStatus, '[ROLLED BACK]') !== false) {
                         @endif
                     </div>
 
-                    {{-- Ready for Disbursement Status --}}
+                    {{-- Ready for Disbursement Status (STEP 2: Mark as Disbursed) --}}
                     <div class="text-center ready-for-disbursement-content"
                         style="{{ $baseStatus === 'Ready for Disbursement' ? '' : 'display: none;' }}">
-                        @php
-                            $otp = $patient->otpCodes()->latest()->first();
-                        @endphp
 
-                        <form action="{{ route('admin.process-tracking.verifyOtp', $patient->id) }}" method="POST"
-                            class="mt-4">
-                            @csrf
-                            <div class="form-group">
-                                <label for="otp_code" class="form-label fw-bold">Enter OTP to Confirm
-                                    Disbursement:</label>
-                                <input type="text" name="otp_code" required class="form-control mt-2 mb-3"
-                                    style="max-width: 300px; margin: 0 auto;">
-                            </div>
-                            <button class="btn btn-success btn-lg px-4">
-                                <i class="fas fa-check-circle me-1"></i> Confirm & Mark Disbursed
-                            </button>
-                        </form>
+                        <button type="button" class="btn btn-success btn-lg px-4 text-white mt-4" data-bs-toggle="modal"
+                            data-bs-target="#quickDisburseModal">
+                            <i class="fas fa-check-circle me-1"></i> Mark as Disbursed
+                        </button>
+
+                        <button type="button" class="btn btn-danger btn-lg px-4 text-white mt-4" data-bs-toggle="modal"
+                            data-bs-target="#rollbackModal">
+                            <i class="fas fa-undo-alt me-1"></i> Rollback Process
+                        </button>
 
                         {{-- Return to Rollbacker Button for Ready for Disbursement --}}
                         @if ($latestLog && str_contains(strtolower($latestLog->status), 'rolled back'))
@@ -830,6 +813,79 @@ if (strpos($originalStatus, '[ROLLED BACK]') !== false) {
                                 </button>
                             </form>
                         @endif
+                    </div>
+                </div>
+                <!-- Ready for Disbursement Modal -->
+                <div class="modal fade" id="readyForDisbursementModal" tabindex="-1"
+                    aria-labelledby="readyForDisbursementModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <form action="{{ route('admin.process-tracking.markAsReadyForDisbursement', $patient->id) }}"
+                            method="POST">
+                            @csrf
+                            <div class="modal-content border-0 shadow-lg rounded-4">
+                                <div class="modal-header bg-warning text-white">
+                                    <h5 class="modal-title" id="readyForDisbursementModalLabel">
+                                        <i class="fas fa-exclamation-circle me-2"></i> Mark as Ready for Disbursement
+                                    </h5>
+                                    <button type="button" class="btn-close text-white" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                                </div>
+
+                                <div class="modal-body">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        This will mark the patient as ready for disbursement. The budget allocation and DV
+                                        must be completed first.
+                                    </div>
+
+                                    <div class="form-group mb-3">
+                                        <label for="readyForDisbursementStatusDate">Status Date</label>
+                                        <input type="datetime-local" name="status_date"
+                                            id="readyForDisbursementStatusDate" class="form-control form-control-lg"
+                                            value="{{ now()->toDateTimeLocalString() }}" required>
+                                    </div>
+
+                                    <div class="form-group mb-3">
+                                        <label>Budget Allocated:</label>
+                                        <p class="form-control bg-light">
+                                            @if ($patient->budgetAllocation)
+                                                ₱{{ number_format($patient->budgetAllocation->amount, 2) }}
+                                            @else
+                                                <span class="text-danger">No budget allocated</span>
+                                            @endif
+                                        </p>
+                                    </div>
+
+                                    <div class="form-group mb-3">
+                                        <label>DV Code:</label>
+                                        <p class="form-control bg-light">
+                                            @if ($patient->disbursementVoucher && $patient->disbursementVoucher->dv_code)
+                                                {{ $patient->disbursementVoucher->dv_code }}
+                                            @else
+                                                <span class="text-danger">No DV submitted</span>
+                                            @endif
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="modal-footer d-flex flex-column gap-2">
+                                    <button type="button" class="btn btn-warning w-100"
+                                        onclick="
+                            const btn = this;
+                            const form = btn.closest('form');
+                            btn.disabled = true;
+                            btn.innerHTML = '<i class=\'fas fa-spinner fa-spin me-1\'></i> Processing...';
+                            form.submit();
+                        ">
+                                        <i class="fas fa-exclamation-circle me-1"></i> Confirm Ready for Disbursement
+                                    </button>
+
+                                    <button type="button" class="btn btn-secondary w-100 mt-2" data-bs-dismiss="modal">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
                     </div>
                 </div>
                 <!-- Rollback Modal -->

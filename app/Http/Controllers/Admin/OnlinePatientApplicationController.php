@@ -58,7 +58,7 @@ class OnlinePatientApplicationController extends Controller
             PatientTrackingNumber::create([
                 'patient_id' => $patient->id,
                 'tracking_number' => $application->tracking_number,
-                'tracking_created_at' => $application->created_at,
+               
             ]);
 
             $statusLog = PatientStatusLog::create([

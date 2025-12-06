@@ -894,6 +894,64 @@ class ProcessTrackingController extends Controller
         }
     }
 
+    public function markAsReadyForDisbursement(Request $request, $id)
+    {
+        abort_if(Gate::denies('treasury_disburse'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $request->validate([
+            'status_date' => 'required|date',
+        ]);
+
+        $patient = PatientRecord::findOrFail($id);
+
+        // Check if budget is allocated
+        if (!$patient->budgetAllocation) {
+            return back()->with('toast', [
+                'type' => 'danger',
+                'title' => 'Cannot Mark as Ready for Disbursement',
+                'message' => 'Budget must be allocated first.',
+                'time' => now()->diffForHumans(),
+            ]);
+        }
+
+        // Check if DV is submitted
+        if (!$patient->disbursementVoucher) {
+            return back()->with('toast', [
+                'type' => 'danger',
+                'title' => 'Cannot Mark as Ready for Disbursement',
+                'message' => 'Disbursement Voucher must be submitted first.',
+                'time' => now()->diffForHumans(),
+            ]);
+        }
+
+        // Update budget status to "Ready for Disbursement"
+        $patient->budgetAllocation()->update([
+            'budget_status' => 'Ready for Disbursement',
+        ]);
+
+        // Create status log
+        $statusLog = PatientStatusLog::create([
+            'patient_id' => $patient->id,
+            'user_id' => Auth::id(),
+            'status' => PatientStatusLog::STATUS_READY_FOR_DISBURSEMENT,
+            'remarks' => 'Ready for disbursement',
+            'status_date' => $request->status_date,
+        ]);
+
+        NotificationService::createStatusLogNotifications($statusLog);
+
+        // Reload patient and broadcast
+        $patient->load(['latestStatusLog', 'budgetAllocation', 'disbursementVoucher', 'latestStatusLog.user.roles']);
+        broadcast(new PatientStatusChanged($patient, 'ready_for_disbursement'))->toOthers();
+
+        return redirect()->route('admin.process-tracking.show', $id)
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'Marked as Ready for Disbursement',
+                'message' => 'Patient has been marked as ready for disbursement.',
+                'time' => now()->diffForHumans(),
+            ]);
+    }
 
 
 

@@ -34,10 +34,7 @@
 
                     {{-- Action Buttons --}}
                     <div class="error-actions">
-                        <a href="{{ url('/login') }}" class="btn btn-primary btn-lg me-3 pulse-hover">
-                            <i class="fas fa-home me-2"></i>Go Home
-                        </a>
-                        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-lg me-3">
+                        <a onclick="reloadPreviousPage()" class="btn btn-outline-secondary btn-lg me-3">
                             <i class="fas fa-arrow-left me-2"></i>Go Back
                         </a>
                         <button onclick="location.reload()" class="btn btn-outline-primary btn-lg">
@@ -57,6 +54,23 @@
     </div>
 </div>
 
+<script>
+function reloadPreviousPage() {
+    if (document.referrer && document.referrer !== window.location.href) {
+        // Go to previous page and reload it
+        window.location.href = document.referrer;
+        // Force reload if still on same page after 100ms
+        setTimeout(() => {
+            if (window.location.href === document.referrer) {
+                location.reload();
+            }
+        }, 100);
+    } else {
+        // No referrer or same page, just go home
+        window.location.href = '/';
+    }
+}
+</script>
 <style>
 .error-number {
     position: relative;
@@ -68,7 +82,7 @@
 .number-digit {
     font-size: 8rem;
     font-weight: 800;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -94,7 +108,7 @@
     position: absolute;
     width: 80px;
     height: 80px;
-    border: 4px solid #667eea;
+    border: 4px solid #48bb78;
     border-radius: 50%;
     top: 50%;
     left: 50%;
@@ -107,7 +121,7 @@
     position: absolute;
     width: 20px;
     height: 20px;
-    background: #764ba2;
+    background: #38a169;
     border-radius: 50%;
     top: -10px;
     left: 50%;
@@ -140,7 +154,7 @@
 .search-glass {
     width: 40px;
     height: 40px;
-    border: 3px solid #667eea;
+    border: 3px solid #48bb78;
     border-radius: 50%;
     position: absolute;
     top: 0;
@@ -151,7 +165,7 @@
 .search-handle {
     width: 20px;
     height: 3px;
-    background: #667eea;
+    background: #48bb78;
     position: absolute;
     top: 35px;
     left: 35px;
@@ -181,7 +195,7 @@
 .float-circle {
     position: absolute;
     border-radius: 50%;
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    background: linear-gradient(135deg, rgba(72, 187, 120, 0.1) 0%, rgba(56, 161, 105, 0.1) 100%);
     animation: float 6s ease-in-out infinite;
 }
 
@@ -207,6 +221,28 @@
     bottom: 20%;
     left: 20%;
     animation-delay: 4s;
+}
+
+/* Button Colors - Green Theme */
+.btn-primary {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    border-color: #48bb78;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+    border-color: #38a169;
+}
+
+.btn-outline-primary {
+    color: #48bb78;
+    border-color: #48bb78;
+}
+
+.btn-outline-primary:hover {
+    background-color: #48bb78;
+    border-color: #48bb78;
+    color: white;
 }
 
 /* Animations */

@@ -13,6 +13,7 @@
         </button>
 
         <nav class="nav-links" id="navMenu" aria-label="Primary">
+            <a href="/" class="apply-link">Go to Application</a>
             <a href="#process">Process</a>
             <a href="#tracking">Track</a>
         </nav>
@@ -79,54 +80,117 @@
 
         <div class="tracking-log-card-wrapper">
             <div class="tracking-log-card">
-                @if ($logs && count($logs) > 0)
-                    @foreach ($logs as $log)
+                @php
+                    // Group logs by status and get only the latest of each status
+                    $filteredLogs = [];
+                    
+                    // Process logs in reverse to get the most recent of each status
+                    $uniqueStatuses = [];
+                    foreach (array_reverse($logs->toArray()) as $log) {
+                        $status = $log['status'];
+                        $isRollback = str_contains($status, '[ROLLED BACK]');
+                        
+                        // Skip rollback entries from display
+                        if ($isRollback) {
+                            continue;
+                        }
+                        
+                        // If we haven't seen this status before, add it
+                        if (!in_array($status, $uniqueStatuses)) {
+                            $uniqueStatuses[] = $status;
+                            $filteredLogs[] = (object) $log;
+                        }
+                    }
+                    
+                    // Reverse back to chronological order
+                    $filteredLogs = array_reverse($filteredLogs);
+                @endphp
+
+                @if (count($filteredLogs) > 0)
+                    @foreach ($filteredLogs as $log)
                         @php
                             $status = $log->status;
                             $isRollback = str_contains($status, '[ROLLED BACK]');
                             $baseStatus = $isRollback ? trim(str_replace('[ROLLED BACK]', '', $status)) : $status;
 
-                            // ✅ Define the color for each status background
+                            // Define department, status text, color and icon
+                            $department = '';
+                            $statusText = '';
+                            $color = '#6c757d';
+                            $icon = 'fa-question-circle';
+                            $textColor = 'white';
+
                             switch ($baseStatus) {
                                 case 'Processing':
+                                    $department = 'CSWD Office';
+                                    $statusText = 'Application is on-process at CSWD Office';
                                     $color = '#6c757d'; // gray
                                     $icon = 'fa-hourglass-half';
                                     break;
                                 case 'Submitted':
+                                    $department = 'Mayor\'s Office';
+                                    $statusText = 'Application is on-process at Mayor\'s Office';
                                     $color = '#28a745'; // green
                                     $icon = 'fa-paper-plane';
                                     break;
                                 case 'Approved':
+                                    $department = 'Budget Office';
+                                    $statusText = 'Application is on-process at Budget Office';
                                     $color = '#28a745'; // green
                                     $icon = 'fa-check-circle';
                                     break;
-                                case 'Rejected':
-                                    $color = '#dc3545'; // red
-                                    $icon = 'fa-times-circle';
-                                    break;
                                 case 'Budget Allocated':
+                                    $department = 'Accounting Office';
+                                    $statusText = 'Application is on-process at Accounting Office';
                                     $color = '#d4a017'; // dark yellow
                                     $icon = 'fa-wallet';
+                                    $textColor = 'black';
                                     break;
                                 case 'DV Submitted':
+                                    $department = 'Treasury Office';
+                                    $statusText = 'Application is on-process at Treasury Office';
                                     $color = '#17a2b8'; // light blue
                                     $icon = 'fa-file-invoice-dollar';
                                     break;
+                                case 'Ready for Disbursement':
+                                    $department = 'Treasury Office';
+                                    $statusText = 'Please wait for a text message to be sent via SMS';
+                                    $color = '#28a745'; // green
+                                    $icon = 'fa-clock';
+                                    break;
                                 case 'Disbursed':
+                                    $department = 'Treasury Office';
+                                    $statusText = 'Disbursed';
                                     $color = '#28a745'; // green
                                     $icon = 'fa-hand-holding-usd';
                                     break;
+                                case 'Rejected':
+                                    $department = '';
+                                    $statusText = 'Application is On-Hold, Discrepancy is detected on your application please call CSWD or Aksyon mamamayan center for more inquiries';
+                                    $color = '#dc3545'; // red
+                                    $icon = 'fa-times-circle';
+                                    break;
                                 default:
-                                    $color = '#6c757d'; // fallback gray
-                                    $icon = 'fa-question-circle';
+                                    $department = '';
+                                    $statusText = $log->remarks ?: 'No remarks provided';
                                     break;
                             }
 
-                            // Adjust text color for readability
-                            $textColor = in_array($baseStatus, ['Budget Allocated']) ? 'black' : 'white';
+                            // For rejected status, override with custom text
+                            if ($baseStatus === 'Rejected' && !empty($log->remarks)) {
+                                $statusText = $log->remarks;
+                            }
+                            
+                            // Convert to correct timezone - FIXED THIS PART
+                            $date = \Carbon\Carbon::parse($log->status_date);
+                            
+                            // Set to Asia/Manila timezone (Philippines)
+                            $date->setTimezone('Asia/Manila');
+                            
+                            // Format the date correctly
+                            $formattedDate = $date->format('F j, Y g:i A');
                         @endphp
 
-                        <!-- ✅ Updated: background now uses the status color -->
                         <div class="tracking-entry"
                             style="background-color: {{ $color }}; border-left: 6px solid {{ $color }}; color: {{ $textColor }};">
                             <div class="status-icon" style="background-color: rgba(255,255,255,0.2);">
@@ -135,16 +199,17 @@
 
                             <div class="status-details">
                                 <p class="tracking-date" style="color: {{ $textColor }};">
-                                    {{ \Carbon\Carbon::parse($log->status_date)->format('F j, Y g:i A') }}
+                                    {{ $formattedDate }}
                                 </p>
+                                @if($department)
+                                    <p class="tracking-department" style="color: {{ $textColor }}; font-weight: bold; margin-bottom: 5px;">
+                                        {{ $department }}
+                                    </p>
+                                @endif
                                 <p class="tracking-status" style="color: {{ $textColor }};">
-                                    <b>{{ $baseStatus }}:</b> {{ $log->remarks }}
+                                    <b>Status:</b> {{ $statusText }}
                                 </p>
                             </div>
-
-                            @if($isRollback)
-                                <span class="rollback-badge">Rolled Back</span>
-                            @endif
                         </div>
                     @endforeach
                 @else
