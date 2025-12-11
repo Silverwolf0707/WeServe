@@ -35,7 +35,6 @@ class NotificationController extends Controller
             ->where('user_id', Auth::id())
             ->recent(30)
             ->orderBy('created_at', 'desc')
-            ->limit(10)
             ->get()
             ->map(function ($notification) {
                 $statusLog = $notification->statusLog;

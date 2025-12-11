@@ -19,9 +19,10 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Mockery\Matcher\Not;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Spatie\SimpleExcel\SimpleExcelWriter;
+
 
 class PatientRecordsController extends Controller
 {
@@ -228,7 +229,7 @@ class PatientRecordsController extends Controller
         $statusDate = $request->input('submitted_date');
 
         // Create status log
-       $statusLog = PatientStatusLog::create([
+        $statusLog = PatientStatusLog::create([
             'patient_id' => $id,
             'status' => $status,
             'user_id' => Auth::id(),
@@ -409,5 +410,36 @@ class PatientRecordsController extends Controller
         };
 
         return new StreamedResponse($callback, 200, $headers);
+    }
+
+    public function excelTemplate($type)
+    {
+        $filename = 'patient_template_' . $type . '_' . date('Y-m-d') . '.xlsx';
+
+        $columns = [
+            'date_processed',
+            'case_type',
+            'control_number',
+            'claimant_name',
+            'case_category',
+            'patient_name',
+            'diagnosis',
+            'age',
+            'address',
+            'contact_number',
+            'case_worker',
+        ];
+
+        if ($type === 'disbursed') {
+            $columns = array_merge($columns, ['disbursed_date', 'amount', 'allocation_date']);
+        }
+
+        $path = storage_path('app/' . $filename);
+
+        SimpleExcelWriter::create($path)
+            ->addHeader($columns)
+            ->close();
+
+        return response()->download($path, $filename)->deleteFileAfterSend(true);
     }
 }

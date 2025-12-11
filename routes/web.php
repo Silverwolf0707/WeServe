@@ -41,7 +41,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     // Home route
     Route::get('/', [HomeController::class, 'index'])->name('home');
     Route::redirect('/login', '/login');
-    
+
     // Permissions
     Route::delete('permissions/destroy', [PermissionsController::class, 'massDestroy'])->name('permissions.massDestroy');
     Route::resource('permissions', PermissionsController::class);
@@ -68,7 +68,9 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
         ->name('patient-records.submit-emergency');
 
     Route::get('csv/template/{type}', [PatientRecordsController::class, 'csvTemplate'])
-    ->name('csv.template');
+        ->name('csv.template');
+    Route::get('excel/template/{type}', [PatientRecordsController::class, 'excelTemplate'])
+        ->name('excel.template'); 
 
 
     Route::resource('online-applications', OnlinePatientApplicationController::class)
@@ -90,14 +92,14 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     Route::post('process-tracking/massBudgetAllocate', [ProcessTrackingController::class, 'massBudgetAllocate'])->name('process-tracking.massBudgetAllocate');
 
     Route::post('process-tracking/{patient}/store-dv', [ProcessTrackingController::class, 'storeDV'])->name('process-tracking.storeDV');
-    Route::put( 'process-tracking/{id}/update-dv', [ProcessTrackingController::class, 'updateDV'])->name('process-tracking.updateDV');
+    Route::put('process-tracking/{id}/update-dv', [ProcessTrackingController::class, 'updateDV'])->name('process-tracking.updateDV');
     Route::post('process-tracking/massDVInput', [ProcessTrackingController::class, 'massDVInput'])->name('process-tracking.massDVInput');
 
 
     Route::post('process-tracking/{id}/disburse-budget', [ProcessTrackingController::class, 'markBudgetAsDisbursed'])->name('process-tracking.disburseBudget');
     Route::post('process-tracking/{patient}/rollback', [ProcessTrackingController::class, 'rollback'])->name('process-tracking.rollback');
     Route::post('process-tracking/{id}/mark-as-ready-for-disbursement', [ProcessTrackingController::class, 'markAsReadyForDisbursement'])
-    ->name('process-tracking.markAsReadyForDisbursement');
+        ->name('process-tracking.markAsReadyForDisbursement');
     // Route::post('process-tracking/send-otp/{id}', [ProcessTrackingController::class, 'sendOtpForDisbursement'])->name('process-tracking.sendOtp');
     // Route::post('process-tracking/{id}/verify-otp', [ProcessTrackingController::class, 'verifyOtp'])->name('process-tracking.verifyOtp');
 
@@ -125,20 +127,19 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     Route::get('statistics/deficiencies', [StatisticsController::class, 'getDeficiencyData'])->name('statistics.deficiencies');
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::delete('settings/delete-all', [SettingsController::class, 'deleteAll'])->name('settings.deleteAll');
-// Add this to your admin routes group in web.php
-Route::group(['prefix' => 'notifications', 'as' => 'notifications.'], function () {
-    Route::get('/unread-count', [NotificationController::class, 'getUnreadCount'])->name('unread-count');
-    Route::get('/list', [NotificationController::class, 'getNotifications'])->name('list');
-    Route::post('/{id}/read', [NotificationController::class, 'markAsRead'])->name('mark-read');
-    Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('mark-all-read');
-    Route::get('/', [NotificationController::class, 'index'])->name('index');
-});
+    // Add this to your admin routes group in web.php
+    Route::group(['prefix' => 'notifications', 'as' => 'notifications.'], function () {
+        Route::get('/unread-count', [NotificationController::class, 'getUnreadCount'])->name('unread-count');
+        Route::get('/list', [NotificationController::class, 'getNotifications'])->name('list');
+        Route::post('/{id}/read', [NotificationController::class, 'markAsRead'])->name('mark-read');
+        Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('mark-all-read');
+        Route::get('/', [NotificationController::class, 'index'])->name('index');
+    });
 
-// In your admin routes group, change these lines:
-Route::post('/profile-image', [ProfileImageController::class, 'store'])->name('profile.image.store');
-Route::put('/profile-image/{profileImage}/set-current', [ProfileImageController::class, 'setCurrent'])->name('profile.image.set-current');
-Route::delete('/profile-image/{profileImage}', [ProfileImageController::class, 'destroy'])->name('profile.image.destroy');
-    
+    // In your admin routes group, change these lines:
+    Route::post('/profile-image', [ProfileImageController::class, 'store'])->name('profile.image.store');
+    Route::put('/profile-image/{profileImage}/set-current', [ProfileImageController::class, 'setCurrent'])->name('profile.image.set-current');
+    Route::delete('/profile-image/{profileImage}', [ProfileImageController::class, 'destroy'])->name('profile.image.destroy');
 });
 
 
