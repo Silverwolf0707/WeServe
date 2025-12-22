@@ -170,9 +170,15 @@ class ProcessTrackingController extends Controller
 
                 $latestStatus = $patient->statusLogs()->latest()->first();
 
-                // Skip if not submitted or already approved/rejected
-                if (!$latestStatus || !in_array($latestStatus->status, [PatientStatusLog::STATUS_SUBMITTED, PatientStatusLog::STATUS_SUBMITTED_EMERGENCY])) {
-                    $skipped[] = $patient->control_number;
+                // ONLY allow if latest status is Submitted, Submitted[Emergency], or Submitted[ROLLED BACK]
+                $eligibleStatuses = [
+                    PatientStatusLog::STATUS_SUBMITTED,
+                    PatientStatusLog::STATUS_SUBMITTED_EMERGENCY,
+                    'Submitted[ROLLED BACK]'
+                ];
+
+                if (!$latestStatus || !in_array($latestStatus->status, $eligibleStatuses)) {
+                    $skipped[] = $patient->control_number . " (Current status: " . ($latestStatus->status ?? 'No status') . ")";
                     continue;
                 }
 
@@ -208,6 +214,9 @@ class ProcessTrackingController extends Controller
                     $approved[] = $patient->id;
                 }
 
+                // Send notifications
+                NotificationService::createStatusLogNotifications($statusLog);
+
                 $actionEvent = $validated['action'] === 'approve' ? 'approved' : 'rejected';
                 broadcast(new PatientStatusChanged($patient, $actionEvent))->toOthers();
             }
@@ -222,7 +231,7 @@ class ProcessTrackingController extends Controller
                 $messages[] = count($rejected) . " " . (count($rejected) === 1 ? 'patient has' : 'patients have') . " been rejected";
             }
             if (count($skipped)) {
-                $messages[] = count($skipped) . " " . (count($skipped) === 1 ? 'patient was' : 'patients were') . " skipped (not submitted or already processed)";
+                $messages[] = count($skipped) . " " . (count($skipped) === 1 ? 'patient was' : 'patients were') . " skipped (not in eligible status)";
             }
 
             $toastMessage = implode('<br>', $messages);
@@ -805,94 +814,100 @@ class ProcessTrackingController extends Controller
             ]);
     }
 
-    public function massQuickDisburse(Request $request)
-    {
-        abort_if(Gate::denies('treasury_disburse'), 403);
+   public function massQuickDisburse(Request $request)
+{
+    abort_if(Gate::denies('treasury_disburse'), 403);
 
-        $request->validate([
-            'ids' => 'required|array|min:1',
-            'ids.*' => 'integer|exists:patient_records,id',
-            'status_date' => 'required|date',
-        ]);
+    $request->validate([
+        'ids' => 'required|array|min:1',
+        'ids.*' => 'integer|exists:patient_records,id',
+        'status_date' => 'required|date',
+    ]);
 
-        $disbursed = [];
-        $skipped   = [];
+    $disbursed = [];
+    $skipped   = [];
 
-        DB::beginTransaction();
+    DB::beginTransaction();
 
-        try {
-            foreach ($request->ids as $id) {
-                $allocation = BudgetAllocation::where('patient_id', $id)->first();
-
-                // Skip if no allocation found
-                if (!$allocation) {
-                    $skipped[] = $id . " (no allocation)";
-                    continue;
-                }
-
-                // Skip if already disbursed
-                if ($allocation->budget_status === 'Disbursed') {
-                    $skipped[] = $id . " (already disbursed)";
-                    continue;
-                }
-
-                // Only allow quick disburse if DV is submitted
-                $hasDv = DisbursementVoucher::where('patient_id', $id)->exists();
-                if (!$hasDv) {
-                    $skipped[] = $id . " (no DV submitted)";
-                    continue;
-                }
-
-                // Update to Disbursed
-                $allocation->update([
-                    'budget_status' => 'Disbursed',
-                ]);
-
-                PatientStatusLog::create([
-                    'patient_id' => $id,
-                    'user_id' => Auth::id(),
-                    'status' => PatientStatusLog::STATUS_DISBURSED,
-                    'remarks' => 'Budget marked as disbursed (mass quick).',
-                    'status_date' => $request->status_date,
-                ]);
-
-                $patient = PatientRecord::with('latestStatusLog')->find($id);
-                if ($patient) {
-                    broadcast(new PatientStatusChanged($patient, 'disbursed'));
-                    $disbursed[] = $patient->control_number ?? $id;
-                }
+    try {
+        foreach ($request->ids as $id) {
+            $patient = PatientRecord::with(['latestStatusLog', 'budgetAllocation'])->find($id);
+            
+            if (!$patient) {
+                $skipped[] = "ID: {$id} (not found)";
+                continue;
             }
 
-            DB::commit();
+            $allocation = $patient->budgetAllocation;
+            $latestStatus = $patient->latestStatusLog->status ?? '';
 
-            // Build messages
-            $messages = [];
-            if (count($disbursed)) {
-                $messages[] = count($disbursed) . " patient" . (count($disbursed) > 1 ? "s" : "") . " disbursed";
-            }
-            if (count($skipped)) {
-                $messages[] = count($skipped) . " skipped (no DV submitted or already disbursed)";
+            // Skip if no allocation found
+            if (!$allocation) {
+                $skipped[] = "{$patient->control_number} (no allocation)";
+                continue;
             }
 
-            $toastMessage = implode('<br>', $messages);
+            // Skip if already disbursed
+            if ($allocation->budget_status === 'Disbursed') {
+                $skipped[] = "{$patient->control_number} (already disbursed)";
+                continue;
+            }
 
-            return redirect()->route('admin.process-tracking.index')
-                ->with('toast', [
-                    'type' => 'success',
-                    'title' => 'Mass Quick Disburse',
-                    'message' => $toastMessage,
-                    'time' => now()->diffForHumans(),
-                ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('toast', [
-                'type' => 'danger',
-                'title' => 'Error in Mass Quick Disburse',
-                'message' => 'An error occurred: ' . $e->getMessage(),
+            // Only allow disburse if status is Ready for Disbursement
+            if ($latestStatus !== PatientStatusLog::STATUS_READY_FOR_DISBURSEMENT) {
+                $skipped[] = "{$patient->control_number} (status: {$latestStatus})";
+                continue;
+            }
+
+            // Update to Disbursed
+            $allocation->update([
+                'budget_status' => 'Disbursed',
+            ]);
+
+            PatientStatusLog::create([
+                'patient_id' => $id,
+                'user_id' => Auth::id(),
+                'status' => PatientStatusLog::STATUS_DISBURSED,
+                'remarks' => 'Budget marked as disbursed (mass disburse).',
+                'status_date' => $request->status_date,
+            ]);
+
+            $patient->load('latestStatusLog');
+            broadcast(new PatientStatusChanged($patient, 'disbursed'))->toOthers();
+            
+            $disbursed[] = $patient->control_number;
+        }
+
+        DB::commit();
+
+        // Build messages
+        $messages = [];
+        if (count($disbursed)) {
+            $messages[] = count($disbursed) . " patient" . (count($disbursed) > 1 ? "s" : "") . " disbursed";
+        }
+        if (count($skipped)) {
+            $messages[] = count($skipped) . " patient" . (count($skipped) > 1 ? "s" : "") . " skipped";
+        }
+
+        $toastMessage = implode('<br>', $messages);
+
+        return redirect()->route('admin.process-tracking.index')
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'Mass Disburse',
+                'message' => $toastMessage,
                 'time' => now()->diffForHumans(),
             ]);
-        }
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return back()->with('toast', [
+            'type' => 'danger',
+            'title' => 'Error in Mass Disburse',
+            'message' => 'An error occurred: ' . $e->getMessage(),
+            'time' => now()->diffForHumans(),
+        ]);
     }
+}
 
     public function markAsReadyForDisbursement(Request $request, $id)
     {
@@ -1131,61 +1146,164 @@ class ProcessTrackingController extends Controller
         ]);
     }
 
-  public function returnToRollbacker($id)
-{
-    $patient = PatientRecord::findOrFail($id);
+    public function massReadyForDisbursement(Request $request)
+    {
+        abort_if(Gate::denies('treasury_disburse'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-    // Find the latest status log with [ROLLED BACK] tag
-    $latestRolledBackLog = $patient->statusLogs()
-        ->where('status', 'LIKE', '%[ROLLED BACK]%')
-        ->latest()
-        ->first();
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:patient_records,id',
+            'status_date' => 'required|date',
+            'remarks' => 'nullable|string|max:1000',
+        ]);
 
-    if (!$latestRolledBackLog) {
+        $ready = [];
+        $skipped = [];
+
+        DB::beginTransaction();
+
+        try {
+            $patients = PatientRecord::with([
+                'latestStatusLog',
+                'budgetAllocation',
+                'disbursementVoucher'
+            ])->whereIn('id', $request->ids)->get();
+
+            foreach ($patients as $patient) {
+                $latestStatus = $patient->latestStatusLog->status ?? '';
+
+                // Check if latest status is DV Submitted or DV Submitted[ROLLED BACK]
+                $allowedStatuses = [
+                    'DV Submitted',
+                    'DV Submitted[ROLLED BACK]'
+                ];
+
+                if (!in_array($latestStatus, $allowedStatuses)) {
+                    $skipped[] = "{$patient->control_number} (status: {$latestStatus})";
+                    continue;
+                }
+
+                // Check if budget is allocated
+                if (!$patient->budgetAllocation) {
+                    $skipped[] = "{$patient->control_number} (no budget allocation)";
+                    continue;
+                }
+
+                // Check if DV is submitted
+                if (!$patient->disbursementVoucher) {
+                    $skipped[] = "{$patient->control_number} (no DV submitted)";
+                    continue;
+                }
+
+                // Update budget status to "Ready for Disbursement"
+                $patient->budgetAllocation()->update([
+                    'budget_status' => 'Ready for Disbursement',
+                ]);
+
+                // Create status log
+                $statusLog = PatientStatusLog::create([
+                    'patient_id' => $patient->id,
+                    'user_id' => Auth::id(),
+                    'status' => PatientStatusLog::STATUS_READY_FOR_DISBURSEMENT,
+                    'remarks' => $request->remarks ?? 'Marked as ready for disbursement',
+                    'status_date' => $request->status_date,
+                ]);
+
+                NotificationService::createStatusLogNotifications($statusLog);
+
+                // Reload patient and broadcast
+                $patient->load(['latestStatusLog', 'budgetAllocation', 'disbursementVoucher', 'latestStatusLog.user.roles']);
+                broadcast(new PatientStatusChanged($patient, 'ready_for_disbursement'))->toOthers();
+
+                $ready[] = $patient->control_number;
+            }
+
+            DB::commit();
+
+            // Build messages
+            $messages = [];
+            if (count($ready)) {
+                $messages[] = count($ready) . " patient" . (count($ready) > 1 ? "s" : "") . " marked as ready for disbursement";
+            }
+            if (count($skipped)) {
+                $messages[] = count($skipped) . " patient" . (count($skipped) > 1 ? "s" : "") . " skipped";
+            }
+
+            $toastMessage = implode('<br>', $messages);
+
+            return redirect()->route('admin.process-tracking.index')
+                ->with('toast', [
+                    'type' => count($ready) > 0 ? 'success' : 'warning',
+                    'title' => 'Mass Ready for Disbursement',
+                    'message' => $toastMessage,
+                    'time' => now()->diffForHumans(),
+                ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('toast', [
+                'type' => 'danger',
+                'title' => 'Error in Mass Ready for Disbursement',
+                'message' => 'An error occurred: ' . $e->getMessage(),
+                'time' => now()->diffForHumans(),
+            ]);
+        }
+    }
+
+    public function returnToRollbacker($id)
+    {
+        $patient = PatientRecord::findOrFail($id);
+
+        // Find the latest status log with [ROLLED BACK] tag
+        $latestRolledBackLog = $patient->statusLogs()
+            ->where('status', 'LIKE', '%[ROLLED BACK]%')
+            ->latest()
+            ->first();
+
+        if (!$latestRolledBackLog) {
+            return back()->with('toast', [
+                'type' => 'warning',
+                'title' => 'No Rollback Found',
+                'message' => 'No rolled back status found to return from.',
+                'time' => now()->diffForHumans(),
+            ]);
+        }
+
+        // Find the status log immediately BEFORE the rolled back one
+        $statusBeforeRollback = $patient->statusLogs()
+            ->where('id', '<', $latestRolledBackLog->id)
+            ->where('status', 'NOT LIKE', '%[ROLLED BACK]%') // Skip other rolled back statuses
+            ->latest()
+            ->first();
+
+        if (!$statusBeforeRollback) {
+            return back()->with('toast', [
+                'type' => 'warning',
+                'title' => 'No Previous Status',
+                'message' => 'Could not find status before the rollback.',
+                'time' => now()->diffForHumans(),
+            ]);
+        }
+
+        // Create a new status log returning to the status before rollback
+        $restoredLog = PatientStatusLog::create([
+            'patient_id' => $patient->id,
+            'status'     => $statusBeforeRollback->status,
+            'user_id'    => Auth::id(),
+            'remarks'    => 'Returned from rollback to: ' . $statusBeforeRollback->status,
+            'status_date' => now(),
+        ]);
+
+        NotificationService::createStatusLogNotifications($restoredLog);
+
+        // Reload patient for broadcasting
+        $patient->load(['latestStatusLog', 'latestStatusLog.user.roles']);
+        broadcast(new PatientStatusChanged($patient, strtolower($statusBeforeRollback->status)));
+
         return back()->with('toast', [
-            'type' => 'warning',
-            'title' => 'No Rollback Found',
-            'message' => 'No rolled back status found to return from.',
+            'type' => 'success',
+            'title' => 'Returned from Rollback',
+            'message' => 'Successfully returned to: ' . $statusBeforeRollback->status,
             'time' => now()->diffForHumans(),
         ]);
     }
-
-    // Find the status log immediately BEFORE the rolled back one
-    $statusBeforeRollback = $patient->statusLogs()
-        ->where('id', '<', $latestRolledBackLog->id)
-        ->where('status', 'NOT LIKE', '%[ROLLED BACK]%') // Skip other rolled back statuses
-        ->latest()
-        ->first();
-
-    if (!$statusBeforeRollback) {
-        return back()->with('toast', [
-            'type' => 'warning',
-            'title' => 'No Previous Status',
-            'message' => 'Could not find status before the rollback.',
-            'time' => now()->diffForHumans(),
-        ]);
-    }
-
-    // Create a new status log returning to the status before rollback
-    $restoredLog = PatientStatusLog::create([
-        'patient_id' => $patient->id,
-        'status'     => $statusBeforeRollback->status,
-        'user_id'    => Auth::id(),
-        'remarks'    => 'Returned from rollback to: ' . $statusBeforeRollback->status,
-        'status_date' => now(),
-    ]);
-
-    NotificationService::createStatusLogNotifications($restoredLog);
-
-    // Reload patient for broadcasting
-    $patient->load(['latestStatusLog', 'latestStatusLog.user.roles']);
-    broadcast(new PatientStatusChanged($patient, strtolower($statusBeforeRollback->status)));
-
-    return back()->with('toast', [
-        'type' => 'success',
-        'title' => 'Returned from Rollback',
-        'message' => 'Successfully returned to: ' . $statusBeforeRollback->status,
-        'time' => now()->diffForHumans(),
-    ]);
-}
 }

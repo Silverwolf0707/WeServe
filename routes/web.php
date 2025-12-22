@@ -70,7 +70,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     Route::get('csv/template/{type}', [PatientRecordsController::class, 'csvTemplate'])
         ->name('csv.template');
     Route::get('excel/template/{type}', [PatientRecordsController::class, 'excelTemplate'])
-        ->name('excel.template'); 
+        ->name('excel.template');
 
 
     Route::resource('online-applications', OnlinePatientApplicationController::class)
@@ -105,6 +105,8 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
 
     Route::post('process-tracking/{id}/quick-disburse', [ProcessTrackingController::class, 'quickDisburse'])->name('process-tracking.quickDisburse');
     Route::post('process-tracking/massQuickDisburse', [ProcessTrackingController::class, 'massQuickDisburse'])->name('process-tracking.massQuickDisburse');
+    Route::post('process-tracking/mass-ready-for-disbursement', [ProcessTrackingController::class, 'massReadyForDisbursement'])
+        ->name('process-tracking.massReadyForDisbursement');
 
 
     Route::post('process-tracking/{id}/return-to-rollbacker', [ProcessTrackingController::class, 'returnToRollbacker'])->name('process-tracking.returnToRollbacker');
@@ -112,12 +114,21 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
 
     Route::resource('budget-records', BudgetRecordController::class)->only(['index']);
 
+    // Document Management Routes
+    Route::delete('document-management/mass-destroy', [DocumentManagementController::class, 'massDestroy'])
+        ->name('document-management.massDestroy');
 
+    Route::get('document-management/patient/{id}', [DocumentManagementController::class, 'show'])
+        ->name('document-management.show');
 
-    Route::delete('document-management/mass-destroy', [DocumentManagementController::class, 'massDestroy'])->name('document-management.massDestroy');
-    Route::get('document-management/patient/{id}', [DocumentManagementController::class, 'show'])->name('admin.document-management.show');
-    Route::delete('document-management/{id}', [DocumentManagementController::class, 'destroy'])->name('admin.document-management.destroy');
-    Route::resource('document-management', DocumentManagementController::class)->names('document-management');
+    Route::get('document-management/view/{id}', [DocumentManagementController::class, 'view'])
+        ->name('document-management.view'); // Add this route
+
+    Route::delete('document-management/{id}', [DocumentManagementController::class, 'destroy'])
+        ->name('document-management.destroy');
+
+    Route::resource('document-management', DocumentManagementController::class)
+        ->names('document-management');
 
     //time series
     Route::get('time-series', [TimeSeriesController::class, 'index'])->name('time-series.index');

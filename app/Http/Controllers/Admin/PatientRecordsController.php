@@ -31,7 +31,30 @@ class PatientRecordsController extends Controller
     public function index()
     {
         abort_if(Gate::denies('patient_record_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
-        $patientRecords = PatientRecord::orderByDesc('date_processed')->get();
+
+        // Eager load the latest status log
+        $patientRecords = PatientRecord::with(['latestStatusLog'])
+            ->orderByDesc('date_processed')
+            ->get()
+            ->map(function ($record) {
+                // Add filter category to each record
+                $latestStatus = $record->latestStatusLog;
+                $statusValue = $latestStatus->status ?? 'Processing';
+                $cleanStatus = preg_replace('/\[ROLLED BACK\]/i', '', $statusValue);
+                $cleanStatus = trim($cleanStatus);
+
+                // Define which statuses should show in "Processing" filter
+                $processingStatuses = ['Processing', 'Rejected'];
+
+                if (in_array($cleanStatus, $processingStatuses)) {
+                    $record->filter_category = 'Processing';
+                } else {
+                    $record->filter_category = 'Submitted';
+                }
+
+                $record->clean_status = $cleanStatus;
+                return $record;
+            });
 
         return view('admin.patientRecords.index', compact('patientRecords'));
     }
@@ -279,22 +302,39 @@ class PatientRecordsController extends Controller
 
         try {
             foreach ($ids as $id) {
-                $patient = PatientRecord::find($id);
+                $patient = PatientRecord::with(['statusLogs' => function ($query) {
+                    $query->orderBy('created_at', 'desc');
+                }])->find($id);
+
                 if (!$patient) continue;
 
-                $latestStatus = $patient->statusLogs()->latest()->first();
+                $latestStatus = $patient->statusLogs->first();
 
-                if (!$latestStatus || $latestStatus->status === PatientStatusLog::STATUS_REJECTED) {
-                    $patient->statusLogs()->create([
+                // Check if latest status is Processing OR Rejected
+                $allowedStatuses = [
+                    PatientStatusLog::STATUS_PROCESSING,
+                    PatientStatusLog::STATUS_REJECTED
+                ];
+
+                if (!$latestStatus || in_array($latestStatus->status, $allowedStatuses)) {
+                    $statusLog = PatientStatusLog::create([
+                        'patient_id' => $patient->id,
                         'status' => PatientStatusLog::STATUS_SUBMITTED,
                         'user_id' => Auth::id(),
                         'remarks' => $remarks,
                         'status_date' => $statusDate,
                         'created_at' => now(),
                     ]);
+
+                    NotificationService::createStatusLogNotifications($statusLog);
+
+                    // Broadcast the status change
+                    $patient->load('latestStatusLog');
+                    broadcast(new PatientStatusChanged($patient, 'submitted'))->toOthers();
+
                     $submitted[] = $patient->control_number;
                 } else {
-                    $skipped[] = $patient->control_number;
+                    $skipped[] = $patient->control_number . " (status: {$latestStatus->status})";
                 }
             }
 
@@ -305,7 +345,7 @@ class PatientRecordsController extends Controller
                 $messages[] = count($submitted) . " " . (count($submitted) === 1 ? "patient has" : "patients have") . " been submitted";
             }
             if (count($skipped)) {
-                $messages[] = count($skipped) . " " . (count($skipped) === 1 ? "patient was" : "patients were") . " skipped (already submitted)";
+                $messages[] = count($skipped) . " " . (count($skipped) === 1 ? "patient was" : "patients were") . " skipped";
             }
 
             $toastMessage = implode('<br>', $messages);
@@ -313,7 +353,7 @@ class PatientRecordsController extends Controller
             return redirect()
                 ->route('admin.patient-records.index')
                 ->with('toast', [
-                    'type' => 'success',
+                    'type' => count($submitted) > 0 ? 'success' : 'warning',
                     'title' => 'Mass Submit Completed',
                     'message' => $toastMessage,
                     'time' => now()->diffForHumans(),

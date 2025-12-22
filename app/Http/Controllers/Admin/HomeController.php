@@ -161,7 +161,7 @@ class HomeController
                         ->from('patient_status_logs')
                         ->groupBy('patient_id');
                 })
-                ->whereIn('status', [PatientStatusLog::STATUS_DRAFT, PatientStatusLog::STATUS_PROCESSING, PatientStatusLog::STATUS_REJECTED])
+                ->whereIn('status', [PatientStatusLog::STATUS_DRAFT, PatientStatusLog::STATUS_PROCESSING, PatientStatusLog::STATUS_REJECTED, PatientStatusLog::STATUS_ROLLED_BACK_TO_PROCESSING])
                 ->orderByDesc('status_date')
                 ->get();
 
@@ -172,7 +172,7 @@ class HomeController
                         ->from('patient_status_logs')
                         ->groupBy('patient_id');
                 })
-                ->whereIn('status', [PatientStatusLog::STATUS_SUBMITTED, PatientStatusLog::STATUS_SUBMITTED_EMERGENCY])
+                ->whereIn('status', [PatientStatusLog::STATUS_SUBMITTED, PatientStatusLog::STATUS_SUBMITTED_EMERGENCY, PatientStatusLog::STATUS_ROLLED_BACK_TO_SUBMITTED])
                 ->orderByDesc('status_date')
                 ->get();
 
@@ -192,7 +192,7 @@ class HomeController
                         ->from('patient_status_logs')
                         ->groupBy('patient_id');
                 })
-                ->where('status', PatientStatusLog::STATUS_APPROVED)
+                ->whereIn('status', [PatientStatusLog::STATUS_APPROVED, PatientStatusLog::STATUS_ROLLED_BACK_TO_APPROVED])
                 ->orderByDesc('status_date')
                 ->get();
 
@@ -202,7 +202,7 @@ class HomeController
                     ->from('patient_status_logs')
                     ->groupBy('patient_id');
             })
-                ->where('status', PatientStatusLog::STATUS_BUDGET_ALLOCATED)
+                ->whereIn('status', [PatientStatusLog::STATUS_BUDGET_ALLOCATED, PatientStatusLog::STATUS_ROLLED_BACK_TO_BUDGET_ALLOCATED])
                 ->orderByDesc('status_date')
                 ->get();
 

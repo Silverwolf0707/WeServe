@@ -69,55 +69,74 @@
 
             <div class="mb-4">
                 <h6 class="text-primary">Uploaded Documents</h6>
-                @if ($patient->documents->count())
-                    <div class="row">
-                        @foreach ($patient->documents as $doc)
-                                    <div class="col-md-3 mb-3 text-center position-relative">
-                                        <div class="card h-100 shadow-sm" data-bs-toggle="tooltip" data-bs-html="true" title="
-                                <strong>Type:</strong> {{ $doc->document_type ?? 'No Type' }}<br>
-                                <strong>File:</strong> {{ $doc->file_name }}<br>
-                                <strong>Description:</strong> {{ $doc->description ?? 'No description' }}
-                            ">
+                <!-- In the Blade view, replace the document display section -->
+@if ($patient->documents->count())
+    <div class="row">
+        @foreach ($patient->documents as $doc)
+            <div class="col-md-3 mb-3 text-center position-relative">
+                <div class="card h-100 shadow-sm" data-bs-toggle="tooltip" data-bs-html="true" title="
+                    <strong>Type:</strong> {{ $doc->document_type ?? 'No Type' }}<br>
+                    <strong>File:</strong> {{ $doc->file_name }}<br>
+                    <strong>Size:</strong> {{ number_format($doc->file_size / 1024, 2) }} KB<br>
+                    <strong>Description:</strong> {{ $doc->description ?? 'No description' }}
+                ">
 
-                                            @php $extension = strtolower(pathinfo($doc->file_name, PATHINFO_EXTENSION)); @endphp
+                    @php 
+                        $extension = strtolower(pathinfo($doc->file_name, PATHINFO_EXTENSION)); 
+                        $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'bmp']);
+                        $isPDF = $extension === 'pdf';
+                    @endphp
 
-                                            @if (in_array($extension, ['jpg', 'jpeg', 'png']))
-                                                <img src="{{ asset('storage/' . $doc->file_path) }}" alt="{{ $doc->file_name }}"
-                                                    class="card-img-top preview-image" data-bs-toggle="modal"
-                                                    data-bs-target="#imagePreviewModal" data-image="{{ asset('storage/' . $doc->file_path) }}"
-                                                    style="height: 150px; object-fit: cover; cursor: pointer;">
-                                            @elseif($extension === 'pdf')
-                                                <a href="{{ str_replace('storage/storage', 'storage', asset('storage/' . $doc->file_path)) }}"
-                                                    target="_blank">
-                                                    <div class="d-flex justify-content-center align-items-center"
-                                                        style="height: 150px; background: #f8f9fa; cursor: pointer;">
-                                                        <i class="fas fa-file-pdf fa-3x text-danger"></i>
-                                                    </div>
-                                                </a>
-                                            @endif
+                    @if ($isImage)
+                        <a href="{{ route('admin.document-management.view', $doc->id) }}" target="_blank">
+                            <div class="document-preview">
+                                <i class="fas fa-eye text-primary"></i>
+                                <small>Click to view</small>
+                            </div>
+                        </a>
+                    @elseif($isPDF)
+                        <a href="{{ route('admin.document-management.view', $doc->id) }}" target="_blank">
+                            <div class="document-preview">
+                                <i class="fas fa-file-pdf fa-3x text-danger"></i>
+                                <small>View PDF</small>
+                            </div>
+                        </a>
+                    @else
+                        <a href="{{ route('admin.document-management.view', $doc->id) }}" target="_blank">
+                            <div class="document-preview">
+                                <i class="fas fa-file fa-3x text-secondary"></i>
+                                <small>Download File</small>
+                            </div>
+                        </a>
+                    @endif
 
-                                            <div class="card-body p-2 text-center">
-                                                <small class="fw-bold text-primary d-block text-truncate">
-                                                    {{ $doc->document_type ?? '' }}
-                                                </small>
-                                            </div>
-
-                                            <form action="{{ route('admin.document-management.destroy', $doc->id) }}" method="POST"
-                                                class="position-absolute" style="top: 5px; right: 10px;">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-danger"
-                                                    onclick="return confirm('Are you sure you want to delete this file?')" title="Delete">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </div>
-                        @endforeach
+                    <div class="card-body p-2 text-center">
+                        <small class="fw-bold text-primary d-block text-truncate">
+                            {{ $doc->document_type ?? 'Document' }}
+                        </small>
+                        <small class="text-muted d-block text-truncate" title="{{ $doc->file_name }}">
+                            {{ Str::limit($doc->file_name, 20) }}
+                        </small>
                     </div>
-                @else
-                    <p>No documents uploaded.</p>
-                @endif
+
+                    <form action="{{ route('admin.document-management.destroy', $doc->id) }}" method="POST"
+                        class="position-absolute" style="top: 5px; right: 10px;">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-sm btn-danger"
+                            onclick="return confirm('Are you sure you want to delete this file?')" title="Delete">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        @endforeach
+    </div>
+@else
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i> No documents uploaded for this patient.
+    </div>
+@endif
             </div>
 
             {{-- Upload & Navigation Buttons --}}
@@ -268,6 +287,32 @@
             font-size: 40px;
             color: #6c757d;
         }
+            .document-preview {
+        height: 150px;
+        background: #f8f9fa;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        transition: all 0.3s ease;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .document-preview:hover {
+        background: #e9ecef;
+        transform: translateY(-2px);
+    }
+    
+    .document-preview i {
+        font-size: 48px;
+        margin-bottom: 10px;
+    }
+    
+    .document-preview small {
+        color: #6c757d;
+        font-size: 12px;
+    }
     </style>
 
 @endsection

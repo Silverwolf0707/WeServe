@@ -21,6 +21,7 @@ class PatientStatusLog extends Model
     const STATUS_BUDGET_ALLOCATED = 'Budget Allocated';
     const STATUS_DV_SUBMITTED = 'DV Submitted';
     const STATUS_DISBURSED = 'Disbursed';
+    const STATUS_ROLLED_BACK_TO_PROCESSING = 'Processing[ROLLED BACK]';
     const STATUS_READY_FOR_DISBURSEMENT = 'Ready for Disbursement';
     const STATUS_ROLLED_BACK_TO_DRAFT = 'Draft[ROLLED BACK]';
     const STATUS_ROLLED_BACK_TO_SUBMITTED = 'Submitted[ROLLED BACK]';

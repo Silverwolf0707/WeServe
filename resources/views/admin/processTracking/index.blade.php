@@ -360,6 +360,55 @@
         </div>
     </div>
     </div>
+
+<div class="modal fade" id="massReadyForDisbursementModal" tabindex="-1"
+    aria-labelledby="massReadyForDisbursementModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <form id="massReadyForDisbursementForm" method="POST">
+            @csrf
+            <input type="hidden" name="ids[]" id="massReadyForDisbursementIds">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header bg-warning text-white">
+                    <h5 class="modal-title" id="massReadyForDisbursementModalLabel">
+                        <i class="fas fa-exclamation-circle me-2"></i> Mark as Ready for Disbursement
+                    </h5>
+                    <button type="button" class="btn-close text-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        This will mark selected patients as <strong>Ready for Disbursement</strong>.<br>
+                        Only patients with <strong>DV Submitted</strong> or <strong>DV Submitted[ROLLED BACK]</strong>
+                        status will be processed.
+                    </div>
+
+<div class="form-group mb-3">
+    <label for="massReadyStatusDate">Status Date</label>
+    <input type="datetime-local" name="status_date" id="massReadyStatusDate"
+        class="form-control form-control-lg" 
+        value="{{ now()->format('Y-m-d\TH:i') }}"
+        step="60"
+        required>
+</div>
+
+
+                    <div class="form-group mb-3">
+                        <label for="massReadyRemarks">Remarks (Optional)</label>
+                        <textarea name="remarks" id="massReadyRemarks" class="form-control form-control-lg" rows="3"
+                            placeholder="Enter any remarks..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer d-flex flex-column gap-2">
+                    <button type="submit" class="btn btn-warning w-100">
+                        <i class="fas fa-exclamation-circle me-1"></i> Mark as Ready
+                    </button>
+                    <button type="button" class="btn btn-secondary w-100" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
     <div class="modal fade" id="massDisburseModal" tabindex="-1" aria-labelledby="massDisburseModalLabel"
         aria-hidden="true">
         <div class="modal-dialog">
@@ -377,10 +426,12 @@
                     <div class="modal-body">
                         <p>Are you sure you want to mark the selected patients as <strong>Disbursed</strong>?</p>
                         <div class="mb-3">
-                            <label for="massDisburseDate" class="form-label">Disbursement Date</label>
-                            <input type="date" class="form-control" id="massDisburseDate" name="status_date"
-                                value="{{ now()->toDateString() }}" required>
-                        </div>
+    <label for="massDisburseDate" class="form-label">Disbursement Date</label>
+    <input type="datetime-local" class="form-control" id="massDisburseDate" name="status_date"
+        value="{{ now()->format('Y-m-d\TH:i') }}"
+        step="60"
+        required>
+</div>
                         <div class="mb-3">
                             <label for="massDisburseRemarks" class="form-label">Remarks (Optional)</label>
                             <textarea class="form-control" id="massDisburseRemarks" name="remarks" rows="3"
@@ -402,10 +453,11 @@
 @section('scripts')
     @parent
     <script>
-
+        'use strict';
+        
         function initializeRealTimeUpdates() {
             console.log('📡 Initializing real-time updates...');
-            
+
             // Connection status handling
             if (window.Echo && window.Echo.connector && window.Echo.connector.pusher) {
                 window.Echo.connector.pusher.connection.bind('connected', function() {
@@ -433,111 +485,112 @@
             }
         }
 
-            function updatePatientTable(e) {
-                const table = $('.datatable-ProcessTracking').DataTable();
-                const badge = generateBadge(e.status);
-                const department = getDepartment(e.status);
-                const rowSelector = `tr[data-entry-id="${e.id}"]`;
-                const existingRow = $(rowSelector);
+        function updatePatientTable(e) {
+            const table = jQuery('.datatable-ProcessTracking').DataTable();
+            const badge = generateBadge(e.status);
+            const department = getDepartment(e.status);
+            const rowSelector = `tr[data-entry-id="${e.id}"]`;
+            const existingRow = jQuery(rowSelector);
 
-                if (e.action === 'submitted' && existingRow.length === 0) {
-                    // Add new row
-                    const newRow = table.row.add([
-                        '',
-                        e.control_number,
-                        formatDate(e.date_processed),
-                        e.claimant_name,
-                        e.case_worker,
-                        badge,
-                        department,
-                        generateActionLink(e.id),
-                    ]).draw(false).node();
+            if (e.action === 'submitted' && existingRow.length === 0) {
+                // Add new row
+                const newRow = table.row.add([
+                    '',
+                    e.control_number,
+                    formatDate(e.date_processed),
+                    e.claimant_name,
+                    e.case_worker,
+                    badge,
+                    department,
+                    generateActionLink(e.id),
+                ]).draw(false).node();
 
-                    $(newRow).attr('data-entry-id', e.id);
-                    $(newRow).addClass('table-success');
-                    setTimeout(() => $(newRow).removeClass('table-success'), 3000);
+                jQuery(newRow).attr('data-entry-id', e.id);
+                jQuery(newRow).addClass('table-success');
+                setTimeout(() => jQuery(newRow).removeClass('table-success'), 3000);
 
-                    console.log('✅ Added new row for patient:', e.claimant_name);
-                } else if (existingRow.length > 0) {
-                    // Update status badge
-                    existingRow.find('td').eq(5).html(badge);
-                    // Update department responsible
-                    existingRow.find('td').eq(6).html(department);
+                console.log('✅ Added new row for patient:', e.claimant_name);
+            } else if (existingRow.length > 0) {
+                // Update status badge
+                existingRow.find('td').eq(5).html(badge);
+                // Update department responsible
+                existingRow.find('td').eq(6).html(department);
 
-                    console.log('✅ Updated row for patient:', e.claimant_name);
-                }
+                console.log('✅ Updated row for patient:', e.claimant_name);
             }
+        }
 
-            // Your existing helper functions remain the same...
-            function getDepartment(status) {
-                const cleanStatus = status.replace('[ROLLED BACK]', '').trim();
-                const statusMap = {
-                    'Processing': 'CSWD Office',
-                    'Submitted': "Mayor's Office",
-                    'Submitted[Emergency]': "Mayor's Office",
-                    'Approved': 'Budget Office',
-                    'Rejected': 'CSWD Office',
-                    'Budget Allocated': 'Accounting Office',
-                    'DV Submitted': 'Treasury Office',
-                    'Disbursed': 'Completed',
-                    'Ready for Disbursement': 'Treasury Office',
-                };
-                return statusMap[cleanStatus] || 'N/A';
-            }
+        // Your existing helper functions remain the same...
+        function getDepartment(status) {
+            const cleanStatus = status.replace('[ROLLED BACK]', '').trim();
+            const statusMap = {
+                'Processing': 'CSWD Office',
+                'Submitted': "Mayor's Office",
+                'Submitted[Emergency]': "Mayor's Office",
+                'Approved': 'Budget Office',
+                'Rejected': 'CSWD Office',
+                'Budget Allocated': 'Accounting Office',
+                'DV Submitted': 'Treasury Office',
+                'Disbursed': 'Completed',
+                'Ready for Disbursement': 'Treasury Office',
+            };
+            return statusMap[cleanStatus] || 'N/A';
+        }
 
-            function formatDate(input) {
-                const date = new Date(input);
-                return date.toLocaleString('en-PH', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true
-                });
-            }
+        function formatDate(input) {
+            const date = new Date(input);
+            return date.toLocaleString('en-PH', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
+        }
 
-            function generateActionLink(id) {
-                return `<a href="/admin/process-tracking/${id}" title="View"><i class="fas fa-eye"></i></a>`;
-            }
+        function generateActionLink(id) {
+            return `<a href="/admin/process-tracking/${id}" title="View"><i class="fas fa-eye"></i></a>`;
+        }
 
-            function generateBadge(status) {
-                const icons = {
-                    'Processing': 'fa-spinner',
-                    'Submitted': 'fa-paper-plane',
-                    'Submitted[Emergency]': 'fa-exclamation-triangle',
-                    'Approved': 'fa-thumbs-up',
-                    'Rejected': 'fa-ban',
-                    'Budget Allocated': 'fa-money-bill-wave',
-                    'DV Submitted': 'fa-file',
-                    'Disbursed': 'fa-money-bill-wave',
-                    'Ready for Disbursement': 'fa-paper-plane',
-                };
+        function generateBadge(status) {
+            const icons = {
+                'Processing': 'fa-spinner',
+                'Submitted': 'fa-paper-plane',
+                'Submitted[Emergency]': 'fa-exclamation-triangle',
+                'Approved': 'fa-thumbs-up',
+                'Rejected': 'fa-ban',
+                'Budget Allocated': 'fa-money-bill-wave',
+                'DV Submitted': 'fa-file',
+                'Disbursed': 'fa-money-bill-wave',
+                'Ready for Disbursement': 'fa-paper-plane',
+            };
 
-                const colors = {
-                    'Submitted': '#007BFF',
-                    'Submitted[Emergency]': '#dc3545',
-                    'Approved': '#2e7d32',
-                    'Rejected': '#c62828',
-                    'Budget Allocated': '#ffc107',
-                    'DV Submitted': '#17a2b8',
-                    'Disbursed': '#6f42c1',
-                    'Ready for Disbursement': '#6f42c1',
-                };
+            const colors = {
+                'Submitted': '#007BFF',
+                'Submitted[Emergency]': '#dc3545',
+                'Approved': '#2e7d32',
+                'Rejected': '#c62828',
+                'Budget Allocated': '#ffc107',
+                'DV Submitted': '#17a2b8',
+                'Disbursed': '#6f42c1',
+                'Ready for Disbursement': '#6f42c1',
+            };
 
-                const isRollback = status.includes('[ROLLED BACK]');
-                const baseStatus = status.replace('[ROLLED BACK]', '').trim();
+            const isRollback = status.includes('[ROLLED BACK]');
+            const baseStatus = status.replace('[ROLLED BACK]', '').trim();
 
-                const icon = icons[baseStatus] || 'fa-question-circle';
-                const color = colors[baseStatus] || '#6c757d';
+            const icon = icons[baseStatus] || 'fa-question-circle';
+            const color = colors[baseStatus] || '#6c757d';
 
-                const textColor = baseStatus === 'Budget Allocated' ? 'black' : 'white';
+            const textColor = baseStatus === 'Budget Allocated' ? 'black' : 'white';
 
-                return `<span class="badge d-inline-flex align-items-center"
+            return `<span class="badge d-inline-flex align-items-center"
         style="background-color: ${color}; padding: 6px 12px; border-radius: 50px; color: ${textColor};">
         <i class="fas ${icon} me-2"></i> ${baseStatus}${isRollback ? ' <small>[ROLLED BACK]</small>' : ''}
     </span>`;
-            }
+        }
+        
         document.addEventListener('DOMContentLoaded', function() {
             initializeRealTimeUpdates();
             var toastEl = document.getElementById('liveToast');
@@ -562,10 +615,11 @@
             }
         });
 
-        $(function() {
-            let dtButtons = $.extend(true, [], $.fn.dataTable.defaults.buttons);
+        jQuery(function() {
+            let dtButtons = jQuery.extend(true, [], jQuery.fn.dataTable.defaults.buttons);
+            let _token = jQuery('meta[name="csrf-token"]').attr('content');
 
-            $.extend(true, $.fn.dataTable.defaults, {
+            jQuery.extend(true, jQuery.fn.dataTable.defaults, {
                 orderCellsTop: true,
                 order: [
                     [1, 'desc']
@@ -573,7 +627,7 @@
                 pageLength: 100,
             });
 
-            let table = $('.datatable-ProcessTracking:not(.ajaxTable)').DataTable({
+            let table = jQuery('.datatable-ProcessTracking:not(.ajaxTable)').DataTable({
                 buttons: dtButtons,
                 order: [
                     [8, 'asc'],
@@ -581,9 +635,8 @@
                 ],
             });
 
-
-            $('a[data-toggle="tab"]').on('shown.bs.tab click', function() {
-                $($.fn.dataTable.tables(true)).DataTable().columns.adjust();
+            jQuery('a[data-toggle="tab"]').on('shown.bs.tab click', function() {
+                jQuery(jQuery.fn.dataTable.tables(true)).DataTable().columns.adjust();
             });
 
             @can('approve_patient')
@@ -593,10 +646,10 @@
                     text: 'Approve Selected',
                     className: 'btn-success',
                     action: function(e, dt, node, config) {
-                        selectedIds = $.map(dt.rows({
+                        selectedIds = jQuery.map(dt.rows({
                             selected: true
                         }).nodes(), function(entry) {
-                            return $(entry).data('entry-id');
+                            return jQuery(entry).data('entry-id');
                         });
 
                         if (selectedIds.length === 0) {
@@ -604,9 +657,9 @@
                             return;
                         }
 
-                        $('#massDecisionAction').val('approve');
-                        $('#massDecisionRemarks').val('');
-                        $('#massDecisionModal').modal('show');
+                        jQuery('#massDecisionAction').val('approve');
+                        jQuery('#massDecisionRemarks').val('');
+                        jQuery('#massDecisionModal').modal('show');
                     }
                 });
 
@@ -614,10 +667,10 @@
                     text: 'Reject Selected',
                     className: 'btn-danger',
                     action: function(e, dt, node, config) {
-                        selectedIds = $.map(dt.rows({
+                        selectedIds = jQuery.map(dt.rows({
                             selected: true
                         }).nodes(), function(entry) {
-                            return $(entry).data('entry-id');
+                            return jQuery(entry).data('entry-id');
                         });
 
                         if (selectedIds.length === 0) {
@@ -625,43 +678,56 @@
                             return;
                         }
 
-                        $('#massDecisionAction').val('reject');
-                        $('#massDecisionRemarks').val('');
-                        $('#massDecisionModal').modal('show');
+                        jQuery('#massDecisionAction').val('reject');
+                        jQuery('#massDecisionRemarks').val('');
+                        jQuery('#massDecisionModal').modal('show');
                     }
                 });
 
-                $('#massDecisionForm').on('submit', function(e) {
+                jQuery('#massDecisionForm').on('submit', function(e) {
                     e.preventDefault();
 
-                    let form = $('<form>', {
+                    // Get the confirm button
+                    const confirmBtn = jQuery('#massDecisionConfirmBtn');
+                    const originalBtnText = confirmBtn.html();
+                    const action = jQuery('#massDecisionAction').val();
+
+                    // Set loading state - disabled with spinner
+                    confirmBtn.prop('disabled', true).html(
+                        '<i class="fas fa-spinner fa-spin me-1"></i> Processing...'
+                    );
+
+                    // Also disable cancel button during submission
+                    jQuery('#massDecisionModal').find('button[data-bs-dismiss="modal"]').prop('disabled', true);
+
+                    let form = jQuery('<form>', {
                             method: 'POST',
                             action: "{{ route('admin.process-tracking.massDecision') }}"
                         })
-                        .append($('<input>', {
+                        .append(jQuery('<input>', {
                             type: 'hidden',
                             name: '_token',
                             value: _token
                         }))
-                        .append($('<input>', {
+                        .append(jQuery('<input>', {
                             type: 'hidden',
                             name: 'action',
-                            value: $('#massDecisionAction').val()
+                            value: action
                         }))
-                        .append($('<input>', {
+                        .append(jQuery('<input>', {
                             type: 'hidden',
                             name: 'remarks',
-                            value: $('#massDecisionRemarks').val()
+                            value: jQuery('#massDecisionRemarks').val()
                         }))
-                        .append($('<input>', {
+                        .append(jQuery('<input>', {
                             type: 'hidden',
                             name: 'status_date',
-                            value: $('#massDecisionStatusDate').val()
+                            value: jQuery('#massDecisionStatusDate').val()
                         }));
 
                     // Append selected IDs
                     selectedIds.forEach(function(id) {
-                        form.append($('<input>', {
+                        form.append(jQuery('<input>', {
                             type: 'hidden',
                             name: 'ids[]',
                             value: id
@@ -669,20 +735,20 @@
                     });
 
                     // Handle reject reasons
-                    if ($('#massDecisionAction').val() === 'reject') {
+                    if (action === 'reject') {
                         let reasons = [];
 
-                        $('input[name="reasons[]"]:checked').each(function() {
-                            reasons.push($(this).val());
+                        jQuery('input[name="reasons[]"]:checked').each(function() {
+                            reasons.push(jQuery(this).val());
                         });
 
-                        let otherReason = $('#massDecisionOtherReason').val().trim();
+                        let otherReason = jQuery('#massDecisionOtherReason').val().trim();
                         if (otherReason) {
                             reasons.push(otherReason);
                         }
 
                         reasons.forEach(function(reason) {
-                            form.append($('<input>', {
+                            form.append(jQuery('<input>', {
                                 type: 'hidden',
                                 name: 'reasons[]',
                                 value: reason
@@ -692,7 +758,21 @@
 
                     form.appendTo('body').submit();
                 });
+
+                // Reset button when modal hides
+                jQuery('#massDecisionModal').on('hidden.bs.modal', function() {
+                    const confirmBtn = jQuery('#massDecisionConfirmBtn');
+                    const action = jQuery('#massDecisionAction').val();
+
+                    // Reset to original text based on action
+                    confirmBtn.prop('disabled', false);
+                    confirmBtn.html(action === 'approve' ? 'Confirm Approve' : 'Confirm Reject');
+
+                    // Re-enable cancel button
+                    jQuery(this).find('button[data-bs-dismiss="modal"]').prop('disabled', false);
+                });
             @endcan
+            
             @can('accounting_dv_input')
                 let selectedDvIds = [];
 
@@ -700,10 +780,10 @@
                     text: 'Mass DV Input',
                     className: 'btn-primary',
                     action: function(e, dt, node, config) {
-                        selectedDvIds = $.map(dt.rows({
+                        selectedDvIds = jQuery.map(dt.rows({
                             selected: true
                         }).nodes(), function(entry) {
-                            return $(entry).data('entry-id');
+                            return jQuery(entry).data('entry-id');
                         });
 
                         if (!selectedDvIds.length) {
@@ -712,39 +792,106 @@
                         }
 
                         // Reset modal fields
-                        $('#massDvDate').val('');
+                        jQuery('#massDvDate').val('');
 
                         // Show modal
-                        $('#massDVModal').modal('show');
+                        jQuery('#massDVModal').modal('show');
                     }
                 });
 
-                $('#massDVForm').on('submit', function(e) {
+                jQuery('#massDVForm').on('submit', function(e) {
                     e.preventDefault();
 
-                    let form = $('<form>', {
+                    let form = jQuery('<form>', {
                             method: 'POST',
                             action: "{{ route('admin.process-tracking.massDVInput') }}"
                         })
-                        .append($('<input>', {
+                        .append(jQuery('<input>', {
                             type: 'hidden',
                             name: '_token',
                             value: _token
                         }))
-                        .append($('<input>', {
+                        .append(jQuery('<input>', {
                             type: 'hidden',
                             name: 'dv_date',
-                            value: $('#massDvDate').val()
+                            value: jQuery('#massDvDate').val()
                         }))
-                        .append($('<input>', {
+                        .append(jQuery('<input>', {
                             type: 'hidden',
                             name: 'status_date',
-                            value: $('#massDvStatusDate').val()
+                            value: jQuery('#massDvStatusDate').val()
                         }));
 
                     // Add each selected patient ID
                     selectedDvIds.forEach(function(id) {
-                        form.append($('<input>', {
+                        form.append(jQuery('<input>', {
+                            type: 'hidden',
+                            name: 'ids[]',
+                            value: id
+                        }));
+                    });
+
+                    form.appendTo('body').submit();
+                });
+            @endcan
+
+            @can('budget_allocate')
+                let selectedBudgetIds = [];
+
+                dtButtons.push({
+                    text: 'Allocate Budget',
+                    className: 'btn-success',
+                    action: function(e, dt, node, config) {
+                        selectedBudgetIds = jQuery.map(dt.rows({
+                            selected: true
+                        }).nodes(), function(entry) {
+                            return jQuery(entry).data('entry-id');
+                        });
+
+                        if (!selectedBudgetIds.length) {
+                            alert('No records selected');
+                            return;
+                        }
+
+                        // Clear inputs
+                        jQuery('#massBudgetAmount').val('');
+                        jQuery('#massBudgetRemarks').val('');
+
+                        // Show modal
+                        jQuery('#massBudgetModal').modal('show');
+                    }
+                });
+
+                jQuery('#massBudgetForm').on('submit', function(e) {
+                    e.preventDefault();
+
+                    let form = jQuery('<form>', {
+                            method: 'POST',
+                            action: "{{ route('admin.process-tracking.massBudgetAllocate') }}"
+                        })
+                        .append(jQuery('<input>', {
+                            type: 'hidden',
+                            name: '_token',
+                            value: _token
+                        }))
+                        .append(jQuery('<input>', {
+                            type: 'hidden',
+                            name: 'amount',
+                            value: jQuery('#massBudgetAmount').val()
+                        }))
+                        .append(jQuery('<input>', {
+                            type: 'hidden',
+                            name: 'remarks',
+                            value: jQuery('#massBudgetRemarks').val()
+                        }))
+                        .append(jQuery('<input>', {
+                            type: 'hidden',
+                            name: 'status_date',
+                            value: jQuery('#massBudgetStatusDate').val()
+                        }));
+
+                    selectedBudgetIds.forEach(function(id) {
+                        form.append(jQuery('<input>', {
                             type: 'hidden',
                             name: 'ids[]',
                             value: id
@@ -756,16 +903,31 @@
             @endcan
 
             @can('treasury_disburse')
+                let selectedReadyForDisbursementIds = [];
                 let selectedDisburseIds = [];
 
+                function getManilaDateTime() {
+                    const now = new Date();
+                    // Manila is UTC+8
+                    const manilaTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+                    
+                    const year = manilaTime.getUTCFullYear();
+                    const month = String(manilaTime.getUTCMonth() + 1).padStart(2, '0');
+                    const day = String(manilaTime.getUTCDate()).padStart(2, '0');
+                    const hours = String(manilaTime.getUTCHours()).padStart(2, '0');
+                    const minutes = String(manilaTime.getUTCMinutes()).padStart(2, '0');
+                    
+                    return `${year}-${month}-${day}T${hours}:${minutes}`;
+                }
+
                 dtButtons.push({
-                    text: 'Quick Disburse',
+                    text: 'Disburse',
                     className: 'btn-danger',
                     action: function(e, dt, node, config) {
-                        selectedDisburseIds = $.map(dt.rows({
+                        selectedDisburseIds = jQuery.map(dt.rows({
                             selected: true
                         }).nodes(), function(entry) {
-                            return $(entry).data('entry-id');
+                            return jQuery(entry).data('entry-id');
                         });
 
                         if (!selectedDisburseIds.length) {
@@ -773,109 +935,124 @@
                             return;
                         }
 
-                        // Reset modal fields
-                        $('#massDisburseDate').val('{{ now()->toDateString() }}');
-                        $('#massDisburseRemarks').val('');
+                        // Reset modal fields with Manila time
+                        jQuery('#massDisburseDate').val(getManilaDateTime());
+                        jQuery('#massDisburseRemarks').val('');
 
                         // Show modal
-                        $('#massDisburseModal').modal('show');
+                        jQuery('#massDisburseModal').modal('show');
                     }
                 });
 
-                $('#massDisburseForm').on('submit', function(e) {
-                    e.preventDefault();
-
-                    let form = $('<form>', {
-                            method: 'POST',
-                            action: "{{ route('admin.process-tracking.massQuickDisburse') }}"
-                        })
-                        .append($('<input>', {
-                            type: 'hidden',
-                            name: '_token',
-                            value: _token
-                        }))
-                        .append($('<input>', {
-                            type: 'hidden',
-                            name: 'status_date',
-                            value: $('#massDisburseDate').val()
-                        }))
-                        .append($('<input>', {
-                            type: 'hidden',
-                            name: 'remarks',
-                            value: $('#massDisburseRemarks').val()
-                        }));
-
-                    // Add each selected patient ID
-                    selectedDisburseIds.forEach(function(id) {
-                        form.append($('<input>', {
-                            type: 'hidden',
-                            name: 'ids[]',
-                            value: id
-                        }));
-                    });
-
-                    form.appendTo('body').submit();
-                });
-            @endcan
-
-
-            @can('budget_allocate')
-                let selectedBudgetIds = [];
-
                 dtButtons.push({
-                    text: 'Allocate Budget',
-                    className: 'btn-success',
+                    text: 'Ready for Disbursement',
+                    className: 'btn-warning',
                     action: function(e, dt, node, config) {
-                        selectedBudgetIds = $.map(dt.rows({
+                        selectedReadyForDisbursementIds = jQuery.map(dt.rows({
                             selected: true
                         }).nodes(), function(entry) {
-                            return $(entry).data('entry-id');
+                            return jQuery(entry).data('entry-id');
                         });
 
-                        if (!selectedBudgetIds.length) {
+                        if (!selectedReadyForDisbursementIds.length) {
                             alert('No records selected');
                             return;
                         }
 
-                        // Clear inputs
-                        $('#massBudgetAmount').val('');
-                        $('#massBudgetRemarks').val('');
+                        // Reset modal fields with Manila time
+                        jQuery('#massReadyStatusDate').val(getManilaDateTime());
+                        jQuery('#massReadyRemarks').val('');
 
                         // Show modal
-                        $('#massBudgetModal').modal('show');
+                        jQuery('#massReadyForDisbursementModal').modal('show');
                     }
                 });
-
-                $('#massBudgetForm').on('submit', function(e) {
+                
+                // Mass Ready for Disbursement form submission
+                jQuery('#massReadyForDisbursementForm').on('submit', function(e) {
                     e.preventDefault();
 
-                    let form = $('<form>', {
+                    // Get the submit button
+                    const submitBtn = jQuery(this).find('button[type="submit"]');
+
+                    // Set loading state - disabled with spinner
+                    submitBtn.prop('disabled', true).html(
+                        '<i class="fas fa-spinner fa-spin me-1"></i> Processing...'
+                    );
+
+                    // Also disable cancel button during submission
+                    jQuery('#massReadyForDisbursementModal').find('button[data-bs-dismiss="modal"]').prop('disabled', true);
+
+                    let form = jQuery('<form>', {
                             method: 'POST',
-                            action: "{{ route('admin.process-tracking.massBudgetAllocate') }}"
+                            action: "{{ route('admin.process-tracking.massReadyForDisbursement') }}"
                         })
-                        .append($('<input>', {
+                        .append(jQuery('<input>', {
                             type: 'hidden',
                             name: '_token',
                             value: _token
                         }))
-                        .append($('<input>', {
-                            type: 'hidden',
-                            name: 'amount',
-                            value: $('#massBudgetAmount').val()
-                        }))
-                        .append($('<input>', {
-                            type: 'hidden',
-                            name: 'remarks',
-                            value: $('#massBudgetRemarks').val()
-                        }))
-                        .append($('<input>', {
+                        .append(jQuery('<input>', {
                             type: 'hidden',
                             name: 'status_date',
-                            value: $('#massBudgetStatusDate').val()
+                            value: jQuery('#massReadyStatusDate').val()
+                        }))
+                        .append(jQuery('<input>', {
+                            type: 'hidden',
+                            name: 'remarks',
+                            value: jQuery('#massReadyRemarks').val()
                         }));
 
-                    selectedBudgetIds.forEach(function(id) {
-                        form.append($('<input>', {
+                    // Add each selected patient ID
+                    selectedReadyForDisbursementIds.forEach(function(id) {
+                        form.append(jQuery('<input>', {
+                            type: 'hidden',
+                            name: 'ids[]',
+                            value: id
+                        }));
+                    });
+
+                    form.appendTo('body').submit();
+                });
+
+                // Mass Disburse form submission
+                jQuery('#massDisburseForm').on('submit', function(e) {
+                    e.preventDefault();
+
+                    // Get the submit button
+                    const submitBtn = jQuery(this).find('button[type="submit"]');
+
+                    // Set loading state - disabled with spinner
+                    submitBtn.prop('disabled', true).html(
+                        '<i class="fas fa-spinner fa-spin me-1"></i> Processing...'
+                    );
+
+                    // Also disable cancel button during submission
+                    jQuery('#massDisburseModal').find('button[data-bs-dismiss="modal"]').prop('disabled', true);
+
+                    let form = jQuery('<form>', {
+                            method: 'POST',
+                            action: "{{ route('admin.process-tracking.massQuickDisburse') }}"
+                        })
+                        .append(jQuery('<input>', {
+                            type: 'hidden',
+                            name: '_token',
+                            value: _token
+                        }))
+                        .append(jQuery('<input>', {
+                            type: 'hidden',
+                            name: 'status_date',
+                            value: jQuery('#massDisburseDate').val()
+                        }))
+                        .append(jQuery('<input>', {
+                            type: 'hidden',
+                            name: 'remarks',
+                            value: jQuery('#massDisburseRemarks').val()
+                        }));
+
+                    // Add each selected patient ID
+                    selectedDisburseIds.forEach(function(id) {
+                        form.append(jQuery('<input>', {
                             type: 'hidden',
                             name: 'ids[]',
                             value: id
@@ -886,30 +1063,29 @@
                 });
             @endcan
 
-
             // Change modal header & toggle reject reasons based on action
-            $('#massDecisionModal').on('show.bs.modal', function() {
-                let action = $('#massDecisionAction').val();
-                let header = $('#massDecisionHeader');
-                let confirmBtn = $('#massDecisionConfirmBtn');
+            jQuery('#massDecisionModal').on('show.bs.modal', function() {
+                let action = jQuery('#massDecisionAction').val();
+                let header = jQuery('#massDecisionHeader');
+                let confirmBtn = jQuery('#massDecisionConfirmBtn');
 
                 if (action === 'approve') {
                     header.removeClass('bg-danger text-white').addClass('bg-success text-white');
-                    $('#massDecisionModalLabel').text('Approve Selected Applications');
+                    jQuery('#massDecisionModalLabel').text('Approve Selected Applications');
                     confirmBtn.removeClass('btn-danger').addClass('btn-success').text('Confirm Approve');
-                    $('#massDecisionRejectFields').hide();
+                    jQuery('#massDecisionRejectFields').hide();
                 } else {
                     header.removeClass('bg-success text-white').addClass('bg-danger text-white');
-                    $('#massDecisionModalLabel').text('Reject Selected Applications');
+                    jQuery('#massDecisionModalLabel').text('Reject Selected Applications');
                     confirmBtn.removeClass('btn-success').addClass('btn-danger').text('Confirm Reject');
-                    $('#massDecisionRejectFields').show();
+                    jQuery('#massDecisionRejectFields').show();
                 }
             });
-            $(document).on('click', '.suggested-amount', function() {
-                let value = $(this).data('value');
-                $('#massBudgetAmount').val(value);
+            
+            jQuery(document).on('click', '.suggested-amount', function() {
+                let value = jQuery(this).data('value');
+                jQuery('#massBudgetAmount').val(value);
             });
-
 
         });
     </script>

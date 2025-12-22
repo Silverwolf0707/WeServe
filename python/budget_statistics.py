@@ -1,18 +1,29 @@
 import pandas as pd
 import json
 import os
+import sys
 
-# --------------------------
-# Paths
-# --------------------------
+# Get CSV path from command line argument
+if len(sys.argv) > 1:
+    csv_path = sys.argv[1]
+else:
+    # Fallback path if no argument provided
+    base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    csv_path = os.path.join(base_path, 'storage', 'app', 'private', 'analytics', 'full_patient_data.csv')
+
+# Output JSON path in private storage
 base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-full_csv_path = os.path.join(base_path, 'storage', 'app', 'public', 'full_patient_data.csv')
-json_path = os.path.join(base_path, 'storage', 'app', 'public', 'budget_stats_output.json')
+json_path = os.path.join(base_path, 'storage', 'app', 'private', 'analytics', 'budget_stats_output.json')
 
-# --------------------------
+# Ensure the analytics directory exists
+os.makedirs(os.path.dirname(json_path), exist_ok=True)
+
 # Load CSV
-# --------------------------
-df = pd.read_csv(full_csv_path, parse_dates=['month', 'date_processed'])
+try:
+    df = pd.read_csv(csv_path, parse_dates=['month', 'date_processed'])
+except Exception as e:
+    print(f"Error loading CSV: {e}")
+    sys.exit(1)
 
 # Add Year column for grouping
 df['year'] = df['month'].dt.year
@@ -101,6 +112,6 @@ output = {
     'yearly': yearly_stats
 }
 
-# Save JSON
+# Save JSON to private storage
 with open(json_path, 'w') as f:
     json.dump(output, f, indent=2)

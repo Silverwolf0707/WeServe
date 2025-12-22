@@ -10,6 +10,8 @@ use App\Models\PatientRecord;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Gate;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class DocumentManagementController extends Controller
 {
@@ -34,14 +36,27 @@ class DocumentManagementController extends Controller
 
         if ($request->hasFile('files')) {
             foreach ($request->file('files') as $file) {
-                $path = $file->store("documents/{$request->patient_id}", 'public');
+                // Generate unique filename for security
+                $originalName = $file->getClientOriginalName();
+                $extension = $file->getClientOriginalExtension();
+                $filename = Str::random(40) . '_' . time() . '.' . $extension;
+                
+                // Store in private storage (not accessible via URL)
+                $path = $file->storeAs(
+                    'documents/' . $request->patient_id,
+                    $filename,
+                    'private' // This ensures it's stored in private disk
+                );
 
                 Document::create([
                     'patient_id' => $request->patient_id,
-                    'file_name' => $file->getClientOriginalName(),
+                    'file_name' => $originalName,
                     'file_path' => $path,
+                    'file_size' => $file->getSize(),
+                    'file_extension' => $extension,
                     'document_type' => $request->document_type,
                     'description' => $request->description,
+                    'uploaded_by' => auth('web')->user()->id,
                 ]);
             }
         }
@@ -59,12 +74,45 @@ class DocumentManagementController extends Controller
         return view('admin.documentManagement.show', compact('patient'));
     }
 
+    /**
+     * Download/View a document with permission check
+     */
+    public function view($id)
+    {
+        $document = Document::findOrFail($id);
+        
+        // Check if user has permission to view documents
+        abort_if(Gate::denies('documents_management'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        // Check if file exists in private storage
+        if (!Storage::disk('private')->exists($document->file_path)) {
+            abort(404, 'File not found.');
+        }
+
+        // Get file path and mime type
+        $path = Storage::disk('private')->path($document->file_path);
+        $mimeType = mime_content_type($path) ?: 'application/octet-stream';
+
+        // For images and PDFs, display inline if possible
+        if (Str::startsWith($mimeType, 'image/') || $mimeType === 'application/pdf') {
+            return response()->file($path, [
+                'Content-Type' => $mimeType,
+                'Content-Disposition' => 'inline; filename="' . $document->file_name . '"'
+            ]);
+        }
+
+        // For other files, force download
+        return response()->download($path, $document->file_name);
+    }
+
     public function destroy($id)
     {
         abort_if(Gate::denies('documents_management'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         $doc = Document::findOrFail($id);
-        Storage::disk('public')->delete($doc->file_path);
+        
+        // Delete from private storage
+        Storage::disk('private')->delete($doc->file_path);
         $doc->delete();
 
         return back()->with('status', 'Document deleted successfully.');
@@ -83,7 +131,7 @@ class DocumentManagementController extends Controller
         $documents = Document::whereIn('patient_id', $ids)->get();
 
         foreach ($documents as $doc) {
-            Storage::disk('public')->delete($doc->file_path);
+            Storage::disk('private')->delete($doc->file_path);
             $doc->delete();
         }
 

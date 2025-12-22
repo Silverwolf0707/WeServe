@@ -60,11 +60,8 @@
                 </thead>
                 <tbody>
                     @foreach ($patientRecords as $patientRecord)
-                        @php
-                            $latestStatus = $patientRecord->latestStatusLog; // Make sure you eager load this in the controller
-                            $statusValue = $latestStatus->status ?? 'Processing';
-                        @endphp
-                        <tr data-entry-id="{{ $patientRecord->id }}" data-status="{{ $statusValue }}">
+                        <tr data-entry-id="{{ $patientRecord->id }}" data-status="{{ $patientRecord->clean_status }}"
+                            data-filter-category="{{ $patientRecord->filter_category }}">
                             <td></td>
                             <td>
                                 <span data-order="{{ \Carbon\Carbon::parse($patientRecord->date_processed)->timestamp }}">
@@ -94,13 +91,10 @@
                                             title="Edit"><i class="fas fa-edit"></i></a>
                                     @endcan
                                     @can('patient_record_delete')
-                                        <form action="{{ route('admin.patient-records.destroy', $patientRecord->id) }}"
-                                            method="POST" class="m-0 p-0 delete-form" style="display: inline;">
-                                            @method('DELETE')
-                                            @csrf
-                                            <button type="submit" class="btn p-0 border-0 bg-transparent mr-3 delete-button"
-                                                title="Delete"><i class="fas fa-trash-alt text-danger"></i></button>
-                                        </form>
+                                        <a href="#" class="mr-3 delete-single-btn" data-id="{{ $patientRecord->id }}"
+                                            title="Delete">
+                                            <i class="fas fa-trash-alt text-danger"></i>
+                                        </a>
                                     @endcan
                                 </div>
                             </td>
@@ -110,6 +104,58 @@
             </table>
         </div>
     </div>
+    </div>
+
+    {{-- Single Delete Confirmation Modal --}}
+    <div class="modal fade" id="singleDeleteModal" tabindex="-1" aria-labelledby="singleDeleteModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="singleDeleteModalLabel">Confirm Delete</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this patient record?</p>
+                    <p class="text-muted small">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form id="singleDeleteForm" method="POST" style="display: inline;">
+                        @method('DELETE')
+                        @csrf
+                        <button type="submit" class="btn btn-danger" id="confirmSingleDeleteBtn">
+                            <i class="fas fa-trash-alt me-1"></i> Delete
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Mass Delete Confirmation Modal --}}
+    <div class="modal fade" id="massDeleteModal" tabindex="-1" aria-labelledby="massDeleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="massDeleteModalLabel">Confirm Mass Delete</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete the selected patient records?</p>
+                    <p class="text-muted small">This action cannot be undone.</p>
+                    <div id="selectedRecordsCount" class="alert alert-warning mt-2"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmMassDeleteBtn">
+                        <i class="fas fa-trash-alt me-1"></i> Delete Selected
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     {{-- Mass Submit Modal --}}
@@ -143,11 +189,10 @@
 
 @section('scripts')
     @parent
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         function initializeRealTimeUpdates() {
             console.log('📡 Initializing real-time updates for patient records...');
-            
+
             // Connection status handling
             if (window.Echo && window.Echo.connector && window.Echo.connector.pusher) {
                 window.Echo.connector.pusher.connection.bind('connected', function() {
@@ -176,9 +221,9 @@
         }
 
         function updatePatientTable(e) {
-            const table = $('.datatable-PatientRecord').DataTable();
+            const table = jQuery('.datatable-PatientRecord').DataTable();
             const rowData = [
-                '', 
+                '',
                 `<span data-order="${new Date(e.date_processed).getTime()}">${safeValue(formatDate(e.date_processed))}</span>`,
                 safeValue(e.case_type),
                 safeValue(e.control_number),
@@ -203,10 +248,10 @@
 
             table.order([1, 'desc']).draw();
 
-            $(newRow).attr('data-entry-id', e.id);
-            $(newRow).attr('data-status', e.latest_status || 'Processing');
-            $(newRow).addClass('table-success');
-            setTimeout(() => $(newRow).removeClass('table-success'), 3000);
+            jQuery(newRow).attr('data-entry-id', e.id);
+            jQuery(newRow).attr('data-status', e.latest_status || 'Processing');
+            jQuery(newRow).addClass('table-success');
+            setTimeout(() => jQuery(newRow).removeClass('table-success'), 3000);
 
             console.log('✅ Added new row for patient:', e.patient_name);
         }
@@ -262,19 +307,15 @@
                 <div class="d-flex align-items-center">
                     <a href="/admin/patient-records/${id}" class="mr-3" title="View"><i class="fas fa-eye"></i></a>
                     <a href="/admin/patient-records/${id}/edit" class="mr-3" title="Edit"><i class="fas fa-edit"></i></a>
-                    <form method="POST" action="/admin/patient-records/${id}" class="m-0 p-0 delete-form" style="display:inline;">
-                        <input type="hidden" name="_method" value="DELETE">
-                        <input type="hidden" name="_token" value="${_token}">
-                        <button type="submit" class="btn p-0 border-0 bg-transparent mr-3 delete-button" title="Delete">
-                            <i class="fas fa-trash-alt text-danger"></i>
-                        </button>
-                    </form>
+                    <a href="#" class="mr-3 delete-single-btn" data-id="${id}" title="Delete">
+                        <i class="fas fa-trash-alt text-danger"></i>
+                    </a>
                 </div>`;
         }
 
         document.addEventListener('DOMContentLoaded', function() {
             initializeRealTimeUpdates();
-            
+
             var toastEl = document.getElementById('liveToast');
             var timerEl = document.getElementById('toast-timer');
 
@@ -298,10 +339,11 @@
             }
         });
 
-        $(function() {
-            let dtButtons = $.extend(true, [], $.fn.dataTable.defaults.buttons)
+        jQuery(function() {
+            let dtButtons = jQuery.extend(true, [], jQuery.fn.dataTable.defaults.buttons)
+            let _token = jQuery('meta[name="csrf-token"]').attr('content');
 
-            let table = $('.datatable-PatientRecord:not(.ajaxTable)').DataTable({
+            let table = jQuery('.datatable-PatientRecord:not(.ajaxTable)').DataTable({
                 buttons: dtButtons,
                 order: [
                     [1, 'desc']
@@ -321,19 +363,57 @@
             });
 
             // Custom filter for status
-            $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
-                let selectedStatus = $('#statusFilter').val(); // value from dropdown
-                let rowStatus = $(table.row(dataIndex).node()).data('status'); // read data-status
+            jQuery.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+                let selectedFilter = jQuery('#statusFilter').val();
+                if (!selectedFilter) return true; // Show all if no filter selected
 
-                // If nothing selected, show all
-                if (!selectedStatus) return true;
+                let row = table.row(dataIndex).node();
+                let filterCategory = jQuery(row).data('filter-category');
 
-                return rowStatus === selectedStatus;
+                return filterCategory === selectedFilter;
             });
 
             // Trigger filter when dropdown changes
-            $('#statusFilter').on('change', function() {
+            jQuery('#statusFilter').on('change', function() {
                 table.draw();
+            });
+
+            // Handle single delete button clicks
+            jQuery(document).on('click', '.delete-single-btn', function(e) {
+                e.preventDefault();
+                const recordId = jQuery(this).data('id');
+                const recordControlNumber = jQuery(this).closest('tr').find('td').eq(3).text().trim();
+
+                // Set up the delete form
+                const deleteForm = jQuery('#singleDeleteForm');
+                deleteForm.attr('action', `/admin/patient-records/${recordId}`);
+
+                // Update modal text
+                jQuery('#singleDeleteModal .modal-body p:first').text(
+                    `Are you sure you want to delete the patient record with Control Number: ${recordControlNumber}?`
+                );
+
+                // Show modal
+                const deleteModal = new bootstrap.Modal(document.getElementById('singleDeleteModal'));
+                deleteModal.show();
+            });
+
+            // Handle single delete confirmation
+            jQuery('#confirmSingleDeleteBtn').on('click', function() {
+                const btn = jQuery(this);
+                const form = jQuery('#singleDeleteForm');
+
+                // Disable button and show loading
+                btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Deleting...');
+
+                // Submit the form
+                form.submit();
+            });
+
+            // Reset single delete button when modal hides
+            jQuery('#singleDeleteModal').on('hidden.bs.modal', function() {
+                jQuery('#confirmSingleDeleteBtn').prop('disabled', false).html(
+                    '<i class="fas fa-trash-alt me-1"></i> Delete');
             });
 
             @can('patient_record_delete')
@@ -342,10 +422,10 @@
                     text: deleteButtonTrans,
                     className: 'btn-danger',
                     action: function(e, dt, node, config) {
-                        var ids = $.map(dt.rows({
+                        var ids = jQuery.map(dt.rows({
                             selected: true
                         }).nodes(), function(entry) {
-                            return $(entry).data('entry-id');
+                            return jQuery(entry).data('entry-id');
                         });
 
                         if (ids.length === 0) {
@@ -353,52 +433,69 @@
                             return;
                         }
 
-                        Swal.fire({
-                            title: 'Are you sure?',
-                            text: "You are about to delete selected records. This action cannot be undone.",
-                            icon: 'warning',
-                            showCancelButton: true,
-                            confirmButtonText: 'Yes, delete them!',
-                            cancelButtonText: 'Cancel',
-                            customClass: {
-                                confirmButton: 'btn btn-danger',
-                                cancelButton: 'btn btn-secondary'
-                            },
-                            buttonsStyling: false
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                // Submit via standard form to allow redirect
-                                let form = $('<form>', {
-                                        method: 'POST',
-                                        action: "{{ route('admin.patient-records.massDestroy') }}"
-                                    })
-                                    .append($('<input>', {
-                                        type: 'hidden',
-                                        name: '_token',
-                                        value: _token
-                                    }))
-                                    .append($('<input>', {
-                                        type: 'hidden',
-                                        name: '_method',
-                                        value: 'DELETE'
-                                    }));
+                        // Update modal with selected count
+                        jQuery('#selectedRecordsCount').text(
+                            `You have selected ${ids.length} record(s) for deletion.`);
 
-                                ids.forEach(function(id) {
-                                    form.append($('<input>', {
-                                        type: 'hidden',
-                                        name: 'ids[]',
-                                        value: id
-                                    }));
-                                });
+                        // Store IDs for later use
+                        const deleteModal = document.getElementById('massDeleteModal');
+                        deleteModal.dataset.selectedIds = JSON.stringify(ids);
 
-                                form.appendTo('body').submit();
-                            }
-                        });
+                        // Show modal
+                        const modal = new bootstrap.Modal(deleteModal);
+                        modal.show();
                     }
                 };
 
                 dtButtons.push(deleteButton);
             @endcan
+
+            // Handle mass delete confirmation
+            jQuery('#confirmMassDeleteBtn').on('click', function() {
+                const btn = jQuery(this);
+                const modal = document.getElementById('massDeleteModal');
+                const ids = JSON.parse(modal.dataset.selectedIds || '[]');
+
+                if (ids.length === 0) {
+                    alert('No records selected');
+                    return;
+                }
+
+                // Disable button and show loading
+                btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Deleting...');
+
+                // Submit via standard form
+                let form = jQuery('<form>', {
+                        method: 'POST',
+                        action: "{{ route('admin.patient-records.massDestroy') }}"
+                    })
+                    .append(jQuery('<input>', {
+                        type: 'hidden',
+                        name: '_token',
+                        value: _token
+                    }))
+                    .append(jQuery('<input>', {
+                        type: 'hidden',
+                        name: '_method',
+                        value: 'DELETE'
+                    }));
+
+                ids.forEach(function(id) {
+                    form.append(jQuery('<input>', {
+                        type: 'hidden',
+                        name: 'ids[]',
+                        value: id
+                    }));
+                });
+
+                form.appendTo('body').submit();
+            });
+
+            // Reset mass delete button when modal hides
+            jQuery('#massDeleteModal').on('hidden.bs.modal', function() {
+                jQuery('#confirmMassDeleteBtn').prop('disabled', false).html(
+                    '<i class="fas fa-trash-alt me-1"></i> Delete Selected');
+            });
 
             @can('submit_patient_application')
                 let selectedIds = [];
@@ -407,10 +504,10 @@
                     text: 'Submit Selected',
                     className: 'btn-primary',
                     action: function(e, dt, node, config) {
-                        selectedIds = $.map(dt.rows({
+                        selectedIds = jQuery.map(dt.rows({
                             selected: true
                         }).nodes(), function(entry) {
-                            return $(entry).data('entry-id');
+                            return jQuery(entry).data('entry-id');
                         });
 
                         if (selectedIds.length === 0) {
@@ -418,37 +515,49 @@
                             return;
                         }
 
-                        $('#massSubmitRemarks').val('');
-                        $('#massSubmitModal').modal('show');
+                        jQuery('#massSubmitRemarks').val('');
+                        jQuery('#massSubmitModal').modal('show');
                     }
                 });
 
-                $('#massSubmitForm').on('submit', function(e) {
+                jQuery('#massSubmitForm').on('submit', function(e) {
                     e.preventDefault();
 
-                    let form = $('<form>', {
+                    // Get the submit button
+                    const submitBtn = jQuery(this).find('button[type="submit"]');
+                    const originalBtnText = submitBtn.html();
+
+                    // Set loading state
+                    submitBtn.prop('disabled', true).html(
+                        '<i class="fas fa-spinner fa-spin me-1"></i> Submitting...'
+                    );
+
+                    // Also disable cancel button during submission
+                    jQuery(this).find('button[data-bs-dismiss="modal"]').prop('disabled', true);
+
+                    let form = jQuery('<form>', {
                             method: 'POST',
                             action: "{{ route('admin.patient-records.massSubmit') }}"
                         })
-                        .append($('<input>', {
+                        .append(jQuery('<input>', {
                             type: 'hidden',
                             name: '_token',
                             value: _token
                         }))
-                        .append($('<input>', {
+                        .append(jQuery('<input>', {
                             type: 'hidden',
                             name: 'remarks',
-                            value: $('#massSubmitRemarks').val()
+                            value: jQuery('#massSubmitRemarks').val()
                         }))
-                        .append($('<input>', {
+                        .append(jQuery('<input>', {
                             type: 'hidden',
                             name: 'submitted_date',
-                            value: $('#massSubmitDate').val()
+                            value: jQuery('#massSubmitDate').val()
                         }));
 
                     // Add each selected patient ID
                     selectedIds.forEach(function(id) {
-                        form.append($('<input>', {
+                        form.append(jQuery('<input>', {
                             type: 'hidden',
                             name: 'ids[]',
                             value: id
@@ -457,10 +566,19 @@
 
                     form.appendTo('body').submit();
                 });
+
+                // Reset button when modal closes
+                jQuery('#massSubmitModal').on('hidden.bs.modal', function() {
+                    const submitBtn = jQuery('#massSubmitForm').find('button[type="submit"]');
+                    submitBtn.prop('disabled', false).html('Submit Now');
+
+                    // Re-enable cancel button
+                    jQuery(this).find('button[data-bs-dismiss="modal"]').prop('disabled', false);
+                });
             @endcan
 
-            $('a[data-toggle="tab"]').on('shown.bs.tab click', function() {
-                $($.fn.dataTable.tables(true)).DataTable().columns.adjust();
+            jQuery('a[data-toggle="tab"]').on('shown.bs.tab click', function() {
+                jQuery(jQuery.fn.dataTable.tables(true)).DataTable().columns.adjust();
             });
         });
     </script>
