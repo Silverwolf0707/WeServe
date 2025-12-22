@@ -1064,14 +1064,45 @@ class ProcessTrackingController extends Controller
                 'time' => now()->diffForHumans(),
             ]);
         }
-        $validStatuses = $patient->statusLogs->pluck('status')->map(function ($status) {
-            return str_replace('[ROLLED BACK]', '', $status);
-        })->unique();
+
+        // Define the process flow sequence
+        $processFlow = [
+            'Processing' => 'CSWD Office',
+            'Submitted' => 'Mayor\'s Office',
+            'Submitted[Emergency]' => 'Mayor\'s Office',
+            'Approved' => 'Budget Office',
+            'Budget Allocated' => 'Accounting Office',
+            'DV Submitted' => 'Treasury Office',
+            'Ready for Disbursement' => 'Treasury Office', // Add this
+            'Disbursed' => 'Treasury Office', // Add this if needed
+        ];
 
         $rollbackTo = $request->rollback_to;
 
-        if (!$validStatuses->contains($rollbackTo)) {
+        // Get the current base status (without [ROLLED BACK] tag)
+        $latestStatus = $patient->latestStatusLog->status ?? '';
+        $currentBaseStatus = trim(preg_replace('/\[.*?\]/', '', $latestStatus));
+
+        // Check if rollback is valid based on process flow
+        $processSteps = array_keys($processFlow);
+        $currentPosition = array_search($currentBaseStatus, $processSteps);
+        $targetPosition = array_search($rollbackTo, $processSteps);
+
+        // Allow rollback only if:
+        // 1. Target status exists in process flow
+        // 2. Target is earlier in the process flow than current status
+        // 3. Target status has been reached before (exists in patient's history)
+        if ($targetPosition === false || $targetPosition >= $currentPosition) {
             return back()->with('error', 'Invalid rollback target.');
+        }
+
+        // Check if the target status exists in patient's history
+        $hasStatusInHistory = $patient->statusLogs()
+            ->where('status', 'LIKE', '%' . $rollbackTo . '%')
+            ->exists();
+
+        if (!$hasStatusInHistory) {
+            return back()->with('error', 'Cannot rollback to a status that hasn\'t been reached yet.');
         }
 
         $rolledBackStatus = $rollbackTo . '[ROLLED BACK]';
@@ -1082,6 +1113,7 @@ class ProcessTrackingController extends Controller
             'user_id' => Auth::id(),
             'status_date' => now(),
         ]);
+
         NotificationService::createStatusLogNotifications($statusLog);
 
         // Reload latest status log before broadcasting
@@ -1099,86 +1131,61 @@ class ProcessTrackingController extends Controller
         ]);
     }
 
-    public function returnToRollbacker($id)
-    {
-        $patient = PatientRecord::findOrFail($id);
+  public function returnToRollbacker($id)
+{
+    $patient = PatientRecord::findOrFail($id);
 
-        $latestLog = $patient->statusLogs()->latest()->first();
+    // Find the latest status log with [ROLLED BACK] tag
+    $latestRolledBackLog = $patient->statusLogs()
+        ->where('status', 'LIKE', '%[ROLLED BACK]%')
+        ->latest()
+        ->first();
 
-        $previousLog = $patient->statusLogs()
-            ->where('id', '<', $latestLog->id)
-            ->latest()
-            ->first();
-
-        if (!$previousLog) {
-            return back()->with('error', 'No previous status found to return to.');
-        }
-
-        $restoredLog = PatientStatusLog::create([
-            'patient_id' => $patient->id,
-            'status'     => $previousLog->status, // no rollback tag
-            'user_id'    => Auth::id(),
-            'remarks'    => 'Returned to rollbacker: ' . $previousLog->status,
-            'status_date' => now(),
-        ]);
-        $patient->load(['latestStatusLog', 'budgetAllocation', 'latestStatusLog.user.roles']);
-
-        broadcast(new PatientStatusChanged($patient, strtolower($previousLog->status)));
-
+    if (!$latestRolledBackLog) {
         return back()->with('toast', [
-            'type' => 'success',
-            'title' => 'Returned to Rollbacker',
-            'message' => 'Successfully returned to previous status: ' . $previousLog->status,
+            'type' => 'warning',
+            'title' => 'No Rollback Found',
+            'message' => 'No rolled back status found to return from.',
             'time' => now()->diffForHumans(),
         ]);
     }
-    public function submit(Request $request, $id)
-    {
-        abort_if(Gate::denies('submit_patient_application'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        $request->validate([
-            'remarks' => 'nullable|string|max:1000',
-            'status' => 'required|string',
-            'submitted_date' => 'required|date'
+    // Find the status log immediately BEFORE the rolled back one
+    $statusBeforeRollback = $patient->statusLogs()
+        ->where('id', '<', $latestRolledBackLog->id)
+        ->where('status', 'NOT LIKE', '%[ROLLED BACK]%') // Skip other rolled back statuses
+        ->latest()
+        ->first();
+
+    if (!$statusBeforeRollback) {
+        return back()->with('toast', [
+            'type' => 'warning',
+            'title' => 'No Previous Status',
+            'message' => 'Could not find status before the rollback.',
+            'time' => now()->diffForHumans(),
         ]);
-
-        $status = $request->input('status');
-        $statusDate = $request->input('submitted_date');
-
-        // Create status log
-        PatientStatusLog::create([
-            'patient_id' => $id,
-            'status' => $status,
-            'user_id' => Auth::id(),
-            'status_date' => $statusDate,
-            'remarks' => $request->remarks,
-            'created_at' => now(),
-        ]);
-
-        $patient = PatientRecord::with('latestStatusLog')->findOrFail($id);
-
-        $action = $status === 'Submitted' ? 'submitted' : 'updated';
-        broadcast(new PatientStatusChanged($patient, $action))->toOthers();
-
-
-        if ($request->has('redirect_to_process_tracking')) {
-            return redirect()
-                ->route('admin.process-tracking.show', $id)
-                ->with('toast', [
-                    'type' => 'success',
-                    'title' => 'Patient Submitted Successfully',
-                    'message' => 'Application submitted successfully',
-                    'time' => now()->diffForHumans(),
-                ]);
-        }
-
-        return redirect()
-            ->route('admin.patient-records.show', $id)
-            ->with('toast', [
-                'type' => 'success',
-                'title' => 'Patient Submitted Successfully',
-                'message' => 'Application submitted successfully',
-                'time' => now()->diffForHumans(),
-            ]);
     }
+
+    // Create a new status log returning to the status before rollback
+    $restoredLog = PatientStatusLog::create([
+        'patient_id' => $patient->id,
+        'status'     => $statusBeforeRollback->status,
+        'user_id'    => Auth::id(),
+        'remarks'    => 'Returned from rollback to: ' . $statusBeforeRollback->status,
+        'status_date' => now(),
+    ]);
+
+    NotificationService::createStatusLogNotifications($restoredLog);
+
+    // Reload patient for broadcasting
+    $patient->load(['latestStatusLog', 'latestStatusLog.user.roles']);
+    broadcast(new PatientStatusChanged($patient, strtolower($statusBeforeRollback->status)));
+
+    return back()->with('toast', [
+        'type' => 'success',
+        'title' => 'Returned from Rollback',
+        'message' => 'Successfully returned to: ' . $statusBeforeRollback->status,
+        'time' => now()->diffForHumans(),
+    ]);
+}
 }

@@ -129,47 +129,42 @@ class OnlineApplicationController
         ];
     }
 
-    public function track(Request $request)
-    {
-        $request->validate([
-            'tracking_number' => 'required|string',
-        ]);
+   public function track(Request $request)
+{
+    $request->validate([
+        'tracking_number' => 'required|string',
+    ]);
 
-        $trackingNumber = $request->tracking_number;
+    $trackingNumber = $request->tracking_number;
 
-        $trackingRecord = PatientTrackingNumber::where('tracking_number', $trackingNumber)
-            ->with('patient.statusLogs')
-            ->first();
+    $trackingRecord = PatientTrackingNumber::where('tracking_number', $trackingNumber)
+        ->with('patient.statusLogs')
+        ->first();
 
-        if ($trackingRecord && $trackingRecord->patient) {
-            $patient = $trackingRecord->patient;
-            $logs = $patient->statusLogs()->orderBy('status_date')->get();
-
-            return view('trackingpage')->with([
-                'status' => 'Application has been transferred to patient records.',
-                'application' => $patient,
-                'logs' => $logs,
-            ]);
-        }
-
-        $application = OnlinePatientApplication::where('tracking_number', $trackingNumber)->first();
-        if ($application) {
-            return view('trackingpage')->with([
-                'status' => 'Application is still on process.',
-                'application' => $application,
-                'logs' => [
-                    (object)[
-                        'status_date' => $application->created_at,
-                        'status' => 'Please wait for further announcement',
-                        'remarks' => null
-                    ]
-                ],
-            ]);
-        }
+    if ($trackingRecord && $trackingRecord->patient) {
+        $patient = $trackingRecord->patient;
+        $logs = $patient->statusLogs()->orderBy('status_date')->get();
 
         return view('trackingpage')->with([
-            'status' => 'Tracking number not found.',
-            'logs' => [],
+            'status' => 'Application has been transferred to patient records.',
+            'application' => $patient,
+            'logs' => $logs,
         ]);
     }
+
+    $application = OnlinePatientApplication::where('tracking_number', $trackingNumber)->first();
+    if ($application) {
+        // Return an empty collection instead of an array
+        return view('trackingpage')->with([
+            'status' => 'Application is still on process.',
+            'application' => $application,
+            'logs' => collect([]), // Use collect() to create an empty collection
+        ]);
+    }
+
+    return view('trackingpage')->with([
+        'status' => 'Tracking number not found.',
+        'logs' => collect([]), // Use collect() here too
+    ]);
+}
 }

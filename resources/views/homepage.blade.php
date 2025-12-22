@@ -242,7 +242,9 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-success" onclick="validateAndShowConfirmation()">Review & Submit</button>
+                    <button type="button" class="btn btn-success" id="reviewSubmitBtn" onclick="validateAndShowConfirmation()">
+                        Review & Submit
+                    </button>
                 </div>
             </div>
         </div>
@@ -301,8 +303,12 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="editApplication()">Edit Details</button>
-                    <button type="button" class="btn btn-success" onclick="submitApplication()">Confirm & Submit</button>
+                    <button type="button" class="btn btn-secondary" id="editDetailsBtn" onclick="editApplication()">
+                        Edit Details
+                    </button>
+                    <button type="button" class="btn btn-success" id="confirmSubmitBtn" onclick="submitApplication()">
+                        <i class="fas fa-paper-plane me-1"></i> Confirm & Submit
+                    </button>
                 </div>
             </div>
         </div>
@@ -322,7 +328,7 @@
                     <div class="tracking-display mb-3">
                         <code id="trackingNumberDisplay" class="fs-5 fw-bold d-block p-2 bg-light rounded"></code>
                     </div>
-                    <button type="button" onclick="copyTrackingNumber()" class="btn btn-primary w-100">
+                    <button type="button" id="copyTrackingBtn" onclick="copyTrackingNumber()" class="btn btn-primary w-100">
                         <i class="fas fa-copy"></i> Copy Tracking Number
                     </button>
                 </div>
@@ -400,6 +406,13 @@
 
         // Form validation and modal functions
         function validateAndShowConfirmation() {
+            // Disable review submit button immediately
+            const reviewSubmitBtn = document.getElementById('reviewSubmitBtn');
+            if (reviewSubmitBtn) {
+                reviewSubmitBtn.disabled = true;
+                reviewSubmitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            }
+
             // Clear previous validation
             clearValidation();
 
@@ -448,6 +461,12 @@
             }
 
             if (!isValid) {
+                // Re-enable button if validation fails
+                if (reviewSubmitBtn) {
+                    reviewSubmitBtn.disabled = false;
+                    reviewSubmitBtn.innerHTML = 'Review & Submit';
+                }
+                
                 // Scroll to first invalid field
                 if (firstInvalidField) {
                     firstInvalidField.scrollIntoView({ 
@@ -464,6 +483,14 @@
 
             // If validation passes, show confirmation
             showConfirmation();
+            
+            // Re-enable button after showing confirmation
+            if (reviewSubmitBtn) {
+                setTimeout(() => {
+                    reviewSubmitBtn.disabled = false;
+                    reviewSubmitBtn.innerHTML = 'Review & Submit';
+                }, 1000);
+            }
         }
 
         function clearValidation() {
@@ -512,6 +539,16 @@
         }
 
         function editApplication() {
+            // Enable buttons first
+            const editDetailsBtn = document.getElementById('editDetailsBtn');
+            const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
+            
+            if (editDetailsBtn) editDetailsBtn.disabled = false;
+            if (confirmSubmitBtn) {
+                confirmSubmitBtn.disabled = false;
+                confirmSubmitBtn.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Confirm & Submit';
+            }
+            
             // Close confirmation modal and reopen application modal
             const confirmationModal = bootstrap.Modal.getInstance(document.getElementById('confirmationModal'));
             if (confirmationModal) {
@@ -525,7 +562,23 @@
         }
 
         function submitApplication() {
-            document.getElementById('applicationForm').submit();
+            // Disable both buttons immediately to prevent duplicate submission
+            const editDetailsBtn = document.getElementById('editDetailsBtn');
+            const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
+            
+            if (editDetailsBtn) editDetailsBtn.disabled = true;
+            if (confirmSubmitBtn) {
+                confirmSubmitBtn.disabled = true;
+                confirmSubmitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+            }
+            
+            // Show processing alert
+            showAlert('Submitting your application...', 'info');
+            
+            // Submit the form after a short delay to show the loading state
+            setTimeout(() => {
+                document.getElementById('applicationForm').submit();
+            }, 500);
         }
 
         function showRequirements() {
@@ -594,15 +647,38 @@
         }
 
         function copyTrackingNumber() {
+            const copyTrackingBtn = document.getElementById('copyTrackingBtn');
             const track = document.getElementById("trackingNumberDisplay");
-            if (track) {
+            
+            if (track && copyTrackingBtn) {
+                // Disable button immediately
+                copyTrackingBtn.disabled = true;
+                copyTrackingBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Copying...';
+                
                 navigator.clipboard.writeText(track.innerText).then(() => {
+                    // Show success state
+                    copyTrackingBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
                     showAlert('Tracking number copied to clipboard!', 'success');
+                    
+                    // Re-enable button after 2 seconds
+                    setTimeout(() => {
+                        copyTrackingBtn.disabled = false;
+                        copyTrackingBtn.innerHTML = '<i class="fas fa-copy"></i> Copy Tracking Number';
+                    }, 2000);
+                }).catch(err => {
+                    // Show error and re-enable button
+                    copyTrackingBtn.disabled = false;
+                    copyTrackingBtn.innerHTML = '<i class="fas fa-copy"></i> Copy Tracking Number';
+                    showAlert('Failed to copy tracking number. Please copy manually.', 'danger');
                 });
             }
         }
 
         function showAlert(message, type = 'info') {
+            // Remove existing alerts
+            const existingAlerts = document.querySelectorAll('.alert.position-fixed');
+            existingAlerts.forEach(alert => alert.remove());
+
             // Create alert element
             const alertDiv = document.createElement('div');
             alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
@@ -678,7 +754,32 @@
                 }
             });
         });
-    </script>
 
-    
+        // Prevent multiple submissions by disabling form submit on Enter key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+            }
+        });
+
+        // Reset form state when modal is closed
+        document.getElementById('applicationModal').addEventListener('hidden.bs.modal', function () {
+            // Re-enable review submit button
+            const reviewSubmitBtn = document.getElementById('reviewSubmitBtn');
+            if (reviewSubmitBtn) {
+                reviewSubmitBtn.disabled = false;
+                reviewSubmitBtn.innerHTML = 'Review & Submit';
+            }
+            
+            // Re-enable confirmation modal buttons
+            const editDetailsBtn = document.getElementById('editDetailsBtn');
+            const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
+            
+            if (editDetailsBtn) editDetailsBtn.disabled = false;
+            if (confirmSubmitBtn) {
+                confirmSubmitBtn.disabled = false;
+                confirmSubmitBtn.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Confirm & Submit';
+            }
+        });
+    </script>
 @endsection

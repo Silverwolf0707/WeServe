@@ -82,6 +82,47 @@
             @php
                 $latestStatusValue = optional($latestStatus)->status;
                 $isLocked = !in_array($latestStatusValue, [null, 'Rejected', 'Processing', "Draft"]);
+                
+                // Check if there was previous emergency submission
+                $hasPreviousEmergencySubmission = false;
+                $hasPreviousNormalSubmission = false;
+                
+                if ($patientRecord->statusLogs) {
+                    // Get all submission logs (excluding rolled back)
+                    $submissionLogs = $patientRecord->statusLogs
+                        ->whereIn('status', ['Submitted', 'Submitted[Emergency]'])
+                        ->whereNotIn('status', function ($query) {
+                            $query
+                                ->select('status')
+                                ->from('patient_status_logs')
+                                ->where('status', 'like', '%[ROLLED BACK]%');
+                        })
+                        ->sortByDesc('status_date');
+                    
+                    if ($submissionLogs->count() > 0) {
+                        $latestSubmission = $submissionLogs->first();
+                        if (str_contains($latestSubmission->status, 'Emergency')) {
+                            $hasPreviousEmergencySubmission = true;
+                        } else {
+                            $hasPreviousNormalSubmission = true;
+                        }
+                    }
+                }
+                
+                // Determine which buttons to enable/disable
+                $enableNormalSubmit = !$isLocked && !$hasPreviousEmergencySubmission;
+                $enableEmergencySubmit = !$isLocked;
+                
+                // Special case: after rejection, only enable the same type as previous submission
+                if ($latestStatusValue === 'Rejected') {
+                    if ($hasPreviousEmergencySubmission) {
+                        $enableNormalSubmit = false;
+                        $enableEmergencySubmit = true;
+                    } elseif ($hasPreviousNormalSubmission) {
+                        $enableNormalSubmit = true;
+                        $enableEmergencySubmit = false;
+                    }
+                }
             @endphp
 
             @can('submit_patient_application')
@@ -91,9 +132,10 @@
                     </div>
 
                     <div class="card-body">
-                        <form method="POST">
+                        <form method="POST" id="submitForm">
                             @csrf
                             <input type="hidden" name="status" value="Submitted">
+                            <input type="hidden" name="submit_type" id="submitType" value="">
 
                             <div class="form-group">
                                 <label for="submitted_date">Submitted Date</label>
@@ -108,31 +150,35 @@
 
                             <div class="d-flex justify-content-between">
                                 {{-- Normal Submit --}}
-                                <button type="button" class="btn btn-primary" @if ($isLocked) disabled @endif
-                                    onclick="
-                        const form = this.closest('form');
-                        this.disabled = true;
-                        this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Submitting...';
-                        form.action='{{ route('admin.patient-records.submit', $patientRecord->id) }}';
-                        form.submit();
-                    ">
+                                <button type="button" class="btn btn-primary submit-btn" 
+                                    id="normalSubmitBtn"
+                                    @if (!$enableNormalSubmit) disabled @endif
+                                    onclick="handleSubmit('normal', this)">
                                     Submit
                                 </button>
 
                                 {{-- Emergency Submit --}}
-                                <button type="button" class="btn btn-danger" @if ($isLocked) disabled @endif
-                                    onclick="
-                        const form = this.closest('form');
-                        this.disabled = true;
-                        this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Submitting...';
-                        form.action='{{ route('admin.patient-records.submit-emergency', $patientRecord->id) }}';
-                        form.submit();
-                    ">
+                                <button type="button" class="btn btn-danger submit-btn"
+                                    id="emergencySubmitBtn"
+                                    @if (!$enableEmergencySubmit) disabled @endif
+                                    onclick="handleSubmit('emergency', this)">
                                     Submit [Emergency]
                                 </button>
                             </div>
 
-                            @if ($isLocked)
+                            @if ($hasPreviousEmergencySubmission && $latestStatusValue === 'Rejected')
+                                <div class="alert alert-warning mt-3">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    This application was previously submitted as Emergency. Only emergency submissions are allowed.
+                                </div>
+                            @elseif ($hasPreviousNormalSubmission && $latestStatusValue === 'Rejected')
+                                <div class="alert alert-info mt-3">
+                                    <i class="fas fa-info-circle"></i>
+                                    This application was previously submitted normally. Only normal submissions are allowed.
+                                </div>
+                            @endif
+
+                            @if ($isLocked && $latestStatusValue !== 'Rejected')
                                 <div class="alert alert-info mt-3">
                                     This application has already been submitted and is currently in process.
                                 </div>
@@ -192,4 +238,37 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('scripts')
+<script>
+    function handleSubmit(type, clickedButton) {
+        const form = document.getElementById('submitForm');
+        const submitTypeField = document.getElementById('submitType');
+        const allSubmitButtons = document.querySelectorAll('.submit-btn');
+        
+        // Set the submit type
+        submitTypeField.value = type;
+        
+        // Set the form action based on type
+        if (type === 'normal') {
+            form.action = '{{ route('admin.patient-records.submit', $patientRecord->id) }}';
+        } else {
+            form.action = '{{ route('admin.patient-records.submit-emergency', $patientRecord->id) }}';
+        }
+        
+        // Disable all submit buttons
+        allSubmitButtons.forEach(button => {
+            button.disabled = true;
+            if (button === clickedButton) {
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            } else {
+                button.innerHTML = '<i class="fas fa-clock"></i> Please wait...';
+            }
+        });
+        
+        // Submit the form
+        form.submit();
+    }
+</script>
 @endsection
