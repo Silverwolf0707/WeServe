@@ -10,6 +10,7 @@ The WeServe is a user-friendly web application designed to streamline the manage
 - **User  Authentication:**
   - Secure login for different user roles (Admin, CSWD Officer, Mayor, Budget Officer, Accounting Officer, Treasury Officer).
   - Role-based access control to ensure users can only access relevant features.
+  - Permission-based access for different roles.
 
 - **Patient Application Management:**
   - Online application submission with unique tracking numbers.
@@ -18,12 +19,12 @@ The WeServe is a user-friendly web application designed to streamline the manage
 
 - **Budget and Disbursement Management:**
   - Budget allocation for approved applications.
-  - Generation of Obligation Request and Status (OBRE) and Disbursement Voucher (DV) PDFs.
-  - OTP verification for secure disbursement processes.
+  - Disbursement voucher code inputs
+  - Mark application as diburse
 
 - **Data Analytics and Reporting:**
   - Dashboards displaying key metrics and trends.
-  - Distribution of assistance and deficiency data analysis.
+  - Distribution of assistance and deficiency data graphs.
   - Yearly trend analysis of patient applications.
 
 - **Document Management:**
@@ -35,9 +36,8 @@ The WeServe is a user-friendly web application designed to streamline the manage
 - **Backend:** Laravel (PHP Framework)
 - **Frontend:** HTML, CSS, JavaScript
 - **Database:** MySQL
-- **PDF Generation:** Dompdf
-- **SMS Integration:** Vonage API for OTP verification
 - **Data Visualization:** Chart.js for analytics
+- **Analytics:** Python Scripts
 
 ## Installation
 
