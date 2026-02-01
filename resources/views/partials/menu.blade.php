@@ -1,14 +1,34 @@
 <aside id="sidebar" class="main-sidebar sidebar-dark-primary elevation-4">
-    <a href="{{ route('admin.home') }}"
-        class="brand-link d-flex align-items-center py-3 px-3 border-bottom text-decoration-none">
-
-        <span class="brand-icon d-flex align-items-center justify-content-center">
-            <img src="{{ asset('logo.png') }}" alt="Logo" style="height: 40px; width: 40px; object-fit: cover;">
-        </span>
-        <span class="brand-text fw-bold ms-3 fs-5 text-light" style="margin-left: 1rem;">
-            <img src="{{ asset('WeServe1.png') }}" alt="WeServe Logo" class="logo-full" loading="eager">
-        </span>
-    </a>
+    <!-- Profile Section (Replaces Logo) -->
+    <div class="profile-section d-flex align-items-center py-3 px-3 border-bottom">
+        <!-- Profile Image -->
+        <div class="profile-image-wrapper me-3">
+            @if(Auth::user()->currentProfileImage)
+                <img src="{{ Auth::user()->currentProfileImage->image_url }}" alt="Profile" 
+                     class="rounded-circle profile-img" style="width: 45px; height: 45px; object-fit: cover;">
+            @else
+                <div class="rounded-circle profile-img-placeholder d-flex align-items-center justify-content-center"
+                     style="width: 45px; height: 45px; background: linear-gradient(135deg, #4e73df, #1cc88a);">
+                    <i class="fas fa-user text-white" style="font-size: 20px;"></i>
+                </div>
+            @endif
+        </div>
+        
+        <!-- User Info -->
+        <div class="user-info flex-grow-1">
+            <div class="username fw-bold text-light" style="font-size: 1rem;">
+                {{ Auth::user()->name }}
+            </div>
+            <div class="user-role text-light" style="font-size: 0.85rem; opacity: 0.8;">
+                {{ Auth::user()->roles->pluck('title')->first() ?? 'User' }}
+            </div>
+        </div>
+        
+        <!-- Profile Dropdown Trigger -->
+        <button class="btn btn-link p-0 ms-2" data-bs-toggle="modal" data-bs-target="#profileModal">
+            <i class="fas fa-ellipsis-v text-light" style="font-size: 1rem;"></i>
+        </button>
+    </div>
 
     <div class="sidebar">
         <nav class="mt-3">
@@ -92,36 +112,13 @@
                         </a>
                     </li>
                 @endcan
-                <style>
-                    .beta-tag {
-                        background: #ffc107;
-                        color: #000;
-                        font-size: 0.6rem;
-                        font-weight: bold;
-                        padding: 2px 6px;
-                        border-radius: 4px;
-                        margin-left: 8px;
-                        text-transform: uppercase;
-                        position: relative;
-                        top: -2px;
-                    }
-
-                    /* Or if using Bootstrap classes */
-                    .beta-badge {
-                        font-size: 0.6rem;
-                        margin-left: 8px;
-                        vertical-align: top;
-                    }
-                </style>
 
                 @can('process_tracking_access')
                     <li class="nav-item">
                         <a href="{{ route('admin.process-tracking.index') }}"
                             class="nav-link {{ request()->is('admin/process-tracking*') ? 'active' : '' }}">
                             <i class="nav-icon fas fa-stream"></i>
-                            <p>Process Tracking
-                                {{-- <span class="badge badge-danger right"> 1</span> --}}
-                            </p>
+                            <p>Process Tracking</p>
                         </a>
                     </li>
                 @endcan
@@ -162,7 +159,7 @@
                                     <a href="{{ route('admin.time-series.index', ['type' => 'cswd']) }}"
                                         class="nav-link {{ request()->fullUrlIs(route('admin.time-series.index', ['type' => 'cswd'])) ? 'active' : '' }}">
                                         <i class="fas fa-chart-pie nav-icon"></i>
-                                        <p>CSWD</p>
+                                        <p>Application</p>
                                     </a>
                                 </li>
                             @endcan
@@ -175,28 +172,9 @@
                                     </a>
                                 </li>
                             @endcan
-                            @can('TREASURY-ANALYTICS')
-                                <li class="nav-item">
-                                    <a href="{{ route('admin.time-series.index', ['type' => 'treasury']) }}"
-                                        class="nav-link {{ request()->fullUrlIs(route('admin.time-series.index', ['type' => 'treasury'])) ? 'active' : '' }}">
-                                        <i class="fas fa-coins nav-icon"></i>
-                                        <p>Treasury</p>
-                                    </a>
-                                </li>
-                            @endcan
-                            @can('ACCOUNTING-ANALYTICS')
-                                <li class="nav-item">
-                                    <a href="{{ route('admin.time-series.index', ['type' => 'accounting']) }}"
-                                        class="nav-link {{ request()->fullUrlIs(route('admin.time-series.index', ['type' => 'accounting'])) ? 'active' : '' }}">
-                                        <i class="fas fa-balance-scale nav-icon"></i>
-                                        <p>Accounting</p>
-                                    </a>
-                                </li>
-                            @endcan
                         </ul>
                     </li>
                 @endif
-
 
                 @can('settings')
                     <li class="nav-item">
@@ -221,13 +199,6 @@
                 @endif
 
                 <li class="nav-item">
-                    <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#profileModal">
-                        <i class="fas fa-user-circle nav-icon"></i>
-                        <p>Profile</p>
-                    </a>
-                </li>
-
-                <li class="nav-item">
                     <a href="#" class="nav-link text-danger" data-bs-toggle="modal" data-bs-target="#logoutModal">
                         <i class="fas fa-sign-out-alt nav-icon"></i>
                         <p>Logout</p>
@@ -240,65 +211,145 @@
 </aside>
 
 <style>
-.brand-link {
-    background: #2c3e50;
+/* Profile Section Styles */
+.profile-section {
+    background: #1c4874;
     transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 0.75rem 1rem;
-    overflow: hidden;
-    border-bottom: 2px solid;
-    background: white !important;
     position: sticky;
     top: 0;
     z-index: 100;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    min-height: 78px; /* Fixed height to prevent shifting */
 }
 
-.brand-icon img {
+.profile-img {
+    border: 2px solid #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
     width: 45px !important;
     height: 45px !important;
-    border-radius: 50%;
-    border: 2px solid #fff;
     object-fit: cover;
-    flex-shrink: 0;
-    transition: transform 0.3s ease;
 }
 
-.logo-full {
-    transform: translateX(-10px);
-    height: 35px;
-    width: auto;
+.profile-img-placeholder {
+    border: 2px solid #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    width: 45px !important;
+    height: 45px !important;
+    background: linear-gradient(135deg, #4e73df, #1cc88a);
 }
 
-.brand-text {
-    margin-left: 12px;
-    font-weight: bold;
-    font-size: 1.1rem;
-    color: #ecf0f1;
-    letter-spacing: 0.5px;
-    opacity: 1;
-    transform: translateX(0);
+.user-info {
+    min-width: 0; /* Allows text truncation */
     transition: opacity 0.3s ease, transform 0.3s ease;
-    white-space: nowrap;
-}
-
-body.sidebar-collapse .brand-text {
-    opacity: 0;
-    transform: translateX(-20px);
-    pointer-events: none;
-}
-
-body.sidebar-collapse .main-sidebar:hover .brand-text {
     opacity: 1;
     transform: translateX(0);
-    pointer-events: auto;
 }
 
-body.sidebar-collapse .main-sidebar:hover .brand-icon img {
-    transform: scale(1.05);
+.username {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.2;
+    font-size: 1rem;
 }
 
+.user-role {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.2;
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.online-status {
+    font-size: 0.75rem;
+}
+
+/* Ellipsis button */
+.btn-link .fa-ellipsis-v {
+    transition: transform 0.2s ease;
+}
+
+.btn-link:hover .fa-ellipsis-v {
+    transform: scale(1.2);
+}
+
+/* Collapsed sidebar styles - KEY CHANGES HERE */
+body.sidebar-collapse .profile-section {
+    padding: 0.75rem 0.5rem !important;
+    justify-content: center !important;
+}
+
+body.sidebar-collapse .user-info,
+body.sidebar-collapse .btn-link {
+    display: none !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+}
+
+body.sidebar-collapse .profile-image-wrapper {
+    margin-right: 0 !important;
+    margin-left: 0 !important;
+}
+
+body.sidebar-collapse .profile-img,
+body.sidebar-collapse .profile-img-placeholder {
+    width: 40px !important;
+    height: 40px !important;
+    margin: 0 auto !important;
+}
+
+/* Show user info on hover when sidebar is collapsed */
+body.sidebar-collapse .main-sidebar:hover .profile-section {
+    justify-content: flex-start !important;
+    padding: 0.75rem 1rem !important;
+}
+
+body.sidebar-collapse .main-sidebar:hover .user-info {
+    display: block !important;
+    opacity: 1 !important;
+    width: auto !important;
+    height: auto !important;
+    margin-left: 12px !important;
+}
+
+body.sidebar-collapse .main-sidebar:hover .btn-link {
+    display: block !important;
+    opacity: 1 !important;
+    width: auto !important;
+    height: auto !important;
+    margin-left: auto !important;
+}
+
+body.sidebar-collapse .main-sidebar:hover .profile-img,
+body.sidebar-collapse .main-sidebar:hover .profile-img-placeholder {
+    width: 45px !important;
+    height: 45px !important;
+    margin: 0 !important;
+}
+
+/* Beta tag styling */
+.beta-tag {
+    background: #ffc107;
+    color: #000;
+    font-size: 0.6rem;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 8px;
+    text-transform: uppercase;
+    position: relative;
+    top: -2px;
+}
+
+/* Existing sidebar styles */
 .nav-sidebar {
     background: #2c3e50;
 }
@@ -320,17 +371,6 @@ body.sidebar-collapse .main-sidebar:hover .brand-icon img {
     background: rgba(60, 141, 188, 0.2);
 }
 
-.nav-header {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #bdc3c7;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin: 15px 0 5px 15px;
-    padding-top: 8px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
 .main-sidebar {
     width: 250px;
     height: 100vh;
@@ -338,10 +378,8 @@ body.sidebar-collapse .main-sidebar:hover .brand-icon img {
     overflow-y: auto;
     overflow-x: hidden;
     transition: all 0.3s ease;
-    
-    /* Hide scrollbar but keep functionality */
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */
@@ -359,10 +397,8 @@ body.sidebar-collapse .main-sidebar:hover .brand-icon img {
 }
 
 .main-sidebar .sidebar {
-    min-height: 100vh; /* Changed from height to min-height */
-    padding-bottom: 20px; /* Add some space at the bottom */
-    
-    /* Hide scrollbar but keep functionality */
+    min-height: calc(100vh - 78px); /* Subtract profile section height */
+    padding-bottom: 20px;
     scrollbar-width: none;
     -ms-overflow-style: none;
 }
@@ -380,14 +416,12 @@ body.sidebar-collapse .main-sidebar:hover .brand-icon img {
     background: transparent;
 }
 
-/* Make the nav container take full available height */
 .nav nav-pills nav-sidebar flex-column {
     min-height: 100%;
 }
 
-/* Ensure the nav items container can expand */
 .nav-sidebar {
-    padding-bottom: 50px; /* Extra space for scrolling */
+    padding-bottom: 50px;
 }
 
 body.sidebar-collapse .main-sidebar {
@@ -407,10 +441,20 @@ body.sidebar-collapse .main-sidebar:hover .sidebar {
     overflow-x: hidden;
 }
 
-/* Smooth scrolling */
-.main-sidebar,
-.main-sidebar .sidebar {
-    scroll-behavior: smooth;
+/* Smooth animations for expansion */
+body.sidebar-collapse .main-sidebar:hover .user-info {
+    animation: fadeInSlide 0.3s ease forwards;
+}
+
+@keyframes fadeInSlide {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 /* Force full viewport height */

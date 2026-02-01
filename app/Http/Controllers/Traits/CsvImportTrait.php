@@ -13,7 +13,7 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 trait CsvImportTrait
 {
-    private function getRequiredFields(bool $hasDisbursed): array
+    private function getRequiredFields(bool $hasDisbursed, bool $forceDisburse = false): array
     {
         $fields = [
             'date_processed',
@@ -29,7 +29,7 @@ trait CsvImportTrait
             'case_worker',
         ];
 
-        if ($hasDisbursed) {
+        if ($hasDisbursed || $forceDisburse) {
             $fields[] = 'disbursed_date';
             $fields[] = 'amount';
             $fields[] = 'allocation_date';
@@ -45,6 +45,7 @@ trait CsvImportTrait
     {
         try {
             $hasDisbursed = $request->boolean('has_disbursed_date');
+            $forceDisburse = $request->boolean('force_disburse', false); // New toggle
             $modelName    = $request->input('modelName');
             $modelClass   = "App\\Models\\" . $modelName;
 
@@ -110,13 +111,26 @@ trait CsvImportTrait
                 return is_string($header) ? strtolower(trim($header)) : '';
             }, $rows[0]);
 
+            // Check if file actually has disbursed columns when forceDisburse is enabled
+            $actualHasDisbursed = $hasDisbursed;
+            if ($forceDisburse && !$hasDisbursed) {
+                // Check if disbursed columns exist in file headers
+                $disbursedColumns = ['disbursed_date', 'amount', 'allocation_date'];
+                $actualHasDisbursed = count(array_intersect($disbursedColumns, $headers)) > 0;
+            }
+
             // Required fields
-            $requiredFields = $this->getRequiredFields($hasDisbursed);
+            $requiredFields = $this->getRequiredFields($actualHasDisbursed, $forceDisburse);
 
             // Validate headers
             $missingColumns = [];
             foreach ($requiredFields as $field) {
                 if (!in_array(strtolower($field), $headers)) {
+                    // If forceDisburse is enabled and disbursed columns are missing, show warning
+                    if ($forceDisburse && in_array($field, ['disbursed_date', 'amount', 'allocation_date'])) {
+                        // These will be handled with default values
+                        continue;
+                    }
                     $missingColumns[] = $field;
                 }
             }
@@ -138,6 +152,11 @@ trait CsvImportTrait
             foreach ($requiredFields as $field) {
                 $index = array_search(strtolower($field), $headers);
                 if ($index === false) {
+                    // If forceDisburse is enabled and disbursed columns are missing, use null
+                    if ($forceDisburse && in_array($field, ['disbursed_date', 'amount', 'allocation_date'])) {
+                        $fields[$field] = null; // Will use default values
+                        continue;
+                    }
                     return redirect()
                         ->route('admin.patient-records.index')
                         ->with('toast', [
@@ -153,6 +172,7 @@ trait CsvImportTrait
             $rowsData = [];
             $importedCount = 0;
             $skippedCount = 0;
+            $disbursedCount = 0;
             $errorRows = [];
 
             // Process rows starting from index 1 (skip header)
@@ -170,7 +190,12 @@ trait CsvImportTrait
                 $missingFields = [];
 
                 foreach ($fields as $header => $colIndex) {
-                    $value = $row[$colIndex] ?? null;
+                    $value = null;
+                    
+                    // Get value from column if exists
+                    if ($colIndex !== null && isset($row[$colIndex])) {
+                        $value = $row[$colIndex];
+                    }
                     
                     // Clean up the value
                     if (is_string($value)) {
@@ -187,11 +212,34 @@ trait CsvImportTrait
                                 $value = $this->convertExcelDate($value);
                             } elseif ($value) {
                                 $value = Carbon::parse($value)->format('Y-m-d H:i:s');
+                            } elseif ($forceDisburse && $header === 'disbursed_date') {
+                                // Use date_processed if disbursed_date is empty and forceDisburse is enabled
+                                $dateProcessedIndex = $fields['date_processed'];
+                                $dateProcessedValue = $row[$dateProcessedIndex] ?? null;
+                                if ($dateProcessedValue) {
+                                    try {
+                                        if (is_numeric($dateProcessedValue)) {
+                                            $value = $this->convertExcelDate($dateProcessedValue);
+                                        } else {
+                                            $value = Carbon::parse($dateProcessedValue)->format('Y-m-d H:i:s');
+                                        }
+                                    } catch (\Exception $e) {
+                                        $value = now()->format('Y-m-d H:i:s');
+                                    }
+                                } else {
+                                    $value = now()->format('Y-m-d H:i:s');
+                                }
+                            } elseif ($forceDisburse && $header === 'allocation_date') {
+                                $value = now()->format('Y-m-d H:i:s');
                             } else {
                                 $value = null;
                             }
                         } catch (\Exception $e) {
-                            $value = null;
+                            if ($forceDisburse && in_array($header, ['disbursed_date', 'allocation_date'])) {
+                                $value = now()->format('Y-m-d H:i:s');
+                            } else {
+                                $value = null;
+                            }
                         }
                     }
 
@@ -203,11 +251,14 @@ trait CsvImportTrait
                             // Try to extract numbers from string
                             preg_match('/\d+(\.\d+)?/', (string) $value, $matches);
                             $value = isset($matches[0]) ? (float) $matches[0] : null;
+                        } elseif ($forceDisburse && $header === 'amount') {
+                            $value = 0.00; // Default amount for force disburse
                         }
                     }
 
                     // Check for required fields (allow empty for optional fields)
-                    if (empty($value) && $value !== '0' && $value !== 0 && !in_array($header, ['remarks', 'allocation_date'])) {
+                    $optionalFields = $forceDisburse ? ['remarks', 'amount', 'allocation_date'] : ['remarks', 'allocation_date'];
+                    if (empty($value) && $value !== '0' && $value !== 0 && !in_array($header, $optionalFields)) {
                         $missingFields[] = $header;
                     }
 
@@ -228,6 +279,20 @@ trait CsvImportTrait
                         $skippedCount++;
                         $errorRows[] = "Row " . ($index + 1) . ": Duplicate control number '{$tmp['control_number']}'";
                         continue;
+                    }
+                }
+
+                // Mark for disbursement if forceDisburse is enabled
+                if ($forceDisburse) {
+                    $tmp['_force_disburse'] = true;
+                    if (empty($tmp['disbursed_date'])) {
+                        $tmp['disbursed_date'] = $tmp['date_processed'] ?? now()->format('Y-m-d H:i:s');
+                    }
+                    if (empty($tmp['amount'])) {
+                        $tmp['amount'] = 0.00;
+                    }
+                    if (empty($tmp['allocation_date'])) {
+                        $tmp['allocation_date'] = now()->format('Y-m-d H:i:s');
                     }
                 }
 
@@ -269,33 +334,37 @@ trait CsvImportTrait
                     $patient = $modelClass::create($rowData);
                     $importedCount++;
 
-                    if (!empty($rowData['amount']) && $hasDisbursed) {
+                    // Create budget allocation if amount exists or forceDisburse is enabled
+                    if ((!empty($rowData['amount']) || ($forceDisburse && isset($rowData['_force_disburse']))) && 
+                        ($actualHasDisbursed || $forceDisburse)) {
                         BudgetAllocation::create([
                             'patient_id'      => $patient->id,
                             'user_id'         => Auth::id(),
-                            'amount'          => $rowData['amount'],
-                            'remarks'         => 'Imported via File',
+                            'amount'          => $rowData['amount'] ?? 0.00,
+                            'remarks'         => $forceDisburse ? 'Imported and Auto-Disbursed' : 'Imported via File',
                             'budget_status'   => 'Disbursed',
                             'allocation_date' => $rowData['allocation_date'] ?? now(),
                         ]);
+                        $disbursedCount++;
                     }
 
-                    if (!empty($rowData['disbursed_date']) && $hasDisbursed) {
+                    // Create status log
+                    if (!empty($rowData['disbursed_date']) && ($actualHasDisbursed || $forceDisburse)) {
                         PatientStatusLog::create([
                             'patient_id'  => $patient->id,
                             'status'      => PatientStatusLog::STATUS_DISBURSED,
                             'status_date' => $rowData['disbursed_date'],
                             'user_id'     => Auth::id(),
-                            'remarks'     => 'Imported via File',
+                            'remarks'     => $forceDisburse ? 'Auto-Disbursed on Import' : 'Imported via File',
                         ]);
                     } else {
                         // Create initial status log for imported patients
                         PatientStatusLog::create([
                             'patient_id'  => $patient->id,
-                            'status'      => PatientStatusLog::STATUS_PROCESSING,
+                            'status'      => $forceDisburse ? PatientStatusLog::STATUS_DISBURSED : PatientStatusLog::STATUS_PROCESSING,
                             'status_date' => $rowData['date_processed'] ?? now(),
                             'user_id'     => Auth::id(),
-                            'remarks'     => 'Imported via File',
+                            'remarks'     => $forceDisburse ? 'Auto-Disbursed on Import' : 'Imported via File',
                         ]);
                     }
                 }
@@ -316,6 +385,10 @@ trait CsvImportTrait
 
             $table = Str::plural($modelName);
             $message = "Successfully imported <strong>$importedCount</strong> records into $table.";
+            
+            if ($disbursedCount > 0) {
+                $message .= " <strong>$disbursedCount</strong> records were disbursed.";
+            }
             
             if ($skippedCount > 0) {
                 $message .= " <strong>$skippedCount</strong> duplicate records were skipped.";

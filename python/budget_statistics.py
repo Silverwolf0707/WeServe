@@ -2,6 +2,7 @@ import pandas as pd
 import json
 import os
 import sys
+from datetime import datetime
 
 # Get CSV path from command line argument
 if len(sys.argv) > 1:
@@ -25,8 +26,15 @@ except Exception as e:
     print(f"Error loading CSV: {e}")
     sys.exit(1)
 
-# Add Year column for grouping
+# Add Year and Month columns for grouping
 df['year'] = df['month'].dt.year
+df['month_num'] = df['month'].dt.month
+df['month_name'] = df['month'].dt.strftime('%B')
+
+# Ensure budget_allocated column exists and is numeric
+if 'budget_allocated' not in df.columns:
+    df['budget_allocated'] = 0
+df['budget_allocated'] = pd.to_numeric(df['budget_allocated'], errors='coerce').fillna(0)
 
 # --------------------------
 # Dashboard Summary (Overall)
@@ -88,19 +96,60 @@ def compute_stats_summary(df, value_col):
 # Yearly Stats
 # --------------------------
 yearly_stats = {}
+monthly_stats = {}
 
 for year, year_df in df.groupby('year'):
+    # Yearly budget stats
     budget_stats_by_category, budget_stats_by_type = compute_stats_summary(year_df, 'budget_allocated')
-
+    
+    # Yearly application counts
     total_applications_by_category = {k: int(v) for k, v in year_df.groupby('case_category').size().to_dict().items()}
     total_applications_by_type = {k: int(v) for k, v in year_df.groupby('case_type').size().to_dict().items()}
-
+    
+    # Yearly budget totals
+    total_budget_by_category = year_df.groupby('case_category')['budget_allocated'].sum().to_dict()
+    total_budget_by_type = year_df.groupby('case_type')['budget_allocated'].sum().to_dict()
+    
     yearly_stats[year] = {
         'budget_stats_by_category': budget_stats_by_category,
         'budget_stats_by_type': budget_stats_by_type,
         'total_applications_by_category': total_applications_by_category,
-        'total_applications_by_type': total_applications_by_type
+        'total_applications_by_type': total_applications_by_type,
+        'total_budget_by_category': {k: float(v) for k, v in total_budget_by_category.items()},
+        'total_budget_by_type': {k: float(v) for k, v in total_budget_by_type.items()}
     }
+    
+    # --------------------------
+    # Monthly Stats for this year
+    # --------------------------
+    monthly_stats[year] = {}
+    for month, month_df in year_df.groupby('month_num'):
+        month_name = month_df['month_name'].iloc[0]
+        
+        # Monthly budget stats
+        month_budget_stats_by_category, month_budget_stats_by_type = compute_stats_summary(month_df, 'budget_allocated')
+        
+        # Monthly application counts
+        month_total_applications_by_category = {k: int(v) for k, v in month_df.groupby('case_category').size().to_dict().items()}
+        month_total_applications_by_type = {k: int(v) for k, v in month_df.groupby('case_type').size().to_dict().items()}
+        
+        # Monthly budget totals
+        month_total_budget_by_category = month_df.groupby('case_category')['budget_allocated'].sum().to_dict()
+        month_total_budget_by_type = month_df.groupby('case_type')['budget_allocated'].sum().to_dict()
+        
+        monthly_stats[year][month] = {
+            'month_name': month_name,
+            'budget_stats_by_category': month_budget_stats_by_category,
+            'budget_stats_by_type': month_budget_stats_by_type,
+            'total_applications_by_category': month_total_applications_by_category,
+            'total_applications_by_type': month_total_applications_by_type,
+            'total_budget_by_category': {k: float(v) for k, v in month_total_budget_by_category.items()},
+            'total_budget_by_type': {k: float(v) for k, v in month_total_budget_by_type.items()}
+        }
+
+# Get current year and month for default selection
+current_year = datetime.now().year
+current_month = datetime.now().month
 
 # --------------------------
 # Final Output JSON
@@ -109,7 +158,12 @@ output = {
     'overall': {
         'dashboard_summary': dashboard_summary
     },
-    'yearly': yearly_stats
+    'yearly': yearly_stats,
+    'monthly': monthly_stats,
+    'default_selection': {
+        'year': current_year,
+        'month': current_month
+    }
 }
 
 # Save JSON to private storage

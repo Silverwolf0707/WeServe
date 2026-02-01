@@ -28,42 +28,83 @@ class PatientRecordsController extends Controller
 {
     use CsvImportTrait;
 
-    public function index()
-    {
-        abort_if(Gate::denies('patient_record_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+  public function index(Request $request)
+{
+    abort_if(Gate::denies('patient_record_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        // Eager load the latest status log
-        $patientRecords = PatientRecord::with(['latestStatusLog'])
-            ->orderByDesc('date_processed')
-            ->get()
-            ->map(function ($record) {
-                // Add filter category to each record
-                $latestStatus = $record->latestStatusLog;
-                $statusValue = $latestStatus->status ?? 'Processing';
-                $cleanStatus = preg_replace('/\[ROLLED BACK\]/i', '', $statusValue);
-                $cleanStatus = trim($cleanStatus);
+    $showDeleted = $request->get('show_deleted', false);
+    $statusFilter = $request->get('status_filter', '');
+    $searchTerm = $request->get('search', '');
 
-                // Define which statuses should show in "Processing" filter
-                $processingStatuses = ['Processing', 'Rejected'];
+    $query = $showDeleted 
+        ? PatientRecord::onlyTrashed()
+        : PatientRecord::query();
 
-                if (in_array($cleanStatus, $processingStatuses)) {
-                    $record->filter_category = 'Processing';
-                } else {
-                    $record->filter_category = 'Submitted';
-                }
+    $query->with(['latestStatusLog'])
+          ->orderByDesc($showDeleted ? 'deleted_at' : 'date_processed');
 
-                $record->clean_status = $cleanStatus;
-                return $record;
-            });
-
-        return view('admin.patientRecords.index', compact('patientRecords'));
+    // Apply status filter on server side
+    if ($statusFilter && !$showDeleted) {
+        $query->whereHas('latestStatusLog', function ($q) use ($statusFilter) {
+            if ($statusFilter === 'Processing') {
+                $q->whereIn('status', ['Processing', 'Rejected']);
+            } elseif ($statusFilter === 'Submitted') {
+                $q->where('status', 'like', 'Submitted%')
+                  ->where('status', 'not like', '%[ROLLED BACK]%');
+            }
+        });
     }
+
+    // Apply search term if provided
+    if ($searchTerm) {
+        $query->where(function ($q) use ($searchTerm) {
+            $q->where('control_number', 'like', "%{$searchTerm}%")
+              ->orWhere('patient_name', 'like', "%{$searchTerm}%")
+              ->orWhere('claimant_name', 'like', "%{$searchTerm}%")
+              ->orWhere('diagnosis', 'like', "%{$searchTerm}%")
+              ->orWhere('address', 'like', "%{$searchTerm}%")
+              ->orWhere('contact_number', 'like', "%{$searchTerm}%")
+              ->orWhere('case_worker', 'like', "%{$searchTerm}%")
+              ->orWhere('case_type', 'like', "%{$searchTerm}%");
+        });
+    }
+
+    $patientRecords = $query->paginate(100)->withQueryString();
+
+    // Process each record as before
+    $processedRecords = $patientRecords->map(function ($record) use ($showDeleted) {
+        $latestStatus = $record->latestStatusLog;
+        $statusValue = $latestStatus->status ?? ($showDeleted ? 'Deleted' : 'Processing');
+        $cleanStatus = preg_replace('/\[ROLLED BACK\]/i', '', $statusValue);
+        $cleanStatus = trim($cleanStatus);
+
+        if ($showDeleted) {
+            $record->filter_category = 'Deleted';
+        } else {
+            $processingStatuses = ['Processing', 'Rejected'];
+            $record->filter_category = in_array($cleanStatus, $processingStatuses) 
+                ? 'Processing' 
+                : 'Submitted';
+        }
+
+        $record->clean_status = $cleanStatus;
+        $record->is_deleted = $showDeleted;
+        return $record;
+    });
+
+    $patientRecords->setCollection($processedRecords);
+
+    return view('admin.patientRecords.index', compact(
+        'patientRecords', 
+        'showDeleted', 
+        'searchTerm'
+    ));
+}
 
     public function create()
     {
         abort_if(Gate::denies('patient_record_create'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        // Auto-generate control number
         $latestId = PatientRecord::withTrashed()->max('id') + 1;
         $today = now()->format('Ymd');
         $controlNumber = 'CSWD-' . $today . '-' . str_pad($latestId, 4, '0', STR_PAD_LEFT);
@@ -76,7 +117,9 @@ class PatientRecordsController extends Controller
 
     public function store(StorePatientRecordRequest $request)
     {
-        // Retrieve the most recent patient record with the same name
+
+        abort_if(Gate::denies('patient_record_create'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+        
         $patient = PatientRecord::where('patient_name', $request->patient_name)
             ->orderBy('date_processed', 'desc')
             ->first();
@@ -116,7 +159,6 @@ class PatientRecordsController extends Controller
             }
         }
 
-        // Create the patient record if eligible
         $patientRecord = PatientRecord::create($request->all());
 
         $statusLog = PatientStatusLog::create([
@@ -200,6 +242,7 @@ class PatientRecordsController extends Controller
 
     public function massDestroy(MassDestroyPatientRecordRequest $request)
     {
+        abort_if(Gate::denies('patient_record_delete'), Response::HTTP_FORBIDDEN, '403 Forbidden');
         $ids = $request->input('ids', []);
         $deletedCount = 0;
 
@@ -228,6 +271,130 @@ class PatientRecordsController extends Controller
 
             return redirect()
                 ->route('admin.patient-records.index')
+                ->with('toast', [
+                    'type' => 'danger',
+                    'title' => 'Error Deleting Records',
+                    'message' => 'An error occurred: ' . $e->getMessage(),
+                    'time' => now()->diffForHumans(),
+                ]);
+        }
+    }
+
+      public function restore($id)
+    {
+        abort_if(Gate::denies('patient_record_create'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+        
+        // Find the soft-deleted record
+        $patientRecord = PatientRecord::onlyTrashed()->findOrFail($id);
+        $patientRecord->restore();
+        
+        return redirect()->route('admin.patient-records.index', ['show_deleted' => 1])
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'Record Restored',
+                'message' => "Patient record ({$patientRecord->control_number}) has been restored successfully.",
+                'time' => now()->diffForHumans(),
+            ]);
+    }
+
+    /**
+     * Permanently delete a soft-deleted patient record
+     */
+    public function forceDelete($id)
+    {
+        abort_if(Gate::denies('patient_record_delete'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+        // Find the soft-deleted record
+        $patientRecord = PatientRecord::onlyTrashed()->findOrFail($id);
+        $controlNumber = $patientRecord->control_number;
+        
+        // Force delete the patient record
+        $patientRecord->forceDelete();
+        
+        return redirect()->route('admin.patient-records.index', ['show_deleted' => 1])
+            ->with('toast', [
+                'type' => 'danger',
+                'title' => 'Record Permanently Deleted',
+                'message' => "Patient record ({$controlNumber}) has been permanently deleted.",
+                'time' => now()->diffForHumans(),
+            ]);
+    }
+
+    /**
+     * Mass restore multiple soft-deleted records
+     */
+    public function massRestore(Request $request)
+    {
+        abort_if(Gate::denies('patient_record_create'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+        $ids = $request->input('ids', []);
+        $restoredCount = 0;
+        
+        DB::beginTransaction();
+        
+        try {
+            $patientRecords = PatientRecord::onlyTrashed()->whereIn('id', $ids)->get();
+            
+            foreach ($patientRecords as $patientRecord) {
+                $patientRecord->restore();
+                $restoredCount++;
+            }
+            
+            DB::commit();
+            
+            return redirect()->route('admin.patient-records.index', ['show_deleted' => 1])
+                ->with('toast', [
+                    'type' => 'success',
+                    'title' => 'Mass Restore Completed',
+                    'message' => "{$restoredCount} " . ($restoredCount === 1 ? "record was" : "records were") . " restored successfully",
+                    'time' => now()->diffForHumans(),
+                ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return redirect()->route('admin.patient-records.index', ['show_deleted' => 1])
+                ->with('toast', [
+                    'type' => 'danger',
+                    'title' => 'Error Restoring Records',
+                    'message' => 'An error occurred: ' . $e->getMessage(),
+                    'time' => now()->diffForHumans(),
+                ]);
+        }
+    }
+
+    /**
+     * Mass permanently delete multiple soft-deleted records
+     */
+    public function massForceDelete(Request $request)
+    {
+        abort_if(Gate::denies('patient_record_delete'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+        
+        $ids = $request->input('ids', []);
+        $deletedCount = 0;
+        
+        DB::beginTransaction();
+        
+        try {
+            $patientRecords = PatientRecord::onlyTrashed()->whereIn('id', $ids)->get();
+            
+            foreach ($patientRecords as $patientRecord) {
+                
+                // Force delete
+                $patientRecord->forceDelete();
+                $deletedCount++;
+            }
+            
+            DB::commit();
+            
+            return redirect()->route('admin.patient-records.index', ['show_deleted' => 1])
+                ->with('toast', [
+                    'type' => 'danger',
+                    'title' => 'Mass Permanent Delete Completed',
+                    'message' => "{$deletedCount} " . ($deletedCount === 1 ? "record was" : "records were") . " permanently deleted",
+                    'time' => now()->diffForHumans(),
+                ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return redirect()->route('admin.patient-records.index', ['show_deleted' => 1])
                 ->with('toast', [
                     'type' => 'danger',
                     'title' => 'Error Deleting Records',

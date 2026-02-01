@@ -1,7 +1,6 @@
 @extends('layouts.admin')
 @section('content')
 
-
     <div class="card shadow-sm border-0">
         <!-- Modernized Header -->
         <div class="card-header custom-header d-flex align-items-center bg-primary text-white"
@@ -10,11 +9,37 @@
                 <i class="fas fa-file-alt me-2"></i> {{ __('Documents List') }}
             </h4>
             <div class="header-actions d-flex align-items-center ms-auto">
+                  <form method="GET" action="{{ route('admin.document-management.index') }}" class="float-end">
+                    <div class="input-group">
+                        <input type="text" 
+                               name="search" 
+                               class="form-control" 
+                               placeholder="Search documents..." 
+                               value="{{ request('search') }}"
+                               aria-label="Search documents">
+                        <button class="btn btn-outline-secondary" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        @if(request('search'))
+                            <a href="{{ route('admin.document-management.index') }}" 
+                               class="btn btn-outline-secondary" 
+                               title="Clear search">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        @endif
+                    </div>
+                </form>
+                
             </div>
         </div>
     </div>
+    
+       
+ 
+    
 
     <div class="card-body">
+        
         <div class="table-responsive">
             <table class="table table-bordered table-striped table-hover datatable datatable-Document">
                 <thead class="thead-dark">
@@ -45,8 +70,16 @@
                 </tbody>
             </table>
         </div>
+
+        {{-- Add pagination links --}}
+        @if($patients->hasPages())
+            <div class="centered-pagination mb-4">
+                <div>
+                    {{ $patients->links('pagination::bootstrap-5') }}
+                </div>
+            </div>
+        @endif
     </div>
-</div>
 
 @endsection
 
@@ -55,11 +88,11 @@
 <script>
     $(function () {
         let dtButtons = $.extend(true, [], $.fn.dataTable.defaults.buttons);
+        let _token = $('meta[name="csrf-token"]').attr('content');
 
         @can('documents_management')
         let deleteButton = {
-            text: @json(trans('global.datatables.delete')),
-            url: @json(route('admin.document-management.massDestroy')),
+            text: 'Delete Selected',
             className: 'btn-danger',
             action: function (e, dt, node, config) {
                 let ids = $.map(dt.rows({ selected: true }).nodes(), function (entry) {
@@ -67,17 +100,17 @@
                 });
 
                 if (ids.length === 0) {
-                    alert(@json(trans('global.datatables.zero_selected')));
+                    alert('No records selected');
                     return;
                 }
 
-                if (confirm(@json(trans('global.areYouSure')))) {
+                if (confirm('Are you sure you want to delete the selected documents?')) {
                     $.ajax({
                         headers: {
                             'x-csrf-token': _token
                         },
                         method: 'POST',
-                        url: config.url,
+                        url: "{{ route('admin.document-management.massDestroy') }}",
                         data: {
                             ids: ids,
                             _method: 'DELETE'
@@ -97,7 +130,14 @@
             pageLength: 100,
         });
 
-        let table = $('.datatable-Document:not(.ajaxTable)').DataTable({ buttons: dtButtons });
+        let table = $('.datatable-Document:not(.ajaxTable)').DataTable({
+            buttons: dtButtons,
+            paging: false, 
+            info: false,   
+            searching: false,
+            processing: true,
+            serverSide: false
+        });
 
         $('a[data-toggle="tab"]').on('shown.bs.tab click', function () {
             $($.fn.dataTable.tables(true)).DataTable().columns.adjust();

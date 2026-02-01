@@ -15,12 +15,30 @@ use Illuminate\Support\Facades\Log;
 
 class DocumentManagementController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         abort_if(Gate::denies('documents_management'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        $patients = PatientRecord::latest()->get();
-        return view('admin.documentManagement.index', compact('patients'));
+        $searchTerm = $request->get('search', '');
+        
+        // Start with base query
+        $query = PatientRecord::query();
+        
+        // Apply search if term exists
+        if ($searchTerm) {
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('control_number', 'like', "%{$searchTerm}%")
+                  ->orWhere('patient_name', 'like', "%{$searchTerm}%")
+                  ->orWhere('claimant_name', 'like', "%{$searchTerm}%")
+                  ->orWhere('diagnosis', 'like', "%{$searchTerm}%")
+                  ->orWhere('address', 'like', "%{$searchTerm}%");
+            });
+        }
+        
+        // Get paginated results with search applied
+        $patients = $query->latest()->paginate(100)->withQueryString();
+
+        return view('admin.documentManagement.index', compact('patients', 'searchTerm'));
     }
 
     public function store(Request $request)

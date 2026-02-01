@@ -13,7 +13,10 @@ class Document extends Model
         'file_name',
         'file_path',
         'document_type',
-        'description'
+        'description',
+        'file_size',
+        'file_extension',
+        'uploaded_by',
     ];
 
     public function patient()

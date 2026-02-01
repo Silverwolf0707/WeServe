@@ -66,12 +66,21 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     Route::post('patient-records/mass-submit', [PatientRecordsController::class, 'massSubmit'])->name('patient-records.massSubmit');
     Route::post('patient-records/{id}/submit-emergency', [PatientRecordsController::class, 'submitEmergency'])
         ->name('patient-records.submit-emergency');
+        
 
     Route::get('csv/template/{type}', [PatientRecordsController::class, 'csvTemplate'])
         ->name('csv.template');
     Route::get('excel/template/{type}', [PatientRecordsController::class, 'excelTemplate'])
         ->name('excel.template');
-
+    
+    Route::put('patient-records/{id}/restore', [PatientRecordsController::class, 'restore'])
+        ->name('patient-records.restore');
+    Route::post('patient-records/mass-restore', [PatientRecordsController::class, 'massRestore'])
+        ->name('patient-records.massRestore');
+    Route::delete('patient-records/{id}/force-delete', [PatientRecordsController::class, 'forceDelete'])
+        ->name('patient-records.force-delete');
+    Route::delete('patient-records/mass-force-delete', [PatientRecordsController::class, 'massForceDelete'])
+        ->name('patient-records.massForceDelete');
 
     Route::resource('online-applications', OnlinePatientApplicationController::class)
         ->only(['index', 'show']);
@@ -138,7 +147,14 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     Route::get('statistics/deficiencies', [StatisticsController::class, 'getDeficiencyData'])->name('statistics.deficiencies');
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::delete('settings/delete-all', [SettingsController::class, 'deleteAll'])->name('settings.deleteAll');
-    // Add this to your admin routes group in web.php
+    // Backup & Restore Routes
+    Route::post('settings/backup/create', [SettingsController::class, 'createBackup'])->name('settings.backup.create');
+    Route::post('settings/backup/restore', [SettingsController::class, 'restoreBackup'])->name('settings.backup.restore');
+    Route::get('settings/backup/download/{id}', [SettingsController::class, 'downloadBackup'])->name('settings.backup.download');
+    Route::delete('settings/backup/{id}', [SettingsController::class, 'deleteBackup'])->name('settings.backup.delete');
+    Route::get('settings/backups', [SettingsController::class, 'getBackups'])->name('settings.backups.list');
+
+
     Route::group(['prefix' => 'notifications', 'as' => 'notifications.'], function () {
         Route::get('/unread-count', [NotificationController::class, 'getUnreadCount'])->name('unread-count');
         Route::get('/list', [NotificationController::class, 'getNotifications'])->name('list');
@@ -147,10 +163,13 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
         Route::get('/', [NotificationController::class, 'index'])->name('index');
     });
 
-    // In your admin routes group, change these lines:
     Route::post('/profile-image', [ProfileImageController::class, 'store'])->name('profile.image.store');
     Route::put('/profile-image/{profileImage}/set-current', [ProfileImageController::class, 'setCurrent'])->name('profile.image.set-current');
     Route::delete('/profile-image/{profileImage}', [ProfileImageController::class, 'destroy'])->name('profile.image.destroy');
+  
+    Route::get('/profile-image/{profileImage}', [ProfileImageController::class, 'show'])
+        ->name('profile.image.show')
+        ->middleware('auth');
 });
 
 

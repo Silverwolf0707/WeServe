@@ -12,7 +12,7 @@ class StatisticsController extends Controller
 {
     public function index()
     {
-        $type = request('type'); // cswd, budget, treasury, accounting
+        $type = request('type'); 
 
         $analyticsViews = [
             'cswd' => [

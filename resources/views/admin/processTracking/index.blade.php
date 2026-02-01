@@ -1,14 +1,33 @@
 @extends('layouts.admin')
 @section('content')
     <div class="card shadow-sm border-0">
-        <!-- Modernized Header -->
         <div class="card-header custom-header d-flex align-items-center bg-primary text-white"
             style="min-height: 70px; padding: 1.5rem;">
             <h4 class="mb-0 fw-bold d-flex align-items-center">
                 <i class="fas fa-tasks me-2"></i> Process Tracking
             </h4>
-
-            <div class="header-actions d-flex align-items-center ms-auto">
+             <div class="header-actions d-flex align-items-center ms-auto">
+                <form method="GET" action="{{ route('admin.process-tracking.index') }}" class="d-flex">
+                    <div class="input-group">
+                        <input type="text" 
+                               name="search" 
+                               class="form-control" 
+                               placeholder="Search..." 
+                               value="{{ request('search') }}"
+                               aria-label="Search patients"
+                               autocomplete="off">
+                        <button class="btn btn-outline-secondary" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        @if(request('search'))
+                            <a href="{{ route('admin.process-tracking.index') }}" 
+                               class="btn btn-outline-secondary" 
+                               title="Clear search">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        @endif
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -189,6 +208,14 @@
                 </tbody>
             </table>
         </div>
+        {{-- Add pagination links --}}
+@if($patients->hasPages())
+    <div class="centered-pagination mb-4">
+        <div>
+            {{ $patients->links('pagination::bootstrap-5') }}
+        </div>
+    </div>
+@endif
     </div>
 
     <!-- Mass Decision Modal -->
@@ -477,7 +504,7 @@
             if (window.Echo) {
                 window.Echo.channel('process-tracking')
                     .listen('.patient.status.changed', function(e) {
-                        console.log('📢 Patient status changed:', e);
+                   
                         updatePatientTable(e);
                     });
             } else {
@@ -493,7 +520,7 @@
             const existingRow = jQuery(rowSelector);
 
             if (e.action === 'submitted' && existingRow.length === 0) {
-                // Add new row
+             
                 const newRow = table.row.add([
                     '',
                     e.control_number,
@@ -509,14 +536,11 @@
                 jQuery(newRow).addClass('table-success');
                 setTimeout(() => jQuery(newRow).removeClass('table-success'), 3000);
 
-                console.log('✅ Added new row for patient:', e.claimant_name);
             } else if (existingRow.length > 0) {
-                // Update status badge
+              
                 existingRow.find('td').eq(5).html(badge);
-                // Update department responsible
+         
                 existingRow.find('td').eq(6).html(department);
-
-                console.log('✅ Updated row for patient:', e.claimant_name);
             }
         }
 
@@ -625,6 +649,11 @@
                     [1, 'desc']
                 ],
                 pageLength: 100,
+                    paging: true,
+    info: false,   
+    searching: false,
+    processing: true,
+    serverSide: false
             });
 
             let table = jQuery('.datatable-ProcessTracking:not(.ajaxTable)').DataTable({

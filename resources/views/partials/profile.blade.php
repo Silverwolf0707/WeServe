@@ -154,9 +154,6 @@
                 <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">
                     <i class="fas fa-times me-1"></i> Close
                 </button>
-                <a href="{{ route('profile.password.edit') }}" class="btn btn-primary">
-                    <i class="fas fa-key me-1"></i> Change Password
-                </a>
             </div>
         </div>
     </div>

@@ -28,15 +28,74 @@ use Symfony\Component\HttpFoundation\Response;
 
 class ProcessTrackingController extends Controller
 {
-    public function index()
-    {
-        abort_if(Gate::denies('process_tracking_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+public function index(Request $request)
+{
+    abort_if(Gate::denies('process_tracking_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        $patients = PatientRecord::whereHas('statusLogs')->with(['latestStatusLog'])->get();
+    $searchTerm = $request->get('search', '');
+    
+    $query = PatientRecord::whereHas('statusLogs')
+        ->with(['latestStatusLog'])
+        ->orderByDesc('date_processed');
 
-
-        return view('admin.processTracking.index', compact('patients'));
+    if ($searchTerm) {
+        $query->where(function ($q) use ($searchTerm) {
+            $q->where('control_number', 'like', "%{$searchTerm}%")
+              ->orWhere('patient_name', 'like', "%{$searchTerm}%")
+              ->orWhere('claimant_name', 'like', "%{$searchTerm}%")
+              ->orWhere('case_worker', 'like', "%{$searchTerm}%")
+              ->orWhere('diagnosis', 'like', "%{$searchTerm}%")
+              ->orWhere('address', 'like', "%{$searchTerm}%")
+              ->orWhere('contact_number', 'like', "%{$searchTerm}%")
+              ->orWhere('case_type', 'like', "%{$searchTerm}%");
+        });
     }
+    
+    // Add pagination here
+    $patients = $query->paginate(100)->withQueryString();
+
+    // Calculate priority for sorting
+    $patients->getCollection()->transform(function ($patient) {
+        $currentStatus = $patient->latestStatusLog->status ?? 'Submitted';
+        
+        $priorityMap = [
+            'CSWD Office' => [
+                'Processing' => 1,
+                'Submitted[ROLLED BACK]' => 3,
+                'Submitted' => 4,
+                'Rejected' => 2,
+            ],
+            'Budget Office' => [
+                'Approved' => 1,
+                'Budget Allocated' => 2,
+                'Approved[ROLLED BACK]' => 3,
+            ],
+            'Treasury Office' => [
+                'Ready for Disbursement' => 2,
+                'Disbursed' => 3,
+                'DV Submitted' => 1,
+            ],
+            'Mayors Office' => [
+                'Submitted' => 2,
+                'Submitted[Emergency]' => 1,
+                'Submitted[ROLLED BACK]' => 3,
+                'Approved' => 4,
+            ],
+            'Accounting Office' => [
+                'Budget Allocated' => 1,
+                'Budget Allocated[ROLLED BACK]' => 2,
+                'DV Submitted' => 3,
+            ],
+        ];
+
+        $role = Auth::user()->roles->pluck('title')->first() ?? 'CSWD Office';
+        $patient->priority = $priorityMap[$role][$currentStatus] ?? 999;
+        
+        return $patient;
+    });
+
+    return view('admin.processTracking.index', compact('patients', 'searchTerm'));
+}
 
 
     public function show($id)

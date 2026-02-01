@@ -22,68 +22,99 @@ class NotificationController extends Controller
     }
 
     /**
-     * Get recent notifications with formatted data
+     * Get notifications with pagination/load more support
      */
-        public function getNotifications(Request $request)
+    public function getNotifications(Request $request)
     {
-        $departmentFilter = $request->get('department', 'all');
+        $perPage = 10; // Load 10 notifications at a time
+        $page = $request->get('page', 1);
+        $departmentFilter = $request->get('department', '');
+        $loadMore = $request->boolean('load_more', false);
         
-        $notifications = UserNotification::with([
+        $query = UserNotification::with([
             'statusLog.patient',
             'statusLog.user'
         ])
             ->where('user_id', Auth::id())
-            ->recent(30)
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($notification) {
-                $statusLog = $notification->statusLog;
-                
-                if (!$statusLog) {
-                    return null;
-                }
-                
-                $notificationData = $statusLog->getNotificationData();
-                $userName = $statusLog->user->name ?? 'System';
-                
-                return [
-                    'id' => $notification->id,
-                    'type' => $notificationData['type'],
-                    'title' => $notificationData['title'],
-                    'message' => $notificationData['message'],
-                    'patient_id' => $notificationData['patient_id'],
-                    'control_number' => $notificationData['control_number'],
-                    'patient_name' => $notificationData['patient_name'],
-                    'status' => $notificationData['status'],
-                    'is_read' => $notification->is_read,
-                    'created_at' => $notification->created_at,
-                    'read_at' => $notification->read_at,
-                    'user' => $statusLog->user,
-                    'user_name' => $userName,
-                    'icon' => self::getNotificationIcon($statusLog->status),
-                    'icon_color' => self::getNotificationIconColor($statusLog->status),
-                    'department' => self::getDepartmentByStatus($statusLog->status),
-                    'time_ago' => $notification->created_at->diffForHumans(),
-                ];
-            })
-            ->filter()
-            ->values();
-
-        // Apply department filter
-        if ($departmentFilter !== 'all') {
-            $notifications = $notifications->filter(function ($notification) use ($departmentFilter) {
-                return $notification['department'] === $departmentFilter;
-            })->values();
+            ->orderBy('created_at', 'desc');
+        
+        // Apply department filter if provided
+        if ($departmentFilter) {
+            $query->whereHas('statusLog', function ($q) use ($departmentFilter) {
+                $q->where(function ($subQuery) use ($departmentFilter) {
+                    $departmentMapping = self::getDepartmentMapping();
+                    $statuses = array_keys(array_filter($departmentMapping, function ($dept) use ($departmentFilter) {
+                        return $dept === $departmentFilter;
+                    }));
+                    
+                    if (!empty($statuses)) {
+                        $subQuery->whereIn('status', $statuses);
+                    }
+                });
+            });
         }
-
-        return response()->json($notifications);
+        
+        // Calculate total and loaded counts
+        $totalNotifications = $query->count();
+        $hasMore = false;
+        
+        if ($loadMore) {
+            // For load more, get next page
+            $notifications = $query->paginate($perPage, ['*'], 'page', $page);
+            $hasMore = $notifications->hasMorePages();
+        } else {
+            // Initial load, get first page
+            $notifications = $query->paginate($perPage);
+            $hasMore = $notifications->hasMorePages();
+        }
+        
+        // Transform notifications
+        $transformedNotifications = $notifications->map(function ($notification) {
+            $statusLog = $notification->statusLog;
+            
+            if (!$statusLog) {
+                return null;
+            }
+            
+            $notificationData = $statusLog->getNotificationData();
+            $userName = $statusLog->user->name ?? 'System';
+            
+            return [
+                'id' => $notification->id,
+                'type' => $notificationData['type'],
+                'title' => $notificationData['title'],
+                'message' => $notificationData['message'],
+                'patient_id' => $notificationData['patient_id'],
+                'control_number' => $notificationData['control_number'],
+                'patient_name' => $notificationData['patient_name'],
+                'status' => $notificationData['status'],
+                'is_read' => $notification->is_read,
+                'created_at' => $notification->created_at,
+                'read_at' => $notification->read_at,
+                'user' => $statusLog->user,
+                'user_name' => $userName,
+                'icon' => self::getNotificationIcon($statusLog->status),
+                'icon_color' => self::getNotificationIconColor($statusLog->status),
+                'department' => self::getDepartmentByStatus($statusLog->status),
+                'time_ago' => $notification->created_at->diffForHumans(),
+            ];
+        })->filter()->values();
+        
+        return response()->json([
+            'notifications' => $transformedNotifications,
+            'total' => $totalNotifications,
+            'has_more' => $hasMore,
+            'next_page' => $hasMore ? ($page + 1) : null,
+            'current_page' => $page
+        ]);
     }
-        /**
-     * Get department by status
+    
+    /**
+     * Get department mapping for filtering
      */
-    private static function getDepartmentByStatus($status)
+    private static function getDepartmentMapping()
     {
-        $departmentMapping = [
+        return [
             // CSWD Office
             'Processing' => 'CSWD Office',
             'Processing[ROLLED BACK]' => 'CSWD Office',
@@ -105,13 +136,18 @@ class NotificationController extends Controller
             // Treasury Office
             'DV Submitted' => 'Treasury Office',
             'DV Submitted[ROLLED BACK]' => 'Treasury Office',
-            
-            // Default for other statuses
             'Disbursed' => 'Treasury Office',
             'Ready for Disbursement' => 'Treasury Office',
         ];
+    }
 
-        return $departmentMapping[$status] ?? 'General';
+    /**
+     * Get department by status
+     */
+    private static function getDepartmentByStatus($status)
+    {
+        $mapping = self::getDepartmentMapping();
+        return $mapping[$status] ?? 'General';
     }
 
     /**
@@ -135,7 +171,6 @@ class NotificationController extends Controller
             'Submitted[ROLLED BACK]' => 'fas fa-undo',
             'Approved[ROLLED BACK]' => 'fas fa-undo',
             'Budget Allocated[ROLLED BACK]' => 'fas fa-undo',
-           
         ];
 
         return $icons[$status] ?? 'fas fa-bell';
@@ -157,12 +192,11 @@ class NotificationController extends Controller
             'Disbursed' => 'success',
             'Ready for Disbursement' => 'warning',
             
-            // Rolled back statuses - use warning color for visibility
+            // Rolled back statuses
             'Processing[ROLLED BACK]' => 'warning',
             'Submitted[ROLLED BACK]' => 'warning',
             'Approved[ROLLED BACK]' => 'warning',
             'Budget Allocated[ROLLED BACK]' => 'warning',
-           
         ];
 
         return $colors[$status] ?? 'secondary';
@@ -197,7 +231,7 @@ class NotificationController extends Controller
     }
 
     /**
-     * Get all notifications page
+     * Get all notifications page (for dedicated notifications page)
      */
     public function index()
     {
@@ -207,7 +241,7 @@ class NotificationController extends Controller
         ])
             ->where('user_id', Auth::id())
             ->orderBy('created_at', 'desc')
-            ->paginate(20);
+            ->paginate(50); // Use pagination for the dedicated page
 
         return view('admin.notifications.index', compact('notifications'));
     }

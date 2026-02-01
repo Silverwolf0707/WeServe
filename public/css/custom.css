@@ -1,3 +1,114 @@
+/* ===== GLOBAL FONT SETTINGS ===== */
+/* Import Google Font (already imported in HTML) */
+
+/* Apply font globally to all elements */
+* {
+    font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+/* Specific elements that might need different styling */
+body, 
+html,
+.navbar,
+.sidebar,
+.content-wrapper,
+.card,
+.modal,
+.btn,
+input,
+select,
+textarea,
+.form-control,
+.table,
+.datatable,
+.dropdown-menu,
+.toast,
+.alert,
+.badge,
+.pagination,
+.nav-tabs,
+.nav-pills,
+.list-group,
+.progress,
+.tooltip,
+.popover {
+    font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+/* For monospace/code elements (keep as is) */
+code,
+pre,
+kbd,
+samp,
+.ck-editor__editable {
+    font-family: 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace !important;
+}
+
+/* Font Awesome icons should not be affected */
+.fa,
+.fas,
+.far,
+.fal,
+.fab,
+.glyphicon {
+    font-family: 'Font Awesome 5 Free' !important;
+}
+
+/* If you want to use a different font instead of Source Sans Pro */
+/*
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+* {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+}
+*/
+
+/* Adjust font weights globally if needed */
+body {
+    font-weight: 400;
+}
+
+h1, h2, h3, h4, h5, h6, 
+.card-title, 
+.activity-title, 
+.welcome-title,
+.table.datatable thead th {
+    font-weight: 600 !important;
+}
+
+strong, 
+.bold,
+.user-name {
+    font-weight: 700 !important;
+}
+
+/* Adjust font sizes if needed */
+body {
+    font-size: 15px;
+}
+
+h1 { font-size: 2rem; }
+h2 { font-size: 1.75rem; }
+h3 { font-size: 1.5rem; }
+h4 { font-size: 1.25rem; }
+h5 { font-size: 1.125rem; }
+h6 { font-size: 1rem; }
+
+/* Line height for better readability */
+body {
+    line-height: 1.6;
+}
+
+/* Letter spacing for headings */
+h1, h2, h3, h4, h5, h6,
+.card-title,
+.activity-title,
+.welcome-title {
+    letter-spacing: -0.025em;
+}
+
+/* ===== END GLOBAL FONT SETTINGS ===== */
+
+
 .ck-editor__editable,
 textarea {
     min-height: 150px;
@@ -864,13 +975,42 @@ body.sidebar-collapse #loading-overlay {
     animation: spin 1.5s linear infinite;
 }
 
-/* Brand Text */
-.loader-text {
-    font-family: "Source Sans Pro", sans-serif;
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: #064e3b;
-    letter-spacing: 2px;
+/* Logo Image (replaces WS text) */
+.loader-logo {
+    position: relative;
+    z-index: 1;
+    width: 60px; /* Adjust size as needed */
+    height: 60px; /* Adjust size as needed */
+    background-image: url('../logo.png'); /* Use correct path to your logo */
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+/* Alternative: If you want to use the logo from the assets */
+.loader-logo-img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    position: relative;
+    z-index: 1;
+    animation: pulse 2s infinite ease-in-out;
+}
+
+/* Pulse animation for logo */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 /* Spin animation */
@@ -880,7 +1020,7 @@ body.sidebar-collapse #loading-overlay {
     }
 }
 
-/* end of loading screen ,*/
+/* end of loading screen */
 
 /* 🔹 Process Tracker Styles */
 .stepper {
@@ -940,7 +1080,7 @@ body.sidebar-collapse #loading-overlay {
 
 /* admin home dashboard */
 .dashboard-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #4a804e 0%, #2b4c2e 100%);
     border-radius: 16px;
     overflow: hidden;
     position: relative;
@@ -1001,289 +1141,11 @@ body.sidebar-collapse #loading-overlay {
     }
 }
 
-.welcome-title {
-    font-size: 24px;
-    font-weight: 700;
-    color: white;
-    margin-bottom: 8px;
-    letter-spacing: 0.5px;
-}
 
-.user-name {
-    font-weight: 800;
-    position: relative;
-    display: inline-block;
-}
 
-.user-name:after {
-    content: "";
-    position: absolute;
-    bottom: -3px;
-    left: 0;
-    width: 100%;
-    height: 3px;
-    background: rgba(255, 255, 255, 0.5);
-    border-radius: 3px;
-}
 
-.datetime-display {
-    font-size: 16px;
-    color: rgba(255, 255, 255, 0.85);
-    font-weight: 500;
-    letter-spacing: 0.3px;
-}
 
-/* Animated bubbles background */
-.bubbles {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    z-index: 1;
-    overflow: hidden;
-    top: 0;
-    left: 0;
-    pointer-events: none;
-}
 
-.bubble {
-    position: absolute;
-    bottom: -100px;
-    width: 40px;
-    height: 40px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 50%;
-    animation: rise 15s infinite;
-}
-
-/* Card Styles */
-.dashboard-card {
-    border: none;
-    border-radius: 12px;
-    overflow: hidden;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    position: relative;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    height: 100%;
-}
-
-.dashboard-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 25px rgba(0, 0, 0, 0.1);
-}
-
-.card-header-bg {
-    height: 90px;
-    background: linear-gradient(45deg,
-            var(--card-color),
-            var(--card-color-dark));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-}
-
-.card-icon {
-    font-size: 32px;
-    background: rgba(255, 255, 255, 0.2);
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.card-body {
-    padding: 20px;
-    position: relative;
-}
-
-.card-content {
-    text-align: center;
-}
-
-.card-title {
-    font-size: 18px;
-    font-weight: 700;
-    color: #2d3748;
-    margin-bottom: 12px;
-}
-
-.card-stats {
-    display: flex;
-    justify-content: space-around;
-    border-top: 1px solid rgba(0, 0, 0, 0.05);
-    margin-top: 15px;
-    padding-top: 15px;
-}
-
-.stats-item {
-    text-align: center;
-    padding: 0 10px;
-}
-
-.stats-value {
-    font-size: 24px;
-    font-weight: 800;
-    line-height: 1;
-}
-
-.stats-label {
-    font-size: 12px;
-    color: #718096;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-top: 5px;
-}
-
-.total-users .stats-value {
-    color: var(--card-color);
-}
-
-.active-users .stats-value {
-    color: #38a169;
-}
-
-.card-footer {
-    background: rgba(0, 0, 0, 0.02);
-    padding: 12px 20px;
-    text-align: center;
-}
-
-.view-btn {
-    font-size: 13px;
-    font-weight: 600;
-    padding: 6px 16px;
-    border-radius: 20px;
-    letter-spacing: 0.5px;
-    transition: all 0.2s;
-    border: none;
-}
-
-/* Table Styles */
-.activity-card {
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-    margin-top: 30px;
-}
-
-.activity-header {
-    background-color: white;
-    padding: 20px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.activity-title {
-    font-size: 18px;
-    font-weight: 700;
-    color: #2d3748;
-    margin: 0;
-}
-
-.view-all-btn {
-    font-size: 13px;
-    font-weight: 600;
-    padding: 6px 16px;
-    border-radius: 20px;
-    background: linear-gradient(45deg, #4e73df, #224abe);
-    color: white;
-    border: none;
-    transition: all 0.2s;
-}
-
-.activity-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-}
-
-.activity-table thead th {
-    background-color: #f7fafc;
-    color: #4a5568;
-    font-weight: 700;
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 12px 20px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.activity-table tbody tr {
-    transition: background-color 0.2s;
-}
-
-.activity-table tbody tr:hover {
-    background-color: #f8f9fa;
-}
-
-.activity-table td {
-    padding: 16px 20px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    vertical-align: middle;
-}
-
-.activity-table td:first-child {
-    font-weight: 600;
-    color: #4a5568;
-}
-
-.activity-table td:nth-child(2) {
-    font-weight: 600;
-    color: var(--dept-color);
-}
-
-.status-badge {
-    display: inline-block;
-    padding: 5px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.badge-completed {
-    background-color: #48bb78;
-    color: white;
-}
-
-.badge-in-progress {
-    background-color: #4299e1;
-    color: white;
-}
-
-.badge-pending {
-    background-color: #ed8936;
-    color: white;
-}
-
-@keyframes rise {
-    0% {
-        bottom: -100px;
-        transform: translateX(0);
-        opacity: 0;
-    }
-
-    25% {
-        opacity: 0.8;
-    }
-
-    50% {
-        transform: translateX(50px);
-    }
-
-    100% {
-        bottom: 110%;
-        transform: translateX(-50px);
-        opacity: 0;
-    }
-}
-
-/* end of admin home dashboard */
 
 .dataTables_wrapper .dt-buttons {
     display: flex !important;
@@ -1820,4 +1682,63 @@ body.dark-mode ::-webkit-scrollbar-track {
 .diagnosis-textarea {
     height: 209px;
     resize: vertical;   
+}
+
+
+/* Ensure buttons are always clickable */
+.dt-buttons {
+    position: relative !important;
+    z-index: 10 !important;
+}
+
+/* Prevent buttons from being hidden */
+.col-md-6.d-flex.align-items-center.gap-2 {
+    overflow: visible !important;
+}
+
+
+/* Fix for the More dropdown positioning */
+.dt-buttons .dropdown-menu {
+    position: absolute !important;
+    z-index: 1060 !important; /* Higher than everything */
+}
+
+
+/* Make navbar more compact */
+.main-header.navbar {
+    min-height: 70px !important; 
+    padding: 0.25rem 0 !important;
+}
+
+.main-header .navbar-nav .nav-link {
+    padding: 0.375rem 0.75rem !important;
+}
+
+/* Adjust logo size */
+.main-header .navbar-nav .nav-item.ms-2 img:first-child {
+    height: 50px !important;
+    width: 50px !important;
+}
+
+.main-header .navbar-nav .nav-item.ms-2 img.ms-2 {
+    height: 30px !important;
+}
+
+/* Adjust notification bell position */
+#notification-badge {
+    top: 5px !important; /* Move badge down */
+    left: 35px !important;
+    font-size: 0.55rem !important;
+    min-width: 16px !important;
+    height: 16px !important;
+    padding: 0.2em 0.35em !important;
+}
+
+.main-header .fa-bars {
+    margin-left: 15px;
+    font-size: 1.5rem !important; 
+}
+.main-header.navbar .fa-bell{
+    margin-right: 15px;
+    font-size: 1.5rem !important;
 }

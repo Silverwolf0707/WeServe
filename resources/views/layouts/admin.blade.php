@@ -40,12 +40,16 @@
   <!-- AdminLTE and Custom Styles -->
   <link href="{{ asset('css/adminltev3.css') }}" rel="stylesheet">
   <link href="{{ asset('css/custom.css') }}" rel="stylesheet">
+  <link href="{{ asset('css/context-menu.css') }}" rel="stylesheet">
   @if(app()->isLocal())
     @vite(['resources/js/app.js', 'resources/css/app.css'])
+    <script src="{{ asset('js/context-menu.js') }}"></script>
 @else
     <!-- Production assets -->
     <link rel="stylesheet" href="{{ asset('resources/css/app.css') }}">
+    <link href="{{ asset('css/context-menu.css') }}" rel="stylesheet">
     <script src="{{ asset('resources/js/app.js') }}" defer></script>
+    <script src="{{ asset('js/context-menu.js') }}"></script>
 @endif
 
 
@@ -96,92 +100,111 @@
 
 
 <body class="sidebar-mini layout-fixed" style="height: auto;">
-      <!-- Loading Screen -->
-    <div id="loading-overlay">
-        <div class="loader-wrapper">
-            <div class="circle"></div>
-            <div class="loader-text">WS</div>
-        </div>
+<!-- Loading Screen -->
+<div id="loading-overlay">
+    <div class="loader-wrapper">
+        <div class="circle"></div>
+        <div class="loader-logo"></div>
     </div>
+</div>
   <div class="wrapper">
 <nav class="main-header navbar navbar-expand bg-white navbar-light border-bottom">
     <!-- Left navbar links -->
-    <ul class="navbar-nav">
+    <ul class="navbar-nav d-flex align-items-center">
         <li class="nav-item">
             <a class="nav-link" data-widget="pushmenu" href="#"><i class="fa fa-bars"></i></a>
         </li>
+        <!-- WeServe Logo -->
+        <li class="nav-item ms-2">
+            <a href="{{ route('admin.home') }}" class="d-flex align-items-center text-decoration-none">
+                <img src="{{ asset('logo.png') }}" alt="Logo" style="height: 30px; width: 30px; object-fit: cover;">
+                <img src="{{ asset('WeServe1.png') }}" alt="WeServe Logo" class="ms-2" style="height: 25px; width: auto;">
+            </a>
+        </li>
     </ul>
 
-<!-- Right navbar links -->
-<ul class="navbar-nav ms-auto">
-    <!-- Notification Bell -->
-    <li class="nav-item dropdown">
-        <a class="nav-link" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false" id="notificationDropdown">
-            <i class="fa fa-bell"></i>
-            <!-- Notification Badge -->
-            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notification-badge" id="notification-badge" style="display: none;">
-                0
-                <span class="visually-hidden">unread notifications</span>
-            </span>
-        </a>
-        <div class="dropdown-menu dropdown-menu-end dropdown-menu-lg notification-dropdown" style="width: 400px;">
-            <!-- Dropdown Header -->
-            <div class="dropdown-header bg-light py-3 notification-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0"><i class="fas fa-bell me-2"></i>Notifications<span class="beta-tag">BETA</span></h6>
-                    <div>
-                        <span class="badge bg-primary" id="notification-count" style="display: none;">0 new</span>
-                        <button class="btn btn-sm btn-outline-secondary ms-2" id="refresh-notifications" title="Refresh">
-                            <i class="fas fa-sync-alt"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <!-- Add this right after the notification header div -->
-<div class="dropdown-header bg-light py-2 border-bottom">
-    <div class="d-flex justify-content-between align-items-center">
-        <small class="text-muted">Filter by Department</small>
-        <button class="btn btn-sm btn-outline-secondary" id="clear-filter" style="display: none;">
-            <i class="fas fa-times"></i>
-        </button>
-    </div>
-</div>
-
-<div class="px-3 py-2">
-    <select class="form-select form-select-sm" id="department-filter">
-        <option value="">All Departments</option>
-        <option value="CSWD Office">CSWD Office</option>
-        <option value="Mayor's Office">Mayor's Office</option>
-        <option value="Budget Office">Budget Office</option>
-        <option value="Accounting Office">Accounting Office</option>
-        <option value="Treasury Office">Treasury Office</option>
-    </select>
-</div>
-            
-            <!-- Notification Items Container with Scroll -->
-            <div class="notification-items-container">
-                <div class="notification-items">
-                    <!-- Notifications will be dynamically loaded here -->
-                    <div class="dropdown-item text-center py-4 notification-loading">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        
-                    </div>
-                </div>
-            </div>
-            
-           
-            <div class="dropdown-divider"></div>
-            <div class="d-flex justify-content-between px-3 py-2 notification-actions">
+    <!-- Right navbar links -->
+    <ul class="navbar-nav ms-auto">
+        <!-- Notification Bell -->
+        <li class="nav-item dropdown">
+            <a class="nav-link" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false" id="notificationDropdown">
+                <i class="fa fa-bell"></i>
+                <!-- Notification Badge -->
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notification-badge" id="notification-badge" style="display: none;">
+                    0
+                    <span class="visually-hidden">unread notifications</span>
+                </span>
+            </a>
+            <!-- Replace the notification dropdown section in your layout -->
+<div class="dropdown-menu dropdown-menu-end dropdown-menu-lg notification-dropdown" style="width: 400px;">
+    <!-- Dropdown Header -->
+    <div class="dropdown-header bg-light py-3 notification-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0"><i class="fas fa-bell me-2"></i>Notifications<span class="beta-tag">BETA</span></h6>
+            <div>
+                <span class="badge bg-primary" id="notification-count" style="display: none;">0 new</span>
                 
-                <button class="btn btn-sm btn-outline-secondary" id="mark-all-read">
-                    <i class="fas fa-check-double me-1"></i> Mark All Read
-                </button>
             </div>
         </div>
-    </li>
-</ul>
+    </div>
+    
+    <!-- Filter Section -->
+    <div class="dropdown-header bg-light py-2 border-bottom">
+        <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">Filter by Department</small>
+            <button class="btn btn-sm btn-outline-secondary" id="clear-filter" style="display: none;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="px-3 py-2">
+        <select class="form-select form-select-sm" id="department-filter">
+            <option value="">All Departments</option>
+            <option value="CSWD Office">CSWD Office</option>
+            <option value="Mayor's Office">Mayor's Office</option>
+            <option value="Budget Office">Budget Office</option>
+            <option value="Accounting Office">Accounting Office</option>
+            <option value="Treasury Office">Treasury Office</option>
+        </select>
+    </div>
+    
+    <!-- Notification Items Container with Scroll -->
+    <div class="notification-items-container" style="max-height: 400px; overflow-y: auto;">
+        <div class="notification-items" id="notification-items">
+            <!-- Notifications will be dynamically loaded here -->
+            <div class="dropdown-item text-center py-4 notification-loading">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Load More Button (hidden initially) -->
+        <div class="dropdown-item text-center py-2" id="load-more-container" style="display: none;">
+            <button class="btn btn-sm btn-outline-primary w-100" id="load-more-notifications">
+                <i class="fas fa-arrow-down me-1"></i> Load More
+            </button>
+        </div>
+    </div>
+    
+    <!-- Statistics -->
+    <div class="dropdown-item text-center py-2 border-top" id="notification-stats" style="display: none;">
+        <small class="text-muted" id="notification-stats-text">Showing <span id="shown-count">0</span> of <span id="total-count">0</span></small>
+    </div>
+    
+    <div class="dropdown-divider"></div>
+    <div class="d-flex justify-content-between px-3 py-2 notification-actions">
+        <button class="btn btn-sm btn-outline-secondary" id="mark-all-read">
+            <i class="fas fa-check-double me-1"></i> Mark All Read
+        </button>
+        <a class="btn btn-sm btn-outline-info">
+            <i class="fas fa-list me-1"></i> View All
+        </a>
+    </div>
+</div>
+        </li>
+    </ul>
 </nav>
 
       <!-- Right navbar links -->
@@ -490,10 +513,23 @@ class NotificationManager {
     constructor() {
         this.notificationBadge = document.getElementById('notification-badge');
         this.notificationCount = document.getElementById('notification-count');
-        this.notificationItemsContainer = document.querySelector('.notification-items');
+        this.notificationItemsContainer = document.getElementById('notification-items');
         this.departmentFilter = document.getElementById('department-filter');
         this.clearFilterBtn = document.getElementById('clear-filter');
+        this.loadMoreBtn = document.getElementById('load-more-notifications');
+        this.loadMoreContainer = document.getElementById('load-more-container');
+        this.notificationStats = document.getElementById('notification-stats');
+        this.statsText = document.getElementById('notification-stats-text');
+        this.shownCount = document.getElementById('shown-count');
+        this.totalCount = document.getElementById('total-count');
+        
         this.currentFilter = '';
+        this.currentPage = 1;
+        this.hasMore = false;
+        this.isLoading = false;
+        this.notifications = [];
+        this.shownNotifications = 0;
+        this.totalNotifications = 0;
         
         this.init();
     }
@@ -505,7 +541,7 @@ class NotificationManager {
     }
 
     setupEventListeners() {
-        // Handle notification click - redirect to process tracking
+        // Handle notification click
         document.addEventListener('click', (e) => {
             if (e.target.closest('.notification-item')) {
                 e.preventDefault();
@@ -526,7 +562,7 @@ class NotificationManager {
         // Department filter change
         if (this.departmentFilter) {
             this.departmentFilter.addEventListener('change', (e) => {
-                this.applyFilter(e.target.value);
+                this.resetAndLoad(e.target.value);
             });
         }
 
@@ -537,21 +573,38 @@ class NotificationManager {
             });
         }
 
+        // Load more button
+        if (this.loadMoreBtn) {
+            this.loadMoreBtn.addEventListener('click', () => {
+                this.loadMore();
+            });
+        }
+
         // Mark all as read
         const markAllReadBtn = document.getElementById('mark-all-read');
         if (markAllReadBtn) {
             markAllReadBtn.addEventListener('click', () => this.markAllAsRead());
         }
 
-        // Refresh notifications
-        const refreshNotificationsBtn = document.getElementById('refresh-notifications');
-        if (refreshNotificationsBtn) {
-            refreshNotificationsBtn.addEventListener('click', () => this.loadNotifications());
+     
+        
+        // Infinite scroll on notification container
+        const container = document.querySelector('.notification-items-container');
+        if (container) {
+            container.addEventListener('scroll', () => {
+                const { scrollTop, scrollHeight, clientHeight } = container;
+                if (scrollTop + clientHeight >= scrollHeight - 10 && this.hasMore && !this.isLoading) {
+                    this.loadMore();
+                }
+            });
         }
     }
 
-    applyFilter(filterValue) {
+    resetAndLoad(filterValue = '') {
         this.currentFilter = filterValue;
+        this.currentPage = 1;
+        this.notifications = [];
+        this.shownNotifications = 0;
         
         // Update UI
         if (this.departmentFilter) {
@@ -563,31 +616,93 @@ class NotificationManager {
             this.clearFilterBtn.style.display = filterValue ? 'block' : 'none';
         }
         
-        // Reload notifications with filter
+        // Hide load more button initially
+        this.loadMoreContainer.style.display = 'none';
+        
+        // Reload notifications
         this.loadNotifications();
     }
 
     clearFilter() {
-        this.applyFilter('');
+        this.resetAndLoad('');
     }
 
-    async loadNotifications() {
+    async loadNotifications(isLoadMore = false) {
+        if (this.isLoading) return;
+        
+        this.isLoading = true;
+        
         try {
             const params = new URLSearchParams();
             if (this.currentFilter) {
                 params.append('department', this.currentFilter);
             }
-
-            const response = await fetch(`/admin/notifications/list?${params}`);
-            const notifications = await response.json();
+            if (isLoadMore) {
+                params.append('load_more', 'true');
+                params.append('page', this.currentPage);
+            }
             
-            this.updateNotificationBadge(notifications);
-            this.renderNotifications(notifications);
+            // Show loading state
+            if (!isLoadMore) {
+                this.notificationItemsContainer.innerHTML = `
+                    <div class="dropdown-item text-center py-4 notification-loading">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                `;
+                this.loadMoreContainer.style.display = 'none';
+            } else {
+                this.loadMoreBtn.disabled = true;
+                this.loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Loading...';
+            }
+            
+            const response = await fetch(`/admin/notifications/list?${params}`);
+            const data = await response.json();
+            
+            this.updateNotificationBadge(data.notifications);
+            
+            if (isLoadMore) {
+                // Append new notifications
+                this.renderNotifications(data.notifications, true);
+            } else {
+                // Replace all notifications
+                this.renderNotifications(data.notifications, false);
+            }
+            
+            // Update pagination state
+            this.hasMore = data.has_more;
+            this.totalNotifications = data.total;
+            this.shownNotifications = this.notifications.length;
+            this.currentPage = data.next_page ? data.current_page + 1 : data.current_page;
+            
+            // Update stats
+            this.updateStats();
+            
+            // Show/hide load more button
+            if (this.hasMore) {
+                this.loadMoreContainer.style.display = 'block';
+                this.loadMoreBtn.disabled = false;
+                this.loadMoreBtn.innerHTML = '<i class="fas fa-arrow-down me-1"></i> Load More';
+            } else {
+                this.loadMoreContainer.style.display = 'none';
+            }
+            
         } catch (error) {
             console.error('Failed to load notifications:', error);
             this.showErrorMessage();
+        } finally {
+            this.isLoading = false;
         }
     }
+    
+    loadMore() {
+        if (this.hasMore && !this.isLoading) {
+            this.loadNotifications(true);
+        }
+    }
+    
+    
 
     updateNotificationBadge(notifications) {
         const unreadCount = notifications.filter(n => !n.is_read).length;
@@ -602,24 +717,52 @@ class NotificationManager {
             this.notificationCount.style.display = unreadCount > 0 ? 'inline-block' : 'none';
         }
     }
+    
+    updateStats() {
+        this.shownCount.textContent = this.shownNotifications;
+        this.totalCount.textContent = this.totalNotifications;
+        this.notificationStats.style.display = 'block';
+    }
 
-    renderNotifications(notifications) {
+    renderNotifications(notifications, append = false) {
         if (!this.notificationItemsContainer) {
             console.error('Notification items container not found');
             return;
         }
-
-        // Clear existing content
-        this.notificationItemsContainer.innerHTML = '';
-
-        if (notifications.length === 0) {
+        
+        if (!append) {
+            // Clear existing content for initial load
+            this.notificationItemsContainer.innerHTML = '';
+            this.notifications = [];
+        }
+        
+        if (notifications.length === 0 && !append) {
             this.showEmptyMessage();
             return;
         }
-
+        
+        // Add new notifications to our array
         notifications.forEach(notification => {
+            this.notifications.push(notification);
+        });
+        
+        // Render all notifications
+        this.notificationItemsContainer.innerHTML = '';
+        this.notifications.forEach(notification => {
             const notificationEl = this.createNotificationElement(notification);
             this.notificationItemsContainer.insertAdjacentHTML('beforeend', notificationEl);
+        });
+        
+        // Add dividers between notifications
+        this.addDividers();
+    }
+    
+    addDividers() {
+        const items = this.notificationItemsContainer.querySelectorAll('.notification-item');
+        items.forEach((item, index) => {
+            if (index < items.length - 1) {
+                item.insertAdjacentHTML('afterend', '<div class="dropdown-divider"></div>');
+            }
         });
     }
 
@@ -628,7 +771,10 @@ class NotificationManager {
         const iconClass = `bg-${notification.icon_color} rounded-circle d-flex align-items-center justify-content-center`;
         
         return `
-            <a href="/admin/process-tracking/${notification.patient_id}" class="dropdown-item d-flex align-items-start py-3 notification-item ${readClass}" data-id="${notification.id}" data-patient-id="${notification.patient_id}">
+            <a href="/admin/process-tracking/${notification.patient_id}" 
+               class="dropdown-item d-flex align-items-start py-3 notification-item ${readClass}" 
+               data-id="${notification.id}" 
+               data-patient-id="${notification.patient_id}">
                 <div class="flex-shrink-0 me-3">
                     <div class="${iconClass}" style="width: 40px; height: 40px;">
                         <i class="${notification.icon} text-white"></i>
@@ -646,7 +792,6 @@ class NotificationManager {
                     </div>
                 </div>
             </a>
-            <div class="dropdown-divider"></div>
         `;
     }
 
@@ -666,6 +811,9 @@ class NotificationManager {
                 ` : ''}
             </div>
         `;
+        
+        this.notificationStats.style.display = 'none';
+        this.loadMoreContainer.style.display = 'none';
     }
 
     showErrorMessage() {
@@ -707,10 +855,17 @@ class NotificationManager {
             const notificationEl = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
             if (notificationEl) {
                 notificationEl.classList.remove('unread-notification');
+                
+                // Update local notification object
+                const notification = this.notifications.find(n => n.id == notificationId);
+                if (notification) {
+                    notification.is_read = true;
+                }
             }
             
-            // Reload notifications to update counts
-            this.loadNotifications();
+            // Update badge count
+            this.updateNotificationBadge(this.notifications);
+            
         } catch (error) {
             console.error('Failed to mark notification as read:', error);
         }
@@ -726,17 +881,48 @@ class NotificationManager {
                 }
             });
             
-            this.loadNotifications();
+            // Update all notifications in UI
+            document.querySelectorAll('.notification-item').forEach(item => {
+                item.classList.remove('unread-notification');
+            });
+            
+            // Update all local notifications
+            this.notifications.forEach(notification => {
+                notification.is_read = true;
+            });
+            
+            // Update badge count
+            this.updateNotificationBadge(this.notifications);
+            
         } catch (error) {
             console.error('Failed to mark all notifications as read:', error);
         }
     }
 
     startPolling() {
-        // Refresh notifications every 30 seconds
+        // Refresh unread count every 30 seconds (don't reload all notifications)
         setInterval(() => {
-            this.loadNotifications();
+            this.updateUnreadCount();
         }, 30000);
+    }
+    
+    async updateUnreadCount() {
+        try {
+            const response = await fetch('/admin/notifications/unread-count');
+            const data = await response.json();
+            
+            if (this.notificationBadge) {
+                this.notificationBadge.textContent = data.count;
+                this.notificationBadge.style.display = data.count > 0 ? 'block' : 'none';
+            }
+            
+            if (this.notificationCount) {
+                this.notificationCount.textContent = `${data.count} new`;
+                this.notificationCount.style.display = data.count > 0 ? 'inline-block' : 'none';
+            }
+        } catch (error) {
+            console.error('Failed to update unread count:', error);
+        }
     }
 }
 
@@ -774,6 +960,41 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     </script>
     @stack('scripts')
+    <!-- Context Menu for Right Click -->
+<div id="contextMenu" class="context-menu">
+    <div class="context-menu-header">Actions</div>
+    <div class="context-menu-item" data-action="view">
+        <i class="fas fa-eye"></i>
+        <span>View Details</span>
+    </div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item" data-action="approve">
+        <i class="fas fa-check-circle text-success"></i>
+        <span>Approve</span>
+    </div>
+    <div class="context-menu-item" data-action="reject">
+        <i class="fas fa-times-circle text-danger"></i>
+        <span>Reject</span>
+    </div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item" data-action="budget">
+        <i class="fas fa-money-bill-wave text-warning"></i>
+        <span>Allocate Budget</span>
+    </div>
+    <div class="context-menu-item" data-action="dv">
+        <i class="fas fa-file-invoice text-info"></i>
+        <span>Submit DV</span>
+    </div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item" data-action="ready">
+        <i class="fas fa-exclamation-circle text-warning"></i>
+        <span>Ready for Disbursement</span>
+    </div>
+    <div class="context-menu-item" data-action="disburse">
+        <i class="fas fa-money-bill-wave text-success"></i>
+        <span>Quick Disburse</span>
+    </div>
+</div>
 
 </body>
 

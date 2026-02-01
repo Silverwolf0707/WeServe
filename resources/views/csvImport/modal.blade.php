@@ -42,12 +42,40 @@
                         </small>
                     </div>
 
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" class="form-check-input" id="has_disbursed_date"
-                            name="has_disbursed_date" value="1">
-                        <label class="form-check-label" for="has_disbursed_date">
-                            File has <strong>Disbursed Date</strong> column
-                        </label>
+                    {{-- File Type Selection --}}
+                    <div class="mb-3">
+                        <label class="form-label">File Type</label>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="has_disbursed_date"
+                                name="has_disbursed_date" value="1" checked
+                                onchange="toggleDisbursedOptions()">
+                            <label class="form-check-label" for="has_disbursed_date">
+                                File contains <strong>Disbursement Columns</strong> (Disbursed Date, Amount, Allocation Date)
+                            </label>
+                        </div>
+                    </div>
+
+                    {{-- Force Disburse Option --}}
+                    <div class="mb-3" id="forceDisburseContainer" style="display: none;">
+                        <div class="alert alert-warning border-warning">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="force_disburse"
+                                    name="force_disburse" value="1">
+                                <label class="form-check-label" for="force_disburse">
+                                    <strong>Auto-Disburse All Records</strong>
+                                </label>
+                                <small class="form-text text-muted d-block">
+                                    <i class="fas fa-info-circle"></i> 
+                                    When enabled, all imported records will be marked as disbursed:
+                                    <ul class="mb-0 mt-1 small">
+                                        <li>Records without disbursed date will use the processed date or current date</li>
+                                        <li>Records without amount will be set to 0.00</li>
+                                        <li>Budget allocations will be created for all records</li>
+                                        <li>Status will be set to "Disbursed" instead of "Processing"</li>
+                                    </ul>
+                                </small>
+                            </div>
+                        </div>
                     </div>
 
                     {{-- File Templates --}}
@@ -106,7 +134,27 @@ document.addEventListener('DOMContentLoaded', function() {
     const importButton = document.getElementById('importButton');
     const importButtonText = document.getElementById('importButtonText');
     const importButtonSpinner = document.getElementById('importButtonSpinner');
+    const hasDisbursedCheckbox = document.getElementById('has_disbursed_date');
+    const forceDisburseContainer = document.getElementById('forceDisburseContainer');
+    const forceDisburseCheckbox = document.getElementById('force_disburse');
+    
     let isSubmitting = false;
+
+    // Toggle force disburse option based on file type selection
+    function toggleDisbursedOptions() {
+        if (!hasDisbursedCheckbox.checked) {
+            forceDisburseContainer.style.display = 'block';
+        } else {
+            forceDisburseContainer.style.display = 'none';
+            forceDisburseCheckbox.checked = false;
+        }
+    }
+
+    // Initial state
+    toggleDisbursedOptions();
+
+    // Event listener for file type change
+    hasDisbursedCheckbox.addEventListener('change', toggleDisbursedOptions);
 
     csvImportForm.addEventListener('submit', function(e) {
         if (isSubmitting) {
@@ -131,6 +179,14 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             alert('Please select a valid file type (CSV, Excel, or OpenDocument Spreadsheet).');
             return;
+        }
+
+        // Show confirmation if force disburse is enabled
+        if (forceDisburseCheckbox && forceDisburseCheckbox.checked) {
+            if (!confirm('You have selected "Auto-Disburse All Records". This will:\n1. Mark all records as disbursed\n2. Create budget allocations (amount 0.00 if not specified)\n3. Set disbursed date to processed date or current date\n\nContinue?')) {
+                e.preventDefault();
+                return;
+            }
         }
 
         // Show loading state
