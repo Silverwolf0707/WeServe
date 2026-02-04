@@ -122,7 +122,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
         ->name('document-management.show');
 
     Route::get('document-management/view/{id}', [DocumentManagementController::class, 'view'])
-        ->name('document-management.view'); // Add this route
+        ->name('document-management.view'); 
 
     Route::delete('document-management/{id}', [DocumentManagementController::class, 'destroy'])
         ->name('document-management.destroy');
@@ -167,7 +167,6 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
 
 
 Route::group(['prefix' => 'profile', 'as' => 'profile.', 'middleware' => ['auth']], function () {
-    // Change password
     Route::get('password', [ChangePasswordController::class, 'edit'])->name('password.edit');
     Route::post('password', [ChangePasswordController::class, 'update'])->name('password.update');
     Route::post('profile', [ChangePasswordController::class, 'updateProfile'])->name('password.updateProfile');
