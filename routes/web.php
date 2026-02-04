@@ -118,14 +118,8 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     Route::delete('document-management/mass-destroy', [DocumentManagementController::class, 'massDestroy'])
         ->name('document-management.massDestroy');
 
-    Route::get('document-management/patient/{id}', [DocumentManagementController::class, 'show'])
-        ->name('document-management.show');
-
     Route::get('document-management/view/{id}', [DocumentManagementController::class, 'view'])
         ->name('document-management.view'); 
-
-    Route::delete('document-management/{id}', [DocumentManagementController::class, 'destroy'])
-        ->name('document-management.destroy');
 
     Route::resource('document-management', DocumentManagementController::class)
         ->names('document-management');
