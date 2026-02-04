@@ -13,7 +13,7 @@ return new class extends Migration
             $table->string('filename');
             $table->string('path');
             $table->integer('size')->nullable();
-            $table->string('type')->default('full'); // full, partial, database_only
+            $table->string('type')->default('full');
             $table->text('description')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamp('restored_at')->nullable();
