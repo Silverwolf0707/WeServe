@@ -17,7 +17,6 @@ return new class extends Migration
                 ->constrained('patient_records')
                 ->onDelete('cascade');
             $table->string('tracking_number')->unique();
-            $table->timestamp('tracking_created_at');
             $table->timestamps();
             $table->softDeletes();
         });

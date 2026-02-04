@@ -16,25 +16,86 @@ use App\Models\BudgetAllocation;
 use App\Models\PatientStatusLog;
 use App\Models\DisbursementVoucher;
 use App\Models\Document;
+use App\Services\NotificationService;
 use App\Services\VonageService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 class ProcessTrackingController extends Controller
 {
-    public function index()
-    {
-        abort_if(Gate::denies('process_tracking_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+public function index(Request $request)
+{
+    abort_if(Gate::denies('process_tracking_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        $patients = PatientRecord::whereHas('statusLogs')->with(['latestStatusLog'])->get();
+    $searchTerm = $request->get('search', '');
+    
+    $query = PatientRecord::whereHas('statusLogs')
+        ->with(['latestStatusLog'])
+        ->orderByDesc('date_processed');
 
-
-        return view('admin.processTracking.index', compact('patients'));
+    if ($searchTerm) {
+        $query->where(function ($q) use ($searchTerm) {
+            $q->where('control_number', 'like', "%{$searchTerm}%")
+              ->orWhere('patient_name', 'like', "%{$searchTerm}%")
+              ->orWhere('claimant_name', 'like', "%{$searchTerm}%")
+              ->orWhere('case_worker', 'like', "%{$searchTerm}%")
+              ->orWhere('diagnosis', 'like', "%{$searchTerm}%")
+              ->orWhere('address', 'like', "%{$searchTerm}%")
+              ->orWhere('contact_number', 'like', "%{$searchTerm}%")
+              ->orWhere('case_type', 'like', "%{$searchTerm}%");
+        });
     }
+    
+    // Add pagination here
+    $patients = $query->paginate(100)->withQueryString();
+
+    // Calculate priority for sorting
+    $patients->getCollection()->transform(function ($patient) {
+        $currentStatus = $patient->latestStatusLog->status ?? 'Submitted';
+        
+        $priorityMap = [
+            'CSWD Office' => [
+                'Processing' => 1,
+                'Submitted[ROLLED BACK]' => 3,
+                'Submitted' => 4,
+                'Rejected' => 2,
+            ],
+            'Budget Office' => [
+                'Approved' => 1,
+                'Budget Allocated' => 2,
+                'Approved[ROLLED BACK]' => 3,
+            ],
+            'Treasury Office' => [
+                'Ready for Disbursement' => 2,
+                'Disbursed' => 3,
+                'DV Submitted' => 1,
+            ],
+            'Mayors Office' => [
+                'Submitted' => 2,
+                'Submitted[Emergency]' => 1,
+                'Submitted[ROLLED BACK]' => 3,
+                'Approved' => 4,
+            ],
+            'Accounting Office' => [
+                'Budget Allocated' => 1,
+                'Budget Allocated[ROLLED BACK]' => 2,
+                'DV Submitted' => 3,
+            ],
+        ];
+
+        $role = Auth::user()->roles->pluck('title')->first() ?? 'CSWD Office';
+        $patient->priority = $priorityMap[$role][$currentStatus] ?? 999;
+        
+        return $patient;
+    });
+
+    return view('admin.processTracking.index', compact('patients', 'searchTerm'));
+}
 
 
     public function show($id)
@@ -56,14 +117,13 @@ class ProcessTrackingController extends Controller
         abort_if(Gate::denies('approve_patient'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         $rules = [
-            'remarks' => 'required|string|max:1000',
+            'remarks' => 'nullable|string|max:1000',
             'action'  => 'required|in:approve,reject',
             'status_date' => 'required|date',
         ];
 
-        // Multi-select validation if rejecting
         if ($request->action === 'reject') {
-            $rules['reasons']       = 'required|array|min:1';
+            $rules['reasons']       = 'nullable|array|min:1';
             $rules['reasons.*']     = 'string|max:255';
             $rules['other_reason']  = 'nullable|string|max:255';
         }
@@ -76,7 +136,6 @@ class ProcessTrackingController extends Controller
             ? PatientStatusLog::STATUS_APPROVED
             : PatientStatusLog::STATUS_REJECTED;
 
-        // 1️⃣ Create status log (remarks stored here)
         $statusLog = PatientStatusLog::create([
             'patient_id' => $patient->id,
             'status'     => $status,
@@ -86,40 +145,52 @@ class ProcessTrackingController extends Controller
             'created_at' => now(),
         ]);
 
-        // 2️⃣ Store multiple reasons if rejected
+
+        $rejectionReasons = null;
+
         if ($request->action === 'reject') {
             $reasons = $validated['reasons'] ?? [];
-
-            // Append "Other Reason" if filled
             if (!empty($validated['other_reason'])) {
                 $reasons[] = $validated['other_reason'];
             }
 
+            $rejectionReasons = [];
             foreach ($reasons as $reason) {
-                RejectionReason::create([
+                $rejectionReason = RejectionReason::create([
                     'patient_id'            => $patient->id,
                     'patient_status_log_id' => $statusLog->id,
                     'reason'                => $reason,
                 ]);
+                $rejectionReasons[] = $reason; // Store reasons for broadcasting
             }
         }
+        NotificationService::createStatusLogNotifications($statusLog);
 
         // Reload patient with latest status log and user
-        $patient->load('latestStatusLog');
+        $patient->load(['latestStatusLog', 'latestStatusLog.user.roles']);
 
-        // Broadcast updates
+        // Broadcast updates with conditional rejection reasons
         $action = $request->action === 'approve' ? 'approved' : 'rejected';
+        broadcast(new PatientStatusChanged($patient, $action, $rejectionReasons))->toOthers();
 
-        broadcast(new PatientStatusChanged($patient, $action));
+        // Rest of your toast and redirect logic remains the same...
+        if ($request->action === 'approve') {
+            $toast = [
+                'type' => 'success',
+                'title' => 'Patient Approved',
+                'message' => 'The patient have been approved.',
+                'time' => now()->diffForHumans(),
+            ];
+        } else {
+            $toast = [
+                'type' => 'danger',
+                'title' => 'Patient Rejected',
+                'message' => 'The patient have been rejected.',
+                'time' => now()->diffForHumans(),
+            ];
+        }
 
-
-
-        return redirect()->route('admin.process-tracking.show', $id)->with('toast', [
-            'type' => 'success',
-            'title' => 'Patient Approved',
-            'message' => 'The patient has been successfully approved.',
-            'time' => now()->diffForHumans(),
-        ]);
+        return redirect()->route('admin.process-tracking.show', $id)->with('toast', $toast);
     }
 
     public function massDecision(Request $request)
@@ -129,7 +200,7 @@ class ProcessTrackingController extends Controller
         $rules = [
             'ids'     => 'required|array|min:1',
             'ids.*'   => 'integer|exists:patient_records,id',
-            'remarks' => 'required|string|max:1000',
+            'remarks' => 'nullable|string|max:1000',
             'action'  => 'required|in:approve,reject',
             'status_date' => 'required|date',
         ];
@@ -158,9 +229,15 @@ class ProcessTrackingController extends Controller
 
                 $latestStatus = $patient->statusLogs()->latest()->first();
 
-                // Skip if not submitted or already approved/rejected
-                if (!$latestStatus || $latestStatus->status !== PatientStatusLog::STATUS_SUBMITTED) {
-                    $skipped[] = $patient->control_number;
+                // ONLY allow if latest status is Submitted, Submitted[Emergency], or Submitted[ROLLED BACK]
+                $eligibleStatuses = [
+                    PatientStatusLog::STATUS_SUBMITTED,
+                    PatientStatusLog::STATUS_SUBMITTED_EMERGENCY,
+                    'Submitted[ROLLED BACK]'
+                ];
+
+                if (!$latestStatus || !in_array($latestStatus->status, $eligibleStatuses)) {
+                    $skipped[] = $patient->control_number . " (Current status: " . ($latestStatus->status ?? 'No status') . ")";
                     continue;
                 }
 
@@ -196,21 +273,24 @@ class ProcessTrackingController extends Controller
                     $approved[] = $patient->id;
                 }
 
+                // Send notifications
+                NotificationService::createStatusLogNotifications($statusLog);
+
                 $actionEvent = $validated['action'] === 'approve' ? 'approved' : 'rejected';
-                broadcast(new PatientStatusChanged($patient, $actionEvent));
+                broadcast(new PatientStatusChanged($patient, $actionEvent))->toOthers();
             }
 
             DB::commit();
 
             $messages = [];
             if (count($approved)) {
-                $messages[] = "✅ " . count($approved) . " " . (count($approved) === 1 ? 'patient has' : 'patients have') . " been approved";
+                $messages[] = count($approved) . " " . (count($approved) === 1 ? 'patient has' : 'patients have') . " been approved";
             }
             if (count($rejected)) {
-                $messages[] = "❌ " . count($rejected) . " " . (count($rejected) === 1 ? 'patient has' : 'patients have') . " been rejected";
+                $messages[] = count($rejected) . " " . (count($rejected) === 1 ? 'patient has' : 'patients have') . " been rejected";
             }
             if (count($skipped)) {
-                $messages[] = "⚠️ " . count($skipped) . " " . (count($skipped) === 1 ? 'patient was' : 'patients were') . " skipped (not submitted or already processed)";
+                $messages[] = count($skipped) . " " . (count($skipped) === 1 ? 'patient was' : 'patients were') . " skipped (not in eligible status)";
             }
 
             $toastMessage = implode('<br>', $messages);
@@ -243,8 +323,8 @@ class ProcessTrackingController extends Controller
         abort_if(Gate::denies('accounting_dv_input'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         $request->validate([
-            'dv_code' => 'required|string|max:255',
-            'dv_date' => 'required|date',
+            'dv_code' => 'nullable|string|max:255',
+            'dv_date' => 'nullable|date',
             'status_date' => 'required|date',
         ]);
 
@@ -263,42 +343,48 @@ class ProcessTrackingController extends Controller
         ]);
 
         // Log status
-        PatientStatusLog::create([
+        $statusLog = PatientStatusLog::create([
             'patient_id' => $patient->id,
             'user_id' => Auth::id(),
             'status' => PatientStatusLog::STATUS_DV_SUBMITTED,
-            'remarks' => 'DV recorded: ' . $request->dv_code,
+            'remarks' => 'DV recorded',
             'status_date' => $request->status_date,
         ]);
+        NotificationService::createStatusLogNotifications($statusLog);
 
-        // ✅ Generate DV PDF
-        $pdf = app('dompdf.wrapper');
-        $pdf->loadView('admin.pdf.dv', [
-            'patient' => $patient,
-            'dv'      => $dv,
-        ]);
+        // $pdf = app('dompdf.wrapper');
+        // $pdf->loadView('admin.pdf.dv', [
+        //     'patient' => $patient,
+        //     'dv'      => $dv,
+        // ]);
 
-        $fileName = 'DV_' . $patient->id . '_' . now()->format('Ymd_His') . '.pdf';
-        $filePath = 'documents/' . $patient->id . '/' . $fileName;
+        // $fileName = 'DV_' . $patient->id . '_' . now()->format('Ymd_His') . '.pdf';
+        // $filePath = 'documents/' . $patient->id . '/' . $fileName;
 
-        // Save the PDF in storage
-        Storage::disk('public')->put($filePath, $pdf->output());
+        // // Save the PDF in storage
+        // Storage::disk('public')->put($filePath, $pdf->output());
 
-        // Save document record
-        Document::create([
-            'patient_id'    => $patient->id,
-            'file_name'     => $fileName,
-            'file_path'     => $filePath,
-            'document_type' => 'DV',
-            'description'   => 'Disbursement Voucher PDF',
-        ]);
+        // // Save document record
+        // Document::create([
+        //     'patient_id'    => $patient->id,
+        //     'file_name'     => $fileName,
+        //     'file_path'     => $filePath,
+        //     'document_type' => 'DV',
+        //     'description'   => 'Disbursement Voucher PDF',
+        // ]);
 
         // Refresh patient for broadcasting
-        $patient->load('latestStatusLog');
-        broadcast(new PatientStatusChanged($patient, 'dv_submitted'));
+        // In storeDV and updateDV methods, after creating/updating:
+        $patient->load(['latestStatusLog', 'disbursementVoucher', 'latestStatusLog.user.roles']);
+        broadcast(new PatientStatusChanged($patient, 'dv_submitted'))->toOthers();
 
         return redirect()->route('admin.process-tracking.show', $id)
-            ->with('status', 'Disbursement Voucher added successfully, PDF generated.');
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'DV Submitted',
+                'message' => 'Disbursement Voucher submitted successfully.',
+                'time' => now()->diffForHumans(),
+            ]);
     }
 
 
@@ -307,7 +393,7 @@ class ProcessTrackingController extends Controller
         $patient = PatientRecord::findOrFail($id);
 
         $validated = $request->validate([
-            'dv_code' => 'required|string|max:255',
+            'dv_code' => 'nullable|string|max:255',
             'dv_date' => 'required|date',
             'status_date' => 'required|date',
         ]);
@@ -326,51 +412,55 @@ class ProcessTrackingController extends Controller
             'status_date' => $validated['status_date'],
         ]);
 
-        // ✅ Regenerate PDF
-        if ($dv) {
-            $pdf = app('dompdf.wrapper');
-            $pdf->loadView('admin.pdf.dv', [
-                'patient' => $patient,
-                'dv'      => $dv,
-            ]);
+        // if ($dv) {
+        //     $pdf = app('dompdf.wrapper');
+        //     $pdf->loadView('admin.pdf.dv', [
+        //         'patient' => $patient,
+        //         'dv'      => $dv,
+        //     ]);
 
-            $fileName = 'DV_' . $patient->id . '_' . now()->format('Ymd_His') . '.pdf';
-            $filePath = 'documents/' . $patient->id . '/' . $fileName;
+        //     $fileName = 'DV_' . $patient->id . '_' . now()->format('Ymd_His') . '.pdf';
+        //     $filePath = 'documents/' . $patient->id . '/' . $fileName;
 
-            // Save new PDF
-            Storage::disk('public')->put($filePath, $pdf->output());
+        //     // Save new PDF
+        //     Storage::disk('public')->put($filePath, $pdf->output());
 
-            // Update or create Document record
-            $document = Document::where('patient_id', $patient->id)
-                ->where('document_type', 'DV')
-                ->first();
+        //     // Update or create Document record
+        //     $document = Document::where('patient_id', $patient->id)
+        //         ->where('document_type', 'DV')
+        //         ->first();
 
-            if ($document) {
-                // Delete old file
-                if (Storage::disk('public')->exists($document->file_path)) {
-                    Storage::disk('public')->delete($document->file_path);
-                }
-                $document->update([
-                    'file_name' => $fileName,
-                    'file_path' => $filePath,
-                    'description' => 'Disbursement Voucher PDF (updated)',
-                ]);
-            } else {
-                Document::create([
-                    'patient_id'    => $patient->id,
-                    'file_name'     => $fileName,
-                    'file_path'     => $filePath,
-                    'document_type' => 'DV',
-                    'description'   => 'Disbursement Voucher PDF',
-                ]);
-            }
-        }
+        //     if ($document) {
+        //         // Delete old file
+        //         if (Storage::disk('public')->exists($document->file_path)) {
+        //             Storage::disk('public')->delete($document->file_path);
+        //         }
+        //         $document->update([
+        //             'file_name' => $fileName,
+        //             'file_path' => $filePath,
+        //             'description' => 'Disbursement Voucher PDF (updated)',
+        //         ]);
+        //     } else {
+        //         Document::create([
+        //             'patient_id'    => $patient->id,
+        //             'file_name'     => $fileName,
+        //             'file_path'     => $filePath,
+        //             'document_type' => 'DV',
+        //             'description'   => 'Disbursement Voucher PDF',
+        //         ]);
+        //     }
+        // }
 
         // Refresh patient for broadcasting
-        $patient->load('latestStatusLog');
-        broadcast(new PatientStatusChanged($patient, 'dv_submitted'));
+        $patient->load(['latestStatusLog', 'disbursementVoucher', 'latestStatusLog.user.roles']);
+        broadcast(new PatientStatusChanged($patient, 'dv_submitted'))->toOthers();
 
-        return back()->with('success', 'DV updated, PDF regenerated, and status progressed.');
+        return back()->with('toast', [
+            'type' => 'success',
+            'title' => 'DV Updated',
+            'message' => 'Disbursement Voucher updated successfully.',
+            'time' => now()->diffForHumans(),
+        ]);
     }
 
     public function massDVInput(Request $request)
@@ -380,7 +470,7 @@ class ProcessTrackingController extends Controller
         $request->validate([
             'ids'   => 'required|array|min:1',
             'ids.*' => 'integer|exists:patient_records,id',
-            'dv_date' => 'required|date',
+            'dv_date' => 'nullable|date',
             'status_date' => 'required|date',
         ]);
 
@@ -416,13 +506,13 @@ class ProcessTrackingController extends Controller
                 }
 
                 // Generate unique DV code
-                $dvCode = $this->generateUniqueDvCode();
+                // $dvCode = $this->generateUniqueDvCode();
 
                 // Create DV
                 $dv = DisbursementVoucher::create([
                     'patient_id' => $patient->id,
                     'user_id'    => Auth::id(),
-                    'dv_code'    => $dvCode,
+                    'dv_code'    => null,
                     'dv_date'    => $request->dv_date,
                 ]);
 
@@ -431,12 +521,12 @@ class ProcessTrackingController extends Controller
                     'patient_id' => $patient->id,
                     'user_id'    => Auth::id(),
                     'status'     => PatientStatusLog::STATUS_DV_SUBMITTED,
-                    'remarks'    => 'DV recorded: ' . $dvCode,
+                    'remarks'    => 'DV recorded' . null,
                     'status_date' => $request->status_date,
                 ]);
 
                 $patient->load('latestStatusLog');
-                broadcast(new PatientStatusChanged($patient, 'dv_submitted'));
+                broadcast(new PatientStatusChanged($patient, 'dv_submitted'))->toOthers();
 
                 $submitted[] = $patient->control_number;
             }
@@ -446,10 +536,10 @@ class ProcessTrackingController extends Controller
             // Build toast messages
             $messages = [];
             if (count($submitted)) {
-                $messages[] = "✅ " . count($submitted) . " patient" . (count($submitted) > 1 ? "s" : "") . " DV submitted";
+                $messages[] = count($submitted) . " patient" . (count($submitted) > 1 ? "s" : "") . " DV submitted";
             }
             if (count($skipped)) {
-                $messages[] = "⚠️ " . count($skipped) . " patient" . (count($skipped) > 1 ? "s" : "") . " skipped (" . implode(", ", $skipped) . ")";
+                $messages[] = count($skipped) . " patient" . (count($skipped) > 1 ? "s" : "") . " skipped (" . implode(", ", $skipped) . ")";
             }
 
             $toastMessage = implode('<br>', $messages);
@@ -477,15 +567,15 @@ class ProcessTrackingController extends Controller
     /**
      * Generate a unique DV Code (random, no duplicates).
      */
-    private function generateUniqueDvCode()
-    {
-        do {
-            // Example format: DV-2025-XXXXX (random 5 alphanumeric)
-            $code = 'DV-' . date('Y') . '-' . strtoupper(Str::random(5));
-        } while (DisbursementVoucher::where('dv_code', $code)->exists());
+    // private function generateUniqueDvCode()
+    // {
+    //     do {
+    //         // Example format: DV-2025-XXXXX (random 5 alphanumeric)
+    //         $code = 'DV-' . date('Y') . '-' . strtoupper(Str::random(5));
+    //     } while (DisbursementVoucher::where('dv_code', $code)->exists());
 
-        return $code;
-    }
+    //     return $code;
+    // }
 
 
     public function storeBudget(Request $request, $id)
@@ -504,7 +594,6 @@ class ProcessTrackingController extends Controller
             return back()->with('error', 'Budget already allocated for this patient.');
         }
 
-        // ✅ 1. Save Budget Allocation
         BudgetAllocation::create([
             'patient_id' => $patient->id,
             'user_id' => Auth::id(),
@@ -514,47 +603,50 @@ class ProcessTrackingController extends Controller
             'allocation_date' => $request->status_date,
         ]);
 
-        // ✅ 2. Save Status Log
-        PatientStatusLog::create([
+        $statusLog = PatientStatusLog::create([
             'patient_id' => $patient->id,
             'user_id' => Auth::id(),
             'status' => PatientStatusLog::STATUS_BUDGET_ALLOCATED,
-            'remarks' => 'Budget allocated: ₱' . number_format($request->amount, 2),
-            'status_date' => $request->status_date,
-        ]);
-
-        // ✅ 3. Auto-generate OBRE PDF
-        $data = [
-            'patient' => $patient,
-            'address' => $patient->address,
-            'amount' => $request->amount,
             'remarks' => $request->remarks,
             'status_date' => $request->status_date,
-            'prepared_by' => Auth::user()->name,
-        ];
-
-        $pdf = Pdf::loadView('admin.pdf.obre', $data);
-
-        $fileName = 'OBRE_' . $patient->id . '_' . now()->format('Ymd_His') . '.pdf';
-        $filePath = 'documents/' . $patient->id . '/' . $fileName;
-
-        Storage::disk('public')->put($filePath, $pdf->output());
-
-        // ✅ 4. Save to documents table
-        Document::create([
-            'patient_id' => $patient->id,
-            'file_name' => $fileName,
-            'file_path' => 'storage/' . $filePath,
-            'document_type' => 'OBRE',
-            'description' => 'Obligation Request and Status document',
         ]);
+        NotificationService::createStatusLogNotifications($statusLog);
 
-        // ✅ 5. Broadcast event
-        $patient->load('latestStatusLog');
-        broadcast(new PatientStatusChanged($patient, 'budget_allocated'));
+        // $data = [
+        //     'patient' => $patient,
+        //     'address' => $patient->address,
+        //     'amount' => $request->amount,
+        //     'remarks' => $request->remarks,
+        //     'status_date' => $request->status_date,
+        //     'prepared_by' => Auth::user()->name,
+        // ];
+
+        // $pdf = Pdf::loadView('admin.pdf.obre', $data);
+
+        // $fileName = 'OBRE_' . $patient->id . '_' . now()->format('Ymd_His') . '.pdf';
+        // $filePath = 'documents/' . $patient->id . '/' . $fileName;
+
+        // Storage::disk('public')->put($filePath, $pdf->output());
+
+        // Document::create([
+        //     'patient_id' => $patient->id,
+        //     'file_name' => $fileName,
+        //     'file_path' => 'storage/' . $filePath,
+        //     'document_type' => 'OBRE',
+        //     'description' => 'Obligation Request and Status document',
+        // ]);
+
+        // In storeBudget and updateBudget methods, after creating/updating:
+        $patient->load(['latestStatusLog', 'budgetAllocation', 'latestStatusLog.user.roles']);
+        broadcast(new PatientStatusChanged($patient, 'budget_allocated'))->toOthers();
 
         return redirect()->route('admin.process-tracking.show', $id)
-            ->with('status', 'Budget allocated and OBRE generated successfully.');
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'Budget Allocated',
+                'message' => 'Successfully allocated budget.',
+                'time' => now()->diffForHumans(),
+            ]);
     }
 
     public function updateBudget(Request $request, $id)
@@ -577,49 +669,55 @@ class ProcessTrackingController extends Controller
             'patient_id' => $patient->id,
             'status' => PatientStatusLog::STATUS_BUDGET_ALLOCATED,
             'user_id' => Auth::id(),
-            'remarks' => 'Budget updated: ₱' . number_format($validated['amount'], 2),
+            'remarks' => $request->remarks,
             'status_date' => $request->status_date,
         ]);
 
-        // ✅ Re-generate OBRE PDF
-        $pdf = app('dompdf.wrapper');
-        $pdf->loadView('admin.pdf.obre', [
-            'patient' => $patient,
-            'budget'  => $budget,
-        ]);
+        // $pdf = app('dompdf.wrapper');
+        // $pdf->loadView('admin.pdf.obre', [
+        //     'patient' => $patient,
+        //     'budget'  => $budget,
+        // ]);
 
-        $fileName = 'OBRE_' . $patient->id . '_' . now()->format('Ymd_His') . '.pdf';
-        $filePath = 'documents/' . $patient->id . '/' . $fileName;
+        // $fileName = 'OBRE_' . $patient->id . '_' . now()->format('Ymd_His') . '.pdf';
+        // $filePath = 'documents/' . $patient->id . '/' . $fileName;
 
-        // Delete old OBRE if exists
-        $oldDoc = Document::where('patient_id', $patient->id)
-            ->where('document_type', 'OBRE')
-            ->first();
+        // // Delete old OBRE if exists
+        // $oldDoc = Document::where('patient_id', $patient->id)
+        //     ->where('document_type', 'OBRE')
+        //     ->first();
 
-        if ($oldDoc) {
-            Storage::disk('public')->delete($oldDoc->file_path); // remove file
-            $oldDoc->update([
-                'file_name' => $fileName,
-                'file_path' => $filePath,
-                'description' => 'Updated OBRE PDF after budget modification'
-            ]);
-        } else {
-            Document::create([
-                'patient_id' => $patient->id,
-                'file_name' => $fileName,
-                'file_path' => $filePath,
-                'document_type' => 'OBRE',
-                'description' => 'OBRE PDF after budget update',
-            ]);
-        }
+        // if ($oldDoc) {
+        //     Storage::disk('public')->delete($oldDoc->file_path); // remove file
+        //     $oldDoc->update([
+        //         'file_name' => $fileName,
+        //         'file_path' => $filePath,
+        //         'description' => 'Updated OBRE PDF after budget modification'
+        //     ]);
+        // } else {
+        //     Document::create([
+        //         'patient_id' => $patient->id,
+        //         'file_name' => $fileName,
+        //         'file_path' => $filePath,
+        //         'document_type' => 'OBRE',
+        //         'description' => 'OBRE PDF after budget update',
+        //     ]);
+        // }
 
-        Storage::disk('public')->put($filePath, $pdf->output());
+        // Storage::disk('public')->put($filePath, $pdf->output());
 
         // Refresh patient for broadcast
-        $patient->load('latestStatusLog');
-        broadcast(new PatientStatusChanged($patient, 'budget_allocated'));
+        // In storeBudget and updateBudget methods, after creating/updating:
+        $patient->load(['latestStatusLog', 'budgetAllocation', 'latestStatusLog.user.roles']);
+        broadcast(new PatientStatusChanged($patient, 'budget_allocated'))->toOthers();
 
-        return back()->with('success', 'Budget updated and OBRE PDF regenerated.');
+        return redirect()->route('admin.process-tracking.show', $id)
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'Budget Allocated Updated',
+                'message' => 'Successfully updated allocated budget.',
+                'time' => now()->diffForHumans(),
+            ]);
     }
 
 
@@ -684,10 +782,10 @@ class ProcessTrackingController extends Controller
 
             $messages = [];
             if (count($allocated)) {
-                $messages[] = "✅ " . count($allocated) . " patient" . (count($allocated) > 1 ? "s" : "") . " allocated budget";
+                $messages[] = count($allocated) . " patient" . (count($allocated) > 1 ? "s" : "") . " allocated budget";
             }
             if (count($skipped)) {
-                $messages[] = "⚠️ " . count($skipped) . " patient" . (count($skipped) > 1 ? "s" : "") . " skipped (not approved or already has budget)";
+                $messages[] = count($skipped) . " patient" . (count($skipped) > 1 ? "s" : "") . " skipped (not approved or already has budget)";
             }
 
             $toastMessage = implode('<br>', $messages);
@@ -737,7 +835,12 @@ class ProcessTrackingController extends Controller
         broadcast(new PatientStatusChanged($patient, 'disbursed'));
 
         return redirect()->route('admin.process-tracking.show', $id)
-            ->with('status', 'Budget status updated to Disbursed.');
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'Successfully Disbursed',
+                'message' => 'Successfully Disbursed.',
+                'time' => now()->diffForHumans(),
+            ]);
     }
     public function quickDisburse(Request $request, $id)
     {
@@ -749,110 +852,180 @@ class ProcessTrackingController extends Controller
             'budget_status' => 'Disbursed',
         ]);
 
-        PatientStatusLog::create([
+        $statusLog = PatientStatusLog::create([
             'patient_id' => $id,
             'user_id' => Auth::id(),
             'status' => PatientStatusLog::STATUS_DISBURSED,
-            'remarks' => 'Budget marked as disbursed (OTP bypassed).',
+            'remarks' => 'Budget has been marked as disbursed.',
             'status_date' => $request->input('status_date'),
         ]);
 
         $patient = PatientRecord::with('latestStatusLog')->findOrFail($id);
-        broadcast(new PatientStatusChanged($patient, 'disbursed'));
+        broadcast(new PatientStatusChanged($patient, 'disbursed'))->toOthers();
+        NotificationService::createStatusLogNotifications($statusLog);
 
         return redirect()->route('admin.process-tracking.show', $id)
-            ->with('status', 'Budget status updated to Disbursed (no OTP).');
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'Successfully Disbursed',
+                'message' => 'Successfully Disbursed.',
+                'time' => now()->diffForHumans(),
+            ]);
     }
 
-    public function massQuickDisburse(Request $request)
+   public function massQuickDisburse(Request $request)
+{
+    abort_if(Gate::denies('treasury_disburse'), 403);
+
+    $request->validate([
+        'ids' => 'required|array|min:1',
+        'ids.*' => 'integer|exists:patient_records,id',
+        'status_date' => 'required|date',
+    ]);
+
+    $disbursed = [];
+    $skipped   = [];
+
+    DB::beginTransaction();
+
+    try {
+        foreach ($request->ids as $id) {
+            $patient = PatientRecord::with(['latestStatusLog', 'budgetAllocation'])->find($id);
+            
+            if (!$patient) {
+                $skipped[] = "ID: {$id} (not found)";
+                continue;
+            }
+
+            $allocation = $patient->budgetAllocation;
+            $latestStatus = $patient->latestStatusLog->status ?? '';
+
+            // Skip if no allocation found
+            if (!$allocation) {
+                $skipped[] = "{$patient->control_number} (no allocation)";
+                continue;
+            }
+
+            // Skip if already disbursed
+            if ($allocation->budget_status === 'Disbursed') {
+                $skipped[] = "{$patient->control_number} (already disbursed)";
+                continue;
+            }
+
+            // Only allow disburse if status is Ready for Disbursement
+            if ($latestStatus !== PatientStatusLog::STATUS_READY_FOR_DISBURSEMENT) {
+                $skipped[] = "{$patient->control_number} (status: {$latestStatus})";
+                continue;
+            }
+
+            // Update to Disbursed
+            $allocation->update([
+                'budget_status' => 'Disbursed',
+            ]);
+
+            PatientStatusLog::create([
+                'patient_id' => $id,
+                'user_id' => Auth::id(),
+                'status' => PatientStatusLog::STATUS_DISBURSED,
+                'remarks' => 'Budget marked as disbursed (mass disburse).',
+                'status_date' => $request->status_date,
+            ]);
+
+            $patient->load('latestStatusLog');
+            broadcast(new PatientStatusChanged($patient, 'disbursed'))->toOthers();
+            
+            $disbursed[] = $patient->control_number;
+        }
+
+        DB::commit();
+
+        // Build messages
+        $messages = [];
+        if (count($disbursed)) {
+            $messages[] = count($disbursed) . " patient" . (count($disbursed) > 1 ? "s" : "") . " disbursed";
+        }
+        if (count($skipped)) {
+            $messages[] = count($skipped) . " patient" . (count($skipped) > 1 ? "s" : "") . " skipped";
+        }
+
+        $toastMessage = implode('<br>', $messages);
+
+        return redirect()->route('admin.process-tracking.index')
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'Mass Disburse',
+                'message' => $toastMessage,
+                'time' => now()->diffForHumans(),
+            ]);
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return back()->with('toast', [
+            'type' => 'danger',
+            'title' => 'Error in Mass Disburse',
+            'message' => 'An error occurred: ' . $e->getMessage(),
+            'time' => now()->diffForHumans(),
+        ]);
+    }
+}
+
+    public function markAsReadyForDisbursement(Request $request, $id)
     {
-        abort_if(Gate::denies('treasury_disburse'), 403);
+        abort_if(Gate::denies('treasury_disburse'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         $request->validate([
-            'ids' => 'required|array|min:1',
-            'ids.*' => 'integer|exists:patient_records,id',
             'status_date' => 'required|date',
         ]);
 
-        $disbursed = [];
-        $skipped   = [];
+        $patient = PatientRecord::findOrFail($id);
 
-        DB::beginTransaction();
-
-        try {
-            foreach ($request->ids as $id) {
-                $allocation = BudgetAllocation::where('patient_id', $id)->first();
-
-                // Skip if no allocation found
-                if (!$allocation) {
-                    $skipped[] = $id . " (no allocation)";
-                    continue;
-                }
-
-                // Skip if already disbursed
-                if ($allocation->budget_status === 'Disbursed') {
-                    $skipped[] = $id . " (already disbursed)";
-                    continue;
-                }
-
-                // Only allow quick disburse if DV is submitted
-                $hasDv = DisbursementVoucher::where('patient_id', $id)->exists();
-                if (!$hasDv) {
-                    $skipped[] = $id . " (no DV submitted)";
-                    continue;
-                }
-
-                // Update to Disbursed
-                $allocation->update([
-                    'budget_status' => 'Disbursed',
-                ]);
-
-                PatientStatusLog::create([
-                    'patient_id' => $id,
-                    'user_id' => Auth::id(),
-                    'status' => PatientStatusLog::STATUS_DISBURSED,
-                    'remarks' => 'Budget marked as disbursed (mass quick).',
-                    'status_date' => $request->status_date,
-                ]);
-
-                $patient = PatientRecord::with('latestStatusLog')->find($id);
-                if ($patient) {
-                    broadcast(new PatientStatusChanged($patient, 'disbursed'));
-                    $disbursed[] = $patient->control_number ?? $id;
-                }
-            }
-
-            DB::commit();
-
-            // Build messages
-            $messages = [];
-            if (count($disbursed)) {
-                $messages[] = "✅ " . count($disbursed) . " patient" . (count($disbursed) > 1 ? "s" : "") . " disbursed";
-            }
-            if (count($skipped)) {
-                $messages[] = "⚠️ " . count($skipped) . " skipped (no DV submitted or already disbursed)";
-            }
-
-            $toastMessage = implode('<br>', $messages);
-
-            return redirect()->route('admin.process-tracking.index')
-                ->with('toast', [
-                    'type' => 'success',
-                    'title' => 'Mass Quick Disburse',
-                    'message' => $toastMessage,
-                    'time' => now()->diffForHumans(),
-                ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
+        // Check if budget is allocated
+        if (!$patient->budgetAllocation) {
             return back()->with('toast', [
                 'type' => 'danger',
-                'title' => 'Error in Mass Quick Disburse',
-                'message' => 'An error occurred: ' . $e->getMessage(),
+                'title' => 'Cannot Mark as Ready for Disbursement',
+                'message' => 'Budget must be allocated first.',
                 'time' => now()->diffForHumans(),
             ]);
         }
-    }
 
+        // Check if DV is submitted
+        if (!$patient->disbursementVoucher) {
+            return back()->with('toast', [
+                'type' => 'danger',
+                'title' => 'Cannot Mark as Ready for Disbursement',
+                'message' => 'Disbursement Voucher must be submitted first.',
+                'time' => now()->diffForHumans(),
+            ]);
+        }
+
+        // Update budget status to "Ready for Disbursement"
+        $patient->budgetAllocation()->update([
+            'budget_status' => 'Ready for Disbursement',
+        ]);
+
+        // Create status log
+        $statusLog = PatientStatusLog::create([
+            'patient_id' => $patient->id,
+            'user_id' => Auth::id(),
+            'status' => PatientStatusLog::STATUS_READY_FOR_DISBURSEMENT,
+            'remarks' => 'Ready for disbursement',
+            'status_date' => $request->status_date,
+        ]);
+
+        NotificationService::createStatusLogNotifications($statusLog);
+
+        // Reload patient and broadcast
+        $patient->load(['latestStatusLog', 'budgetAllocation', 'disbursementVoucher', 'latestStatusLog.user.roles']);
+        broadcast(new PatientStatusChanged($patient, 'ready_for_disbursement'))->toOthers();
+
+        return redirect()->route('admin.process-tracking.show', $id)
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'Marked as Ready for Disbursement',
+                'message' => 'Patient has been marked as ready for disbursement.',
+                'time' => now()->diffForHumans(),
+            ]);
+    }
 
 
 
@@ -929,18 +1102,15 @@ class ProcessTrackingController extends Controller
             return back()->with('error', 'Incorrect OTP code.');
         }
 
-        // Mark OTP as verified
         $latestOtp->update([
             'is_verified' => true,
             'verified_at' => now(),
         ]);
 
-        // Update budget status
         $patient->budgetAllocation()->update([
             'budget_status' => 'Disbursed',
         ]);
 
-        // Log status
         PatientStatusLog::create([
             'patient_id' => $patient->id,
             'user_id' => Auth::id(),
@@ -955,100 +1125,244 @@ class ProcessTrackingController extends Controller
 
     public function rollback(Request $request, PatientRecord $patient)
     {
-        $request->validate([
-            'rollback_to' => 'required|string',
-            'rollback_remarks' => 'required|string',
-        ]);
+        try {
+            $request->validate([
+                'rollback_to' => 'required|string',
+                'rollback_remarks' => 'nullable|string',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()->with('toast', [
+                'type' => 'danger',
+                'title' => 'Validation Error',
+                'message' => 'Please select a valid status to rollback to.',
+                'time' => now()->diffForHumans(),
+            ]);
+        }
 
-        $validStatuses = $patient->statusLogs->pluck('status')->map(function ($status) {
-            return str_replace('[ROLLED BACK]', '', $status);
-        })->unique();
+        // Define the process flow sequence
+        $processFlow = [
+            'Processing' => 'CSWD Office',
+            'Submitted' => 'Mayor\'s Office',
+            'Submitted[Emergency]' => 'Mayor\'s Office',
+            'Approved' => 'Budget Office',
+            'Budget Allocated' => 'Accounting Office',
+            'DV Submitted' => 'Treasury Office',
+            'Ready for Disbursement' => 'Treasury Office', // Add this
+            'Disbursed' => 'Treasury Office', // Add this if needed
+        ];
 
         $rollbackTo = $request->rollback_to;
 
-        if (!$validStatuses->contains($rollbackTo)) {
+        // Get the current base status (without [ROLLED BACK] tag)
+        $latestStatus = $patient->latestStatusLog->status ?? '';
+        $currentBaseStatus = trim(preg_replace('/\[.*?\]/', '', $latestStatus));
+
+        // Check if rollback is valid based on process flow
+        $processSteps = array_keys($processFlow);
+        $currentPosition = array_search($currentBaseStatus, $processSteps);
+        $targetPosition = array_search($rollbackTo, $processSteps);
+
+        // Allow rollback only if:
+        // 1. Target status exists in process flow
+        // 2. Target is earlier in the process flow than current status
+        // 3. Target status has been reached before (exists in patient's history)
+        if ($targetPosition === false || $targetPosition >= $currentPosition) {
             return back()->with('error', 'Invalid rollback target.');
+        }
+
+        // Check if the target status exists in patient's history
+        $hasStatusInHistory = $patient->statusLogs()
+            ->where('status', 'LIKE', '%' . $rollbackTo . '%')
+            ->exists();
+
+        if (!$hasStatusInHistory) {
+            return back()->with('error', 'Cannot rollback to a status that hasn\'t been reached yet.');
         }
 
         $rolledBackStatus = $rollbackTo . '[ROLLED BACK]';
 
-        // Log new status with [ROLLED BACK] mark
-        $patient->statusLogs()->create([
+        $statusLog = $patient->statusLogs()->create([
             'status' => $rolledBackStatus,
-            'remarks' => '[ROLLED BACK] ' . $request->rollback_remarks,
+            'remarks' => $request->rollback_remarks,
             'user_id' => Auth::id(),
             'status_date' => now(),
         ]);
+
+        NotificationService::createStatusLogNotifications($statusLog);
 
         // Reload latest status log before broadcasting
         $patient->load('latestStatusLog');
 
         // Broadcast base status only (for UI logic)
+        $patient->load(['latestStatusLog', 'budgetAllocation', 'latestStatusLog.user.roles']);
         broadcast(new PatientStatusChanged($patient, strtolower($rollbackTo)));
 
-        return redirect()->back()->with('success', 'Process rolled back to ' . $rolledBackStatus);
+        return redirect()->back()->with('toast', [
+            'type' => 'warning',
+            'title' => 'Successfully Rolled Back',
+            'message' => 'Rolled Back Successfully to ' . $rollbackTo,
+            'time' => now()->diffForHumans(),
+        ]);
+    }
+
+    public function massReadyForDisbursement(Request $request)
+    {
+        abort_if(Gate::denies('treasury_disburse'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:patient_records,id',
+            'status_date' => 'required|date',
+            'remarks' => 'nullable|string|max:1000',
+        ]);
+
+        $ready = [];
+        $skipped = [];
+
+        DB::beginTransaction();
+
+        try {
+            $patients = PatientRecord::with([
+                'latestStatusLog',
+                'budgetAllocation',
+                'disbursementVoucher'
+            ])->whereIn('id', $request->ids)->get();
+
+            foreach ($patients as $patient) {
+                $latestStatus = $patient->latestStatusLog->status ?? '';
+
+                // Check if latest status is DV Submitted or DV Submitted[ROLLED BACK]
+                $allowedStatuses = [
+                    'DV Submitted',
+                    'DV Submitted[ROLLED BACK]'
+                ];
+
+                if (!in_array($latestStatus, $allowedStatuses)) {
+                    $skipped[] = "{$patient->control_number} (status: {$latestStatus})";
+                    continue;
+                }
+
+                // Check if budget is allocated
+                if (!$patient->budgetAllocation) {
+                    $skipped[] = "{$patient->control_number} (no budget allocation)";
+                    continue;
+                }
+
+                // Check if DV is submitted
+                if (!$patient->disbursementVoucher) {
+                    $skipped[] = "{$patient->control_number} (no DV submitted)";
+                    continue;
+                }
+
+                // Update budget status to "Ready for Disbursement"
+                $patient->budgetAllocation()->update([
+                    'budget_status' => 'Ready for Disbursement',
+                ]);
+
+                // Create status log
+                $statusLog = PatientStatusLog::create([
+                    'patient_id' => $patient->id,
+                    'user_id' => Auth::id(),
+                    'status' => PatientStatusLog::STATUS_READY_FOR_DISBURSEMENT,
+                    'remarks' => $request->remarks ?? 'Marked as ready for disbursement',
+                    'status_date' => $request->status_date,
+                ]);
+
+                NotificationService::createStatusLogNotifications($statusLog);
+
+                // Reload patient and broadcast
+                $patient->load(['latestStatusLog', 'budgetAllocation', 'disbursementVoucher', 'latestStatusLog.user.roles']);
+                broadcast(new PatientStatusChanged($patient, 'ready_for_disbursement'))->toOthers();
+
+                $ready[] = $patient->control_number;
+            }
+
+            DB::commit();
+
+            // Build messages
+            $messages = [];
+            if (count($ready)) {
+                $messages[] = count($ready) . " patient" . (count($ready) > 1 ? "s" : "") . " marked as ready for disbursement";
+            }
+            if (count($skipped)) {
+                $messages[] = count($skipped) . " patient" . (count($skipped) > 1 ? "s" : "") . " skipped";
+            }
+
+            $toastMessage = implode('<br>', $messages);
+
+            return redirect()->route('admin.process-tracking.index')
+                ->with('toast', [
+                    'type' => count($ready) > 0 ? 'success' : 'warning',
+                    'title' => 'Mass Ready for Disbursement',
+                    'message' => $toastMessage,
+                    'time' => now()->diffForHumans(),
+                ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('toast', [
+                'type' => 'danger',
+                'title' => 'Error in Mass Ready for Disbursement',
+                'message' => 'An error occurred: ' . $e->getMessage(),
+                'time' => now()->diffForHumans(),
+            ]);
+        }
     }
 
     public function returnToRollbacker($id)
     {
         $patient = PatientRecord::findOrFail($id);
 
-        // Get the latest log (this should be the rollback one)
-        $latestLog = $patient->statusLogs()->latest()->first();
-
-        // Get the log before it
-        $previousLog = $patient->statusLogs()
-            ->where('id', '<', $latestLog->id)
+        // Find the latest status log with [ROLLED BACK] tag
+        $latestRolledBackLog = $patient->statusLogs()
+            ->where('status', 'LIKE', '%[ROLLED BACK]%')
             ->latest()
             ->first();
 
-        if (!$previousLog) {
-            return back()->with('error', 'No previous status found to return to.');
+        if (!$latestRolledBackLog) {
+            return back()->with('toast', [
+                'type' => 'warning',
+                'title' => 'No Rollback Found',
+                'message' => 'No rolled back status found to return from.',
+                'time' => now()->diffForHumans(),
+            ]);
         }
 
-        // Create a new log to restore previous status
+        // Find the status log immediately BEFORE the rolled back one
+        $statusBeforeRollback = $patient->statusLogs()
+            ->where('id', '<', $latestRolledBackLog->id)
+            ->where('status', 'NOT LIKE', '%[ROLLED BACK]%') // Skip other rolled back statuses
+            ->latest()
+            ->first();
+
+        if (!$statusBeforeRollback) {
+            return back()->with('toast', [
+                'type' => 'warning',
+                'title' => 'No Previous Status',
+                'message' => 'Could not find status before the rollback.',
+                'time' => now()->diffForHumans(),
+            ]);
+        }
+
+        // Create a new status log returning to the status before rollback
         $restoredLog = PatientStatusLog::create([
             'patient_id' => $patient->id,
-            'status'     => $previousLog->status, // no rollback tag
+            'status'     => $statusBeforeRollback->status,
             'user_id'    => Auth::id(),
-            'remarks'    => 'Returned to rollbacker: ' . $previousLog->status,
+            'remarks'    => 'Returned from rollback to: ' . $statusBeforeRollback->status,
             'status_date' => now(),
         ]);
 
-        broadcast(new PatientStatusChanged($patient, strtolower($previousLog->status)));
+        NotificationService::createStatusLogNotifications($restoredLog);
 
-        return back()->with('status', 'Case returned to previous rollbacker.');
-    }
-    public function submit(Request $request, $id)
-    {
-        abort_if(Gate::denies('submit_patient_application'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+        // Reload patient for broadcasting
+        $patient->load(['latestStatusLog', 'latestStatusLog.user.roles']);
+        broadcast(new PatientStatusChanged($patient, strtolower($statusBeforeRollback->status)));
 
-        $request->validate([
-            'remarks' => 'required|string|max:1000',
-            'status' => 'required|string',
-            'submitted_date' => 'required|date'
+        return back()->with('toast', [
+            'type' => 'success',
+            'title' => 'Returned from Rollback',
+            'message' => 'Successfully returned to: ' . $statusBeforeRollback->status,
+            'time' => now()->diffForHumans(),
         ]);
-
-        $status = $request->input('status');
-        $statusDate = $request->input('submitted_date');
-
-        // Create status log
-        PatientStatusLog::create([
-            'patient_id' => $id,
-            'status' => $status,
-            'user_id' => Auth::id(),
-            'status_date' => $statusDate,
-            'remarks' => $request->remarks,
-            'created_at' => now(),
-        ]);
-
-        $patient = PatientRecord::with('latestStatusLog')->findOrFail($id);
-
-        $action = $status === 'Submitted' ? 'submitted' : 'updated';
-        broadcast(new PatientStatusChanged($patient, $action))->toOthers();
-
-        return redirect()
-            ->route('admin.process-tracking.show', $id)
-            ->with('success', 'Application submitted successfully with remarks.');
     }
 }

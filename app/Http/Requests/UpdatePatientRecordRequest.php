@@ -41,12 +41,12 @@ class UpdatePatientRecordRequest extends FormRequest
                 'required',
             ],
             'diagnosis' => [
-                'required',
+                'nullable',
             ],
             'age' => [
                 'required',
                 'integer',
-                'min:-2147483648',
+                'min:1',
                 'max:2147483647',
             ],
             'address' => [

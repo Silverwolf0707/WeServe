@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 
 class StoreUserRequest extends FormRequest
 {
@@ -23,10 +24,16 @@ class StoreUserRequest extends FormRequest
             ],
             'email' => [
                 'required',
-                'unique:users',
+                'email',
+                 Rule::unique('users')->whereNull('deleted_at'),
             ],
             'password' => [
                 'required',
+            ],
+            'status' => [
+                'required',
+                'string',
+                'in:active,inactive,suspended',
             ],
             'roles.*' => [
                 'integer',

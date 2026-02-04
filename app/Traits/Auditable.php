@@ -4,6 +4,7 @@ namespace App\Traits;
 
 use App\Models\AuditLog;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 trait Auditable
 {
@@ -28,7 +29,7 @@ trait Auditable
             'description'  => $description,
             'subject_id'   => $model->id ?? null,
             'subject_type' => sprintf('%s#%s', get_class($model), $model->id) ?? null,
-            'user_id'      => auth()->id() ?? null,
+            'user_id'      => Auth::id() ?? null,
             'properties'   => $changes ?: $model,
             'host'         => request()->ip() ?? null,
         ]);

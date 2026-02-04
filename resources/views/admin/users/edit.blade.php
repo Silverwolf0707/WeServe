@@ -3,7 +3,6 @@
 @section('content')
 <div class="container-fluid" style="background-color: #f8f9fa; padding: 20px;">
     <div class="card shadow-sm">
-        <!-- Modernized Header -->
         <div class="card-header custom-header d-flex align-items-center bg-dark text-white" style="min-height: 80px; padding: 1.5rem;">
             <h4 class="mb-0 fw-bold d-flex align-items-center">
                 <i class="fas fa-user-edit me-2"></i>
@@ -12,9 +11,6 @@
             <div class="header-actions d-flex align-items-center ms-auto">
             </div>
         </div>
-    </div>
-</div>
-
 
         <div class="card-body bg-white">
             <form method="POST" action="{{ route('admin.users.update', [$user->id]) }}" enctype="multipart/form-data">
@@ -32,7 +28,6 @@
                     @if($errors->has('name'))
                         <div class="invalid-feedback">{{ $errors->first('name') }}</div>
                     @endif
-                    <small class="form-text text-muted">{{ trans('cruds.user.fields.name_helper') }}</small>
                 </div>
 
                 {{-- Email --}}
@@ -46,7 +41,6 @@
                     @if($errors->has('email'))
                         <div class="invalid-feedback">{{ $errors->first('email') }}</div>
                     @endif
-                    <small class="form-text text-muted">{{ trans('cruds.user.fields.email_helper') }}</small>
                 </div>
 
                 {{-- Password --}}
@@ -56,7 +50,8 @@
                     </label>
                     <div class="input-group">
                         <input type="password" name="password" id="password"
-                               class="form-control {{ $errors->has('password') ? 'is-invalid' : '' }}">
+                               class="form-control {{ $errors->has('password') ? 'is-invalid' : '' }}"
+                               placeholder="Leave blank to keep current password">
                         <button class="btn btn-outline-secondary toggle-password" type="button" tabindex="-1">
                             <i class="fas fa-eye" id="togglePasswordIcon"></i>
                         </button>
@@ -64,7 +59,22 @@
                     @if($errors->has('password'))
                         <div class="invalid-feedback d-block">{{ $errors->first('password') }}</div>
                     @endif
-                    <small class="form-text text-muted">{{ trans('cruds.user.fields.password_helper') }}</small>
+               
+                </div>
+
+                {{-- Status --}}
+                <div class="form-group">
+                    <label class="required" for="status">
+                        <i class="fas fa-user-check me-1 text-secondary"></i> Status
+                    </label>
+                    <select name="status" id="status" class="form-control {{ $errors->has('status') ? 'is-invalid' : '' }}" required>
+                        <option value="active" {{ old('status', $user->status) == 'active' ? 'selected' : '' }}>Active</option>
+                        <option value="inactive" {{ old('status', $user->status) == 'inactive' ? 'selected' : '' }}>Inactive</option>
+                        <option value="suspended" {{ old('status', $user->status) == 'suspended' ? 'selected' : '' }}>Suspended</option>
+                    </select>
+                    @if($errors->has('status'))
+                        <div class="invalid-feedback">{{ $errors->first('status') }}</div>
+                    @endif
                 </div>
 
                 {{-- Roles --}}
@@ -73,9 +83,8 @@
                         <i class="fas fa-user-tag me-1 text-secondary"></i> {{ trans('cruds.user.fields.roles') }}
                     </label>
                     <div class="mb-2">
-                       <button type="button" class="btn btn-info select-all">{{ trans('global.select_all') }}</button>
-<button type="button" class="btn btn-danger deselect-all">{{ trans('global.deselect_all') }}</button>
-
+                        <button type="button" class="btn btn-info select-all">{{ trans('global.select_all') }}</button>
+                        <button type="button" class="btn btn-danger deselect-all">{{ trans('global.deselect_all') }}</button>
                     </div>
                     <select name="roles[]" id="roles" class="form-control select2 {{ $errors->has('roles') ? 'is-invalid' : '' }}" multiple required>
                         @foreach($roles as $id => $role)
@@ -88,19 +97,17 @@
                     @if($errors->has('roles'))
                         <div class="invalid-feedback">{{ $errors->first('roles') }}</div>
                     @endif
-                    <small class="form-text text-muted">{{ trans('cruds.user.fields.roles_helper') }}</small>
                 </div>
 
                 {{-- Buttons --}}
                 <div class="form-group mt-4 d-flex justify-content-start">
-    <button type="submit" class="btn btn-success">
-        <i class="fas fa-save me-2"></i> {{ trans('global.save') }}
-    </button>
-    <a href="{{ route('admin.users.index') }}" class="btn btn-secondary" style="margin-left: 12px;">
-        <i class="fas fa-arrow-left me-1"></i> {{ trans('global.back_to_list') }}
-    </a>
-</div>
-
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save me-2"></i> {{ trans('global.save') }}
+                    </button>
+                    <a href="{{ route('admin.users.index') }}" class="btn btn-secondary" style="margin-left: 12px;">
+                        <i class="fas fa-arrow-left me-1"></i> {{ trans('global.back_to_list') }}
+                    </a>
+                </div>
             </form>
         </div>
     </div>

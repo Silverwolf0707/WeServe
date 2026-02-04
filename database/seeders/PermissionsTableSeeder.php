@@ -163,15 +163,11 @@ class PermissionsTableSeeder extends Seeder
                 'title' => 'budget_records',
             ],
             [
-                'id' => 40,
-                'title' => 'disbursed_message_automation',
-            ],
-            [
-                'id'    => 41,
+                'id'    => 40,
                 'title' => 'online_application_access',
             ],
             [
-                'id' => 42,
+                'id' => 41,
                 'title' => 'treasury_disburse',
             ],
         ];

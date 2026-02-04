@@ -12,6 +12,11 @@ use Illuminate\Support\Facades\Broadcast;
 | used to check if an authenticated user can listen to the channel.
 |
 */
+Broadcast::channel('process-tracking', function ($user) {
+    return true; // Allow all authenticated users
+    // Or use role-based authorization:
+    // return $user->hasAnyRole(['admin', 'mayor', 'budget', 'accounting', 'treasury']);
+});
 
 Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;

@@ -5,22 +5,24 @@ use App\Http\Controllers\Admin\DocumentManagementController;
 use App\Http\Controllers\Admin\HomeController;
 use App\Http\Controllers\Admin\OnlineApplicationController;
 use App\Http\Controllers\Admin\PermissionsController;
+use App\Http\Controllers\Admin\ProfileImageController;
 use App\Http\Controllers\Admin\RolesController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\StatisticsController;
 use App\Http\Controllers\Admin\TimeSeriesController;
 use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\Admin\AuditLogsController;
+use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\OnlinePatientApplicationController;
 use App\Http\Controllers\Admin\PatientRecordsController;
 use App\Http\Controllers\Admin\ProcessTrackingController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\Auth\ChangePasswordController;
 
 
 Route::get('/online-application', [OnlineApplicationController::class, 'index'])->name('online-application.index');
-// Show the form
 
 Route::post('/applications/store', [OnlineApplicationController::class, 'store'])
     ->name('applications.store');
@@ -29,12 +31,9 @@ Route::get('/track', [OnlineApplicationController::class, 'track'])->name('track
 
 
 Route::get('/', function () {
-    if (session('status')) {
-        return redirect()->route('admin.home')->with('status', session('status'));
-    }
-
-    return redirect()->route('admin.home');
+    return redirect()->route('online-application.index');
 });
+
 
 Auth::routes(['register' => false]);
 
@@ -42,6 +41,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     // Home route
     Route::get('/', [HomeController::class, 'index'])->name('home');
     Route::redirect('/login', '/login');
+
     // Permissions
     Route::delete('permissions/destroy', [PermissionsController::class, 'massDestroy'])->name('permissions.massDestroy');
     Route::resource('permissions', PermissionsController::class);
@@ -66,6 +66,21 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     Route::post('patient-records/mass-submit', [PatientRecordsController::class, 'massSubmit'])->name('patient-records.massSubmit');
     Route::post('patient-records/{id}/submit-emergency', [PatientRecordsController::class, 'submitEmergency'])
         ->name('patient-records.submit-emergency');
+        
+
+    Route::get('csv/template/{type}', [PatientRecordsController::class, 'csvTemplate'])
+        ->name('csv.template');
+    Route::get('excel/template/{type}', [PatientRecordsController::class, 'excelTemplate'])
+        ->name('excel.template');
+    
+    Route::put('patient-records/{id}/restore', [PatientRecordsController::class, 'restore'])
+        ->name('patient-records.restore');
+    Route::post('patient-records/mass-restore', [PatientRecordsController::class, 'massRestore'])
+        ->name('patient-records.massRestore');
+    Route::delete('patient-records/{id}/force-delete', [PatientRecordsController::class, 'forceDelete'])
+        ->name('patient-records.force-delete');
+    Route::delete('patient-records/mass-force-delete', [PatientRecordsController::class, 'massForceDelete'])
+        ->name('patient-records.massForceDelete');
 
     Route::resource('online-applications', OnlinePatientApplicationController::class)
         ->only(['index', 'show']);
@@ -92,11 +107,15 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
 
     Route::post('process-tracking/{id}/disburse-budget', [ProcessTrackingController::class, 'markBudgetAsDisbursed'])->name('process-tracking.disburseBudget');
     Route::post('process-tracking/{patient}/rollback', [ProcessTrackingController::class, 'rollback'])->name('process-tracking.rollback');
-    Route::post('process-tracking/send-otp/{id}', [ProcessTrackingController::class, 'sendOtpForDisbursement'])->name('process-tracking.sendOtp');
-    Route::post('process-tracking/{id}/verify-otp', [ProcessTrackingController::class, 'verifyOtp'])->name('process-tracking.verifyOtp');
+    Route::post('process-tracking/{id}/mark-as-ready-for-disbursement', [ProcessTrackingController::class, 'markAsReadyForDisbursement'])
+        ->name('process-tracking.markAsReadyForDisbursement');
+    // Route::post('process-tracking/send-otp/{id}', [ProcessTrackingController::class, 'sendOtpForDisbursement'])->name('process-tracking.sendOtp');
+    // Route::post('process-tracking/{id}/verify-otp', [ProcessTrackingController::class, 'verifyOtp'])->name('process-tracking.verifyOtp');
 
     Route::post('process-tracking/{id}/quick-disburse', [ProcessTrackingController::class, 'quickDisburse'])->name('process-tracking.quickDisburse');
     Route::post('process-tracking/massQuickDisburse', [ProcessTrackingController::class, 'massQuickDisburse'])->name('process-tracking.massQuickDisburse');
+    Route::post('process-tracking/mass-ready-for-disbursement', [ProcessTrackingController::class, 'massReadyForDisbursement'])
+        ->name('process-tracking.massReadyForDisbursement');
 
 
     Route::post('process-tracking/{id}/return-to-rollbacker', [ProcessTrackingController::class, 'returnToRollbacker'])->name('process-tracking.returnToRollbacker');
@@ -104,12 +123,21 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
 
     Route::resource('budget-records', BudgetRecordController::class)->only(['index']);
 
+    // Document Management Routes
+    Route::delete('document-management/mass-destroy', [DocumentManagementController::class, 'massDestroy'])
+        ->name('document-management.massDestroy');
 
+    Route::get('document-management/patient/{id}', [DocumentManagementController::class, 'show'])
+        ->name('document-management.show');
 
-    Route::delete('document-management/mass-destroy', [DocumentManagementController::class, 'massDestroy'])->name('document-management.massDestroy');
-    Route::get('document-management/patient/{id}', [DocumentManagementController::class, 'show'])->name('admin.document-management.show');
-    Route::delete('document-management/{id}', [DocumentManagementController::class, 'destroy'])->name('admin.document-management.destroy');
-    Route::resource('document-management', DocumentManagementController::class)->names('document-management');
+    Route::get('document-management/view/{id}', [DocumentManagementController::class, 'view'])
+        ->name('document-management.view'); // Add this route
+
+    Route::delete('document-management/{id}', [DocumentManagementController::class, 'destroy'])
+        ->name('document-management.destroy');
+
+    Route::resource('document-management', DocumentManagementController::class)
+        ->names('document-management');
 
     //time series
     Route::get('time-series', [TimeSeriesController::class, 'index'])->name('time-series.index');
@@ -119,6 +147,29 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     Route::get('statistics/deficiencies', [StatisticsController::class, 'getDeficiencyData'])->name('statistics.deficiencies');
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::delete('settings/delete-all', [SettingsController::class, 'deleteAll'])->name('settings.deleteAll');
+    // Backup & Restore Routes
+    Route::post('settings/backup/create', [SettingsController::class, 'createBackup'])->name('settings.backup.create');
+    Route::post('settings/backup/restore', [SettingsController::class, 'restoreBackup'])->name('settings.backup.restore');
+    Route::get('settings/backup/download/{id}', [SettingsController::class, 'downloadBackup'])->name('settings.backup.download');
+    Route::delete('settings/backup/{id}', [SettingsController::class, 'deleteBackup'])->name('settings.backup.delete');
+    Route::get('settings/backups', [SettingsController::class, 'getBackups'])->name('settings.backups.list');
+
+
+    Route::group(['prefix' => 'notifications', 'as' => 'notifications.'], function () {
+        Route::get('/unread-count', [NotificationController::class, 'getUnreadCount'])->name('unread-count');
+        Route::get('/list', [NotificationController::class, 'getNotifications'])->name('list');
+        Route::post('/{id}/read', [NotificationController::class, 'markAsRead'])->name('mark-read');
+        Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('mark-all-read');
+        Route::get('/', [NotificationController::class, 'index'])->name('index');
+    });
+
+    Route::post('/profile-image', [ProfileImageController::class, 'store'])->name('profile.image.store');
+    Route::put('/profile-image/{profileImage}/set-current', [ProfileImageController::class, 'setCurrent'])->name('profile.image.set-current');
+    Route::delete('/profile-image/{profileImage}', [ProfileImageController::class, 'destroy'])->name('profile.image.destroy');
+  
+    Route::get('/profile-image/{profileImage}', [ProfileImageController::class, 'show'])
+        ->name('profile.image.show')
+        ->middleware('auth');
 });
 
 

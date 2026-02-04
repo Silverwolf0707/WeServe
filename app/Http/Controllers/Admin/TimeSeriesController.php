@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class TimeSeriesController extends Controller
@@ -14,58 +15,19 @@ class TimeSeriesController extends Controller
     {
         $type = request('type');
 
-        // Export CSV for all analytics
+        // Always export CSV first (to private storage)
         $csvPath = $this->exportToCsvFile();
 
-        // Determine JSON file based on type
-        $jsonFiles = [
-            'cswd'   => 'stl_output.json',
-            'budget' => 'stl_budget_output.json',
-        ];
-
-        $jsonPath = storage_path('app/public/' . ($jsonFiles[$type] ?? 'stl_output.json'));
-
-        $shouldRunPython = false;
-
-        // Run Python if JSON doesn't exist or CSV row count increased
-        if (!file_exists($jsonPath)) {
-            $shouldRunPython = true;
+        // Always run Python script when analytics page is accessed
+        if ($type === 'budget') {
+            $this->runBudgetPython();
         } else {
-            $metaPath = str_replace('.json', '_meta.json', $jsonPath);
-            $currentRowCount = $this->getCsvRowCount($csvPath);
-
-            $lastRowCount = 0;
-            if (file_exists($metaPath)) {
-                $meta = json_decode(file_get_contents($metaPath), true);
-                $lastRowCount = $meta['row_count'] ?? 0;
-            }
-
-            if ($currentRowCount > $lastRowCount) {
-                $shouldRunPython = true;
-
-                // Save metadata
-                file_put_contents($metaPath, json_encode([
-                    'row_count'  => $currentRowCount,
-                    'updated_at' => now()->toDateTimeString(),
-                ]));
-            }
+            $this->runPythonStl();
         }
 
-        // Run the appropriate Python script
-        if ($shouldRunPython) {
-            if ($type === 'budget') {
-                $this->runBudgetPython();
-            } else {
-                $this->runPythonStl();
-            }
-        }
-
-        // --- Permissions & view mapping ---
         $analyticsViews = [
             'cswd'       => ['permission' => 'CSWD-ANALYTICS',     'view' => 'admin.timeseries.cswd.index'],
             'budget'     => ['permission' => 'BUDGET-ANALYTICS',   'view' => 'admin.timeseries.budget.index'],
-            'treasury'   => ['permission' => 'TREASURY-ANALYTICS', 'view' => 'admin.timeseries.treasury.index'],
-            'accounting' => ['permission' => 'ACCOUNTING-ANALYTICS', 'view' => 'admin.timeseries.accounting.index'],
         ];
 
         if (!isset($analyticsViews[$type])) {
@@ -80,19 +42,6 @@ class TimeSeriesController extends Controller
         }
 
         return view($view);
-    }
-
-    private function getCsvRowCount($csvPath)
-    {
-        if (!file_exists($csvPath)) return 0;
-
-        $rowCount = 0;
-        if (($handle = fopen($csvPath, "r")) !== false) {
-            while (fgetcsv($handle) !== false) $rowCount++;
-            fclose($handle);
-        }
-
-        return max(0, $rowCount - 1); // exclude header
     }
 
     public function exportToCsvFile()
@@ -120,19 +69,24 @@ class TimeSeriesController extends Controller
             $csv .= "{$row->month},{$row->case_category},{$row->case_type},{$row->age},{$row->date_processed},{$row->budget_allocated}\n";
         }
 
-        Storage::disk('public')->put('full_patient_data.csv', $csv);
-        return storage_path('app/public/full_patient_data.csv');
+        // Store in private analytics folder
+        Storage::disk('private')->put('analytics/full_patient_data.csv', $csv);
+        return storage_path('app/private/analytics/full_patient_data.csv');
     }
 
     public function runPythonStl()
     {
         $pythonPath = base_path('venv/Scripts/python.exe');
         $scriptPath = base_path('python/stl_analysis.py');
-
-        exec("\"$pythonPath\" \"$scriptPath\"", $output, $return_var);
+        
+        // Get the CSV file path from private storage
+        $csvPath = storage_path('app/private/analytics/full_patient_data.csv');
+        
+        // Pass the CSV path as an argument to Python script
+        exec("\"$pythonPath\" \"$scriptPath\" \"$csvPath\"", $output, $return_var);
 
         if ($return_var !== 0) {
-            \Log::error("CSWD STL Python script failed", ['output' => $output]);
+            Log::error("CSWD STL Python script failed", ['output' => $output]);
         }
     }
 
@@ -140,11 +94,15 @@ class TimeSeriesController extends Controller
     {
         $pythonPath = base_path('venv/Scripts/python.exe');
         $scriptPath = base_path('python/budget_stl_analysis.py');
-
-        exec("\"$pythonPath\" \"$scriptPath\"", $output, $return_var);
+        
+        // Get the CSV file path from private storage
+        $csvPath = storage_path('app/private/analytics/full_patient_data.csv');
+        
+        // Pass the CSV path as an argument to Python script
+        exec("\"$pythonPath\" \"$scriptPath\" \"$csvPath\"", $output, $return_var);
 
         if ($return_var !== 0) {
-            \Log::error("Budget STL Python script failed", ['output' => $output]);
+            Log::error("Budget STL Python script failed", ['output' => $output]);
         }
     }
 
@@ -152,14 +110,18 @@ class TimeSeriesController extends Controller
     {
         $type = $request->query('type');
 
+        // Define private file paths
         $file = $type === 'budget' 
-            ? storage_path('app/public/stl_budget_output.json') 
-            : storage_path('app/public/stl_output.json');
+            ? 'analytics/stl_budget_output.json' 
+            : 'analytics/stl_output.json';
 
-        if (!file_exists($file)) {
+        // Check if file exists in private storage
+        if (!Storage::disk('private')->exists($file)) {
             return response()->json(['error' => 'STL output not found'], 404);
         }
 
-        return response()->json(json_decode(file_get_contents($file), true));
+        // Read and return JSON content
+        $jsonContent = Storage::disk('private')->get($file);
+        return response()->json(json_decode($jsonContent, true));
     }
 }

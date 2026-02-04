@@ -3,7 +3,6 @@
 @section('content')
 <div class="container-fluid">
     <div class="card shadow-sm border-0">
-
         <div class="card-header custom-header d-flex align-items-center bg-success text-white" style="min-height: 80px; padding: 1.5rem;">
             <h4 class="mb-0 fw-bold d-flex align-items-center">
                 <i class="fas fa-user-plus me-2"></i>
@@ -12,9 +11,6 @@
             <div class="header-actions d-flex align-items-center ms-auto">
             </div>
         </div>
-    </div>
-</div>
-
 
         <div class="card-body bg-white">
             <form method="POST" action="{{ route('admin.users.store') }}" enctype="multipart/form-data">
@@ -55,17 +51,31 @@
                     <small class="form-text text-muted">{{ trans('cruds.user.fields.password_helper') }}</small>
                 </div>
 
+                {{-- Status --}}
+                <div class="form-group">
+                    <label class="required" for="status">Status</label>
+                    <select name="status" id="status" class="form-control {{ $errors->has('status') ? 'is-invalid' : '' }}" required>
+                        <option value="active" {{ old('status', 'active') == 'active' ? 'selected' : '' }}>Active</option>
+                        <option value="inactive" {{ old('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
+                        <option value="suspended" {{ old('status') == 'suspended' ? 'selected' : '' }}>Suspended</option>
+                    </select>
+                    @if($errors->has('status'))
+                        <div class="invalid-feedback">{{ $errors->first('status') }}</div>
+                    @endif
+
+                </div>
+
                 {{-- Roles --}}
                 <div class="form-group">
                     <label class="required" for="roles">{{ trans('cruds.user.fields.roles') }}</label>
                     <div class="mb-2">
-                    <button type="button" class="btn btn-sm btn-success select-all">
-                        <i class="fas fa-check-double me-1"></i> {{ trans('global.select_all') }}
-                    </button>
-                    <button type="button" class="btn btn-sm btn-danger deselect-all">
-                        <i class="fas fa-times-circle me-1"></i> {{ trans('global.deselect_all') }}
-                    </button>
-                </div>
+                        <button type="button" class="btn btn-sm btn-success select-all">
+                            <i class="fas fa-check-double me-1"></i> {{ trans('global.select_all') }}
+                        </button>
+                        <button type="button" class="btn btn-sm btn-danger deselect-all">
+                            <i class="fas fa-times-circle me-1"></i> {{ trans('global.deselect_all') }}
+                        </button>
+                    </div>
                     <select name="roles[]" id="roles" 
                         class="form-control select2 {{ $errors->has('roles') ? 'is-invalid' : '' }}" multiple required>
                         @foreach($roles as $id => $role)
@@ -80,7 +90,7 @@
                     <small class="form-text text-muted">{{ trans('cruds.user.fields.roles_helper') }}</small>
                 </div>
 
-                {{-- Buttons: Save & Back to List side by side --}}
+                {{-- Buttons --}}
                 <div class="form-group mt-4 d-flex">
                     <button type="submit" class="btn btn-success mr-2">
                         <i class="fas fa-save mr-1"></i> {{ trans('global.save') }}

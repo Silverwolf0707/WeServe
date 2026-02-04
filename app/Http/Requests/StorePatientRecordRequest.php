@@ -41,7 +41,7 @@ class StorePatientRecordRequest extends FormRequest
                 'required',
             ],
             'diagnosis' => [
-                'required',
+                'nullable',
             ],
             'age' => [
                 'required',

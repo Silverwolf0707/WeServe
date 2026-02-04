@@ -1,15 +1,34 @@
 <aside id="sidebar" class="main-sidebar sidebar-dark-primary elevation-4">
-    <a href="{{ route('admin.home') }}"
-        class="brand-link d-flex align-items-center py-3 px-3 border-bottom text-decoration-none">
-
-        <span class="brand-icon d-flex align-items-center justify-content-center">
-            <img src="{{ asset('WeServe Logo.png') }}" alt="Logo" class="rounded-circle border border-2"
-                style="height: 40px; width: 40px; object-fit: cover;">
-        </span>
-        <span class="brand-text fw-bold ms-3 fs-5 text-light" style="letter-spacing: 0.5px;">
-            {{ trans('panel.site_title') }}
-        </span>
-    </a>
+    <!-- Profile Section (Replaces Logo) -->
+    <div class="profile-section d-flex align-items-center py-3 px-3 border-bottom">
+        <!-- Profile Image -->
+        <div class="profile-image-wrapper me-3">
+            @if(Auth::user()->currentProfileImage)
+                <img src="{{ Auth::user()->currentProfileImage->image_url }}" alt="Profile" 
+                     class="rounded-circle profile-img" style="width: 45px; height: 45px; object-fit: cover;">
+            @else
+                <div class="rounded-circle profile-img-placeholder d-flex align-items-center justify-content-center"
+                     style="width: 45px; height: 45px; background: linear-gradient(135deg, #4e73df, #1cc88a);">
+                    <i class="fas fa-user text-white" style="font-size: 20px;"></i>
+                </div>
+            @endif
+        </div>
+        
+        <!-- User Info -->
+        <div class="user-info flex-grow-1">
+            <div class="username fw-bold text-light" style="font-size: 1rem;">
+                {{ Auth::user()->name }}
+            </div>
+            <div class="user-role text-light" style="font-size: 0.85rem; opacity: 0.8;">
+                {{ Auth::user()->roles->pluck('title')->first() ?? 'User' }}
+            </div>
+        </div>
+        
+        <!-- Profile Dropdown Trigger -->
+        <button class="btn btn-link p-0 ms-2" data-bs-toggle="modal" data-bs-target="#profileModal">
+            <i class="fas fa-ellipsis-v text-light" style="font-size: 1rem;"></i>
+        </button>
+    </div>
 
     <div class="sidebar">
         <nav class="mt-3">
@@ -76,7 +95,7 @@
                     <li class="nav-item">
                         <a href="{{ route('admin.patient-records.index') }}"
                             class="nav-link {{ request()->is('admin/patient-records*') ? 'active' : '' }}">
-                            <i class="nav-icon fas fa-cogs"></i>
+                            <i class="nav-icon fas fa-briefcase"></i>
                             <p>Patient Records</p>
                         </a>
                     </li>
@@ -85,8 +104,11 @@
                     <li class="nav-item">
                         <a href="{{ route('admin.online-applications.index') }}"
                             class="nav-link {{ request()->is('admin/online-applications*') ? 'active' : '' }}">
-                            <i class="nav-icon fas fa-cogs"></i>
-                            <p>Online Application</p>
+                            <i class="nav-icon fas fa-globe"></i>
+                            <p>
+                                Online Records
+                                <span class="beta-tag">BETA</span>
+                            </p>
                         </a>
                     </li>
                 @endcan
@@ -105,7 +127,7 @@
                     <li class="nav-item">
                         <a href="{{ route('admin.document-management.index') }}"
                             class="nav-link {{ request()->is('admin/document-management*') ? 'active' : '' }}">
-                            <i class="nav-icon fas fa-briefcase"></i>
+                            <i class="nav-icon fas fa-folder"></i>
                             <p>Documents</p>
                         </a>
                     </li>
@@ -120,7 +142,12 @@
                     </li>
                 @endcan
 
-                @if(auth()->user()->can('CSWD-ANALYTICS') || auth()->user()->can('BUDGET-ANALYTICS') || auth()->user()->can('TREASURY-ANALYTICS') || auth()->user()->can('ACCOUNTING-ANALYTICS'))
+                @if (
+                        auth()->user()->can('CSWD-ANALYTICS') ||
+                        auth()->user()->can('BUDGET-ANALYTICS') ||
+                        auth()->user()->can('TREASURY-ANALYTICS') ||
+                        auth()->user()->can('ACCOUNTING-ANALYTICS')
+                    )
                     <li class="nav-item has-treeview {{ request()->is('admin/time-series*') ? 'menu-open' : '' }}">
                         <a href="#" class="nav-link {{ request()->is('admin/time-series*') ? 'active' : '' }}">
                             <i class="nav-icon fas fa-chart-line"></i>
@@ -132,7 +159,7 @@
                                     <a href="{{ route('admin.time-series.index', ['type' => 'cswd']) }}"
                                         class="nav-link {{ request()->fullUrlIs(route('admin.time-series.index', ['type' => 'cswd'])) ? 'active' : '' }}">
                                         <i class="fas fa-chart-pie nav-icon"></i>
-                                        <p>CSWD</p>
+                                        <p>Application</p>
                                     </a>
                                 </li>
                             @endcan
@@ -145,28 +172,9 @@
                                     </a>
                                 </li>
                             @endcan
-                            @can('TREASURY-ANALYTICS')
-                                <li class="nav-item">
-                                    <a href="{{ route('admin.time-series.index', ['type' => 'treasury']) }}"
-                                        class="nav-link {{ request()->fullUrlIs(route('admin.time-series.index', ['type' => 'treasury'])) ? 'active' : '' }}">
-                                        <i class="fas fa-coins nav-icon"></i>
-                                        <p>Treasury</p>
-                                    </a>
-                                </li>
-                            @endcan
-                            @can('ACCOUNTING-ANALYTICS')
-                                <li class="nav-item">
-                                    <a href="{{ route('admin.time-series.index', ['type' => 'accounting']) }}"
-                                        class="nav-link {{ request()->fullUrlIs(route('admin.time-series.index', ['type' => 'accounting'])) ? 'active' : '' }}">
-                                        <i class="fas fa-balance-scale nav-icon"></i>
-                                        <p>Accounting</p>
-                                    </a>
-                                </li>
-                            @endcan
                         </ul>
                     </li>
                 @endif
-
 
                 @can('settings')
                     <li class="nav-item">
@@ -178,7 +186,7 @@
                     </li>
                 @endcan
 
-                @if(file_exists(app_path('Http/Controllers/Auth/ChangePasswordController.php')))
+                @if (file_exists(app_path('Http/Controllers/Auth/ChangePasswordController.php')))
                     @can('profile_password_edit')
                         <li class="nav-item">
                             <a href="{{ route('profile.password.edit') }}"
@@ -191,15 +199,7 @@
                 @endif
 
                 <li class="nav-item">
-                    <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#profileModal">
-                        <i class="fas fa-user-circle nav-icon"></i>
-                        <p>Profile</p>
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a href="#" class="nav-link text-danger"
-                        onclick="event.preventDefault(); document.getElementById('logoutform').submit();">
+                    <a href="#" class="nav-link text-danger" data-bs-toggle="modal" data-bs-target="#logoutModal">
                         <i class="fas fa-sign-out-alt nav-icon"></i>
                         <p>Logout</p>
                     </a>
@@ -211,120 +211,260 @@
 </aside>
 
 <style>
-    .brand-link {
-        background: #2c3e50;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        justify-content: flex-start;
-        padding: 0.75rem 1rem;
-        overflow: hidden;
-    }
+/* Profile Section Styles */
+.profile-section {
+    background: #1c4874;
+    transition: all 0.3s ease;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    min-height: 78px; /* Fixed height to prevent shifting */
+}
 
-    .brand-icon img {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        border: 2px solid #fff;
-        object-fit: cover;
-        flex-shrink: 0;
-        transition: transform 0.3s ease;
-    }
+.profile-img {
+    border: 2px solid #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
+    width: 45px !important;
+    height: 45px !important;
+    object-fit: cover;
+}
 
-    .brand-text {
-        margin-left: 12px;
-        font-weight: bold;
-        font-size: 1.1rem;
-        color: #ecf0f1;
-        letter-spacing: 0.5px;
-        opacity: 1;
-        transform: translateX(0);
-        transition: opacity 0.3s ease, transform 0.3s ease;
-        white-space: nowrap;
-    }
+.profile-img-placeholder {
+    border: 2px solid #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    width: 45px !important;
+    height: 45px !important;
+    background: linear-gradient(135deg, #4e73df, #1cc88a);
+}
 
-    body.sidebar-collapse .brand-text {
+.user-info {
+    min-width: 0; /* Allows text truncation */
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.username {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.2;
+    font-size: 1rem;
+}
+
+.user-role {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.2;
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.online-status {
+    font-size: 0.75rem;
+}
+
+/* Ellipsis button */
+.btn-link .fa-ellipsis-v {
+    transition: transform 0.2s ease;
+}
+
+.btn-link:hover .fa-ellipsis-v {
+    transform: scale(1.2);
+}
+
+/* Collapsed sidebar styles - KEY CHANGES HERE */
+body.sidebar-collapse .profile-section {
+    padding: 0.75rem 0.5rem !important;
+    justify-content: center !important;
+}
+
+body.sidebar-collapse .user-info,
+body.sidebar-collapse .btn-link {
+    display: none !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+}
+
+body.sidebar-collapse .profile-image-wrapper {
+    margin-right: 0 !important;
+    margin-left: 0 !important;
+}
+
+body.sidebar-collapse .profile-img,
+body.sidebar-collapse .profile-img-placeholder {
+    width: 40px !important;
+    height: 40px !important;
+    margin: 0 auto !important;
+}
+
+/* Show user info on hover when sidebar is collapsed */
+body.sidebar-collapse .main-sidebar:hover .profile-section {
+    justify-content: flex-start !important;
+    padding: 0.75rem 1rem !important;
+}
+
+body.sidebar-collapse .main-sidebar:hover .user-info {
+    display: block !important;
+    opacity: 1 !important;
+    width: auto !important;
+    height: auto !important;
+    margin-left: 12px !important;
+}
+
+body.sidebar-collapse .main-sidebar:hover .btn-link {
+    display: block !important;
+    opacity: 1 !important;
+    width: auto !important;
+    height: auto !important;
+    margin-left: auto !important;
+}
+
+body.sidebar-collapse .main-sidebar:hover .profile-img,
+body.sidebar-collapse .main-sidebar:hover .profile-img-placeholder {
+    width: 45px !important;
+    height: 45px !important;
+    margin: 0 !important;
+}
+
+/* Beta tag styling */
+.beta-tag {
+    background: #ffc107;
+    color: #000;
+    font-size: 0.6rem;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 8px;
+    text-transform: uppercase;
+    position: relative;
+    top: -2px;
+}
+
+/* Existing sidebar styles */
+.nav-sidebar {
+    background: #2c3e50;
+}
+
+.nav-sidebar .nav-link {
+    border-radius: 0.5rem;
+    margin: 2px 0;
+    color: #ecf0f1;
+    transition: all 0.2s ease;
+}
+
+.nav-sidebar .nav-link.active {
+    background-color: #3c8dbc;
+    color: #fff;
+    font-weight: 600;
+}
+
+.nav-sidebar .nav-link:hover {
+    background: rgba(60, 141, 188, 0.2);
+}
+
+.main-sidebar {
+    width: 250px;
+    height: 100vh;
+    background: #2c3e50;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: all 0.3s ease;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.main-sidebar::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
+}
+
+.main-sidebar::-webkit-scrollbar-thumb {
+    background: transparent;
+}
+
+.main-sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.main-sidebar .sidebar {
+    min-height: calc(100vh - 78px); /* Subtract profile section height */
+    padding-bottom: 20px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.main-sidebar .sidebar::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
+}
+
+.main-sidebar .sidebar::-webkit-scrollbar-thumb {
+    background: transparent;
+}
+
+.main-sidebar .sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.nav nav-pills nav-sidebar flex-column {
+    min-height: 100%;
+}
+
+.nav-sidebar {
+    padding-bottom: 50px;
+}
+
+body.sidebar-collapse .main-sidebar {
+    width: 60px;
+}
+
+body.sidebar-collapse .main-sidebar .sidebar {
+    overflow: hidden;
+}
+
+body.sidebar-collapse .main-sidebar:hover {
+    width: 250px;
+}
+
+body.sidebar-collapse .main-sidebar:hover .sidebar {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Smooth animations for expansion */
+body.sidebar-collapse .main-sidebar:hover .user-info {
+    animation: fadeInSlide 0.3s ease forwards;
+}
+
+@keyframes fadeInSlide {
+    from {
         opacity: 0;
-        transform: translateX(-20px);
-        pointer-events: none;
+        transform: translateX(-10px);
     }
-
-    body.sidebar-collapse .main-sidebar:hover .brand-text {
+    to {
         opacity: 1;
         transform: translateX(0);
-        pointer-events: auto;
     }
+}
 
-    body.sidebar-collapse .main-sidebar:hover .brand-icon img {
-        transform: scale(1.05);
-    }
+/* Force full viewport height */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
 
-    .nav-sidebar {
-        background: #2c3e50;
-    }
-
-    .nav-sidebar .nav-link {
-        border-radius: 0.5rem;
-        margin: 2px 0;
-        color: #ecf0f1;
-        transition: all 0.2s ease;
-    }
-
-    .nav-sidebar .nav-link.active {
-        background-color: #3c8dbc;
-        color: #fff;
-        font-weight: 600;
-    }
-
-    .nav-sidebar .nav-link:hover {
-        background: rgba(60, 141, 188, 0.2);
-    }
-
-    .nav-header {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: #bdc3c7;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin: 15px 0 5px 15px;
-        padding-top: 8px;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .main-sidebar {
-        width: 250px;
-        height: 100vh;
-        background: #2c3e50;
-        overflow-y: auto;
-        overflow-x: hidden;
-        transition: all 0.3s ease;
-    }
-
-    .main-sidebar .sidebar {
-        height: 100%;
-        overflow: hidden !important;
-    }
-
-    body.sidebar-collapse .main-sidebar {
-        width: 60px;
-        overflow: hidden !important;
-    }
-
-    body.sidebar-collapse .main-sidebar:hover {
-        width: 250px;
-        overflow-y: auto !important;
-    }
-
-    .main-sidebar::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .main-sidebar::-webkit-scrollbar-thumb {
-        background-color: rgba(255, 255, 255, 0.2);
-        border-radius: 10px;
-    }
-
-    .main-sidebar::-webkit-scrollbar-track {
-        background: transparent;
-    }
+.wrapper {
+    min-height: 100vh;
+}
 </style>

@@ -1,17 +1,35 @@
 import pandas as pd
 import json
 import os
+import sys
+from datetime import datetime
 
-# Paths
+# Get CSV path from command line argument
+if len(sys.argv) > 1:
+    csv_path = sys.argv[1]
+else:
+    # Fallback path if no argument provided
+    base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    csv_path = os.path.join(base_path, 'storage', 'app', 'private', 'analytics', 'full_patient_data.csv')
+
+# Output JSON path in private storage
 base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-full_csv_path = os.path.join(base_path, 'storage', 'app', 'public', 'full_patient_data.csv')
-json_path = os.path.join(base_path, 'storage', 'app', 'public', 'age_stats_output.json')
+json_path = os.path.join(base_path, 'storage', 'app', 'private', 'analytics', 'age_stats_output.json')
+
+# Ensure the analytics directory exists
+os.makedirs(os.path.dirname(json_path), exist_ok=True)
 
 # Load CSV
-df = pd.read_csv(full_csv_path, parse_dates=['month', 'date_processed'])
+try:
+    df = pd.read_csv(csv_path, parse_dates=['month', 'date_processed'])
+except Exception as e:
+    print(f"Error loading CSV: {e}")
+    sys.exit(1)
 
-# Add Year column for grouping
+# Add Year and Month columns for grouping
 df['year'] = df['month'].dt.year
+df['month_num'] = df['month'].dt.month
+df['month_name'] = df['month'].dt.strftime('%B')
 
 # Compute processing_days as difference between disbursed month and processed date
 df['disbursed_month'] = df['month']
@@ -69,20 +87,22 @@ def compute_stats_summary(df, value_col):
         }
     return category_stats, type_stats
 
-# 🔹 Compute per-year stats
+# Compute per-year stats
 yearly_stats = {}
+monthly_stats = {}
 
 for year, year_df in df.groupby('year'):
+    # Yearly stats
     age_stats_by_category, age_stats_by_type = compute_stats_summary(year_df, 'age')
-
+    
     application_counts = year_df.groupby(['case_category', 'case_type']).size().reset_index(name='application_count')
     app_stats_by_category, app_stats_by_type = compute_stats_summary(
         application_counts.rename(columns={'application_count': 'value'}), 'value'
     )
-
+    
     total_applications_by_category = year_df.groupby('case_category').size().to_dict()
     total_applications_by_type = year_df.groupby('case_type').size().to_dict()
-
+    
     yearly_stats[year] = {
         'age_stats_by_category': age_stats_by_category,
         'age_stats_by_type': age_stats_by_type,
@@ -91,16 +111,49 @@ for year, year_df in df.groupby('year'):
         'total_applications_by_category': total_applications_by_category,
         'total_applications_by_type': total_applications_by_type,
     }
+    
+    # 🔹 Compute per-month stats for this year
+    monthly_stats[year] = {}
+    for month, month_df in year_df.groupby('month_num'):
+        month_name = month_df['month_name'].iloc[0]
+        
+        month_age_stats_by_category, month_age_stats_by_type = compute_stats_summary(month_df, 'age')
+        
+        month_application_counts = month_df.groupby(['case_category', 'case_type']).size().reset_index(name='application_count')
+        month_app_stats_by_category, month_app_stats_by_type = compute_stats_summary(
+            month_application_counts.rename(columns={'application_count': 'value'}), 'value'
+        )
+        
+        month_total_applications_by_category = month_df.groupby('case_category').size().to_dict()
+        month_total_applications_by_type = month_df.groupby('case_type').size().to_dict()
+        
+        monthly_stats[year][month] = {
+            'month_name': month_name,
+            'age_stats_by_category': month_age_stats_by_category,
+            'age_stats_by_type': month_age_stats_by_type,
+            'application_stats_by_category': month_app_stats_by_category,
+            'application_stats_by_type': month_app_stats_by_type,
+            'total_applications_by_category': month_total_applications_by_category,
+            'total_applications_by_type': month_total_applications_by_type,
+        }
+
+# Get current year and month for default selection
+current_year = datetime.now().year
+current_month = datetime.now().month
 
 # Final JSON output
 output = {
     'overall': {
         'dashboard_summary': dashboard_summary,
     },
-    'yearly': yearly_stats
+    'yearly': yearly_stats,
+    'monthly': monthly_stats,
+    'default_selection': {
+        'year': current_year,
+        'month': current_month
+    }
 }
 
-# Save JSON
+# Save JSON to private storage
 with open(json_path, 'w') as f:
     json.dump(output, f, indent=2)
-

@@ -17,7 +17,7 @@ class PatientProcessUpdated implements ShouldBroadcast
 
     public function __construct(PatientRecord $patient)
     {
-        $this->patient = $patient->load('latestStatusLog'); // load latest log
+        $this->patient = $patient->load('latestStatusLog');
         $this->latestLog = $this->patient->latestStatusLog;
     }
 

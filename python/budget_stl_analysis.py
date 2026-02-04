@@ -2,14 +2,29 @@ import pandas as pd
 from statsmodels.tsa.seasonal import STL
 import json
 import os
+import sys
 
-# Paths
+# Get CSV path from command line argument
+if len(sys.argv) > 1:
+    csv_path = sys.argv[1]
+else:
+    # Fallback path if no argument provided
+    base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    csv_path = os.path.join(base_path, 'storage', 'app', 'private', 'analytics', 'full_patient_data.csv')
+
+# Output JSON path in private storage
 base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-csv_path = os.path.join(base_path, 'storage', 'app', 'public', 'full_patient_data.csv')
-json_path = os.path.join(base_path, 'storage', 'app', 'public', 'stl_budget_output.json')
+json_path = os.path.join(base_path, 'storage', 'app', 'private', 'analytics', 'stl_budget_output.json')
+
+# Ensure the analytics directory exists
+os.makedirs(os.path.dirname(json_path), exist_ok=True)
 
 # Load CSV
-df = pd.read_csv(csv_path, parse_dates=['month'])
+try:
+    df = pd.read_csv(csv_path, parse_dates=['month'])
+except Exception as e:
+    print(f"Error loading CSV: {e}")
+    sys.exit(1)
 
 # Ensure all months in the year exist (pad missing months with 0)
 start_month = pd.Timestamp(df['month'].min().year, 1, 1)   # Jan of earliest year
@@ -31,7 +46,7 @@ for cat in categories:
         continue
     
     # STL decomposition
-    stl = STL(cat_series, period=12, robust=True, seasonal_deg=1, trend_deg=1, low_pass_deg=1)
+    stl = STL(cat_series, period=12, robust=True)
     result = stl.fit()
     
     output[cat] = {
@@ -42,7 +57,6 @@ for cat in categories:
         'residual': result.resid.round(2).tolist()
     }
 
-
-# Save JSON
+# Save JSON to private storage
 with open(json_path, 'w') as f:
     json.dump(output, f, indent=4)

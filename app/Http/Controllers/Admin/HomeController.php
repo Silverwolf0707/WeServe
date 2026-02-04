@@ -5,8 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Models\PatientRecord;
 use App\Models\PatientStatusLog;
 use App\Models\Role;
-use App\Models\User;
-use Illuminate\Support\Carbon;
+use App\Models\AuditLog;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use LaravelDaily\LaravelCharts\Classes\LaravelChart;
@@ -18,7 +17,6 @@ class HomeController
         $user = Auth::user();
 
         if ($user->roles->contains('title', 'Admin')) {
-            // Admin Dashboard Charts
             $settings1 = [
                 'chart_title' => 'Roles',
                 'chart_type' => 'bar',
@@ -49,7 +47,6 @@ class HomeController
 
             $chart2 = new LaravelChart($settings2);
 
-            // Fetch departments with total and active users
             $activeUserIds = DB::table('sessions')
                 ->where('last_activity', '>=', now()->subMinutes(config('session.lifetime'))->timestamp)
                 ->pluck('user_id')
@@ -59,27 +56,24 @@ class HomeController
                 $totalUsers = $role->users()->count();
                 $activeUsers = $role->users()->whereIn('id', $activeUserIds)->count();
 
-                // normalize role title
                 $titleKey = strtolower(trim($role->title));
 
-                // Frontend icons & colors (keys are lowercase)
                 $icons = [
-                    'user' => 'fa-users',
-                    "mayors office" => 'fa-building',   // fixed typo: "ofiice" → "office"
+                    'cswd office' => 'fa-users',
+                    "mayor's office" => 'fa-building',
                     'budget office' => 'fa-wallet',
                     'accounting office' => 'fa-calculator',
                     "treasury office" => 'fa-coins',
                 ];
 
                 $colors = [
-                    'user' => ['#4e73df', '#2b59cb'],
-                    "mayors office" => ['#1cc88a', '#17a673'],
+                    'cswd office' => ['#4e73df', '#2b59cb'],
+                    "mayor's office" => ['#1cc88a', '#17a673'],
                     'budget office' => ['#f6c23e', '#dda20a'],
                     'accounting office' => ['#36b9cc', '#2a96a8'],
                     "treasury office" => ['#e74a3b', '#c93020'],
                 ];
 
-                // fallback gradient + icon
                 $colorPair = $colors[$titleKey] ?? ['#6c63ff', '#3b3bbf'];
                 $icon = $icons[$titleKey] ?? 'fa-user';
 
@@ -93,8 +87,48 @@ class HomeController
                 ];
             });
 
+            $recentActivities = AuditLog::with('user')
+                ->latest()
+                ->take(10)
+                ->get()
+                ->map(function ($log) {
+                    $department = $log->user
+                        ? $log->user->roles->pluck('title')->first()
+                        : 'System';
+                    $colors = [
+                        'user' => '#4e73df',
+                        'mayors office' => '#1cc88a',
+                        'budget office' => '#f6c23e',
+                        'accounting office' => '#36b9cc',
+                        'treasury office' => '#e74a3b',
+                        'cswd' => '#4e73df',
+                    ];
 
-            return view('home', compact('chart1', 'chart2', 'departments'));
+                    $color = $colors[strtolower($department)] ?? '#6c63ff';
+                    $badgeClass = 'badge-secondary';
+                    if (str_contains(strtolower($log->description), 'created')) {
+                        $badgeClass = 'badge-success';
+                    } elseif (str_contains(strtolower($log->description), 'updated')) {
+                        $badgeClass = 'badge-info';
+                    } elseif (str_contains(strtolower($log->description), 'deleted')) {
+                        $badgeClass = 'badge-danger';
+                    }
+
+                    return [
+                        'date' => $log->created_at->format('Y-m-d H:i A'),
+                        'department' => $department,
+                        'action' => ucfirst(str_replace('audit:', '', $log->description)),
+                        'color' => $color,
+                        'username' => $log->user->name ?? 'System',
+                        'host' => $log->host ?? request()->ip(),
+                        'subject_type' => $log->subject_type ?? 'N/A',
+                        'badge' => $badgeClass,
+
+                    ];
+                });
+
+
+            return view('home', compact('chart1', 'chart2', 'departments', 'recentActivities'));
         } else {
 
             $totalPatients = PatientRecord::count();
@@ -103,7 +137,6 @@ class HomeController
             $totalMedicalPatient = PatientRecord::where('case_category', 'Medical Assistance')->count();
             $totalApproved = PatientStatusLog::where('status', 'Approved')->count();
 
-            // Patients per Barangay (using accessor getBarangayAttribute)
             $barangayStats = PatientRecord::get()
                 ->groupBy('barangay')
                 ->map->count();
@@ -111,51 +144,77 @@ class HomeController
             $barangayLabels = $barangayStats->keys();
             $barangayData = $barangayStats->values();
 
-            // Patients per Month
             $monthlyStats = PatientRecord::select(
                 DB::raw("DATE_FORMAT(date_processed, '%M') as month"),
                 DB::raw('COUNT(*) as total')
             )
                 ->groupBy('month')
-                ->orderByRaw("MIN(date_processed)") // keeps chronological order
+                ->orderByRaw("MIN(date_processed)")
                 ->get();
 
             $monthlyLabels = $monthlyStats->pluck('month');
             $monthlyData = $monthlyStats->pluck('total');
-            // Recently Submitted
+
+            $recentlyDraft = PatientStatusLog::with('patient')
+                ->whereIn('id', function ($query) {
+                    $query->select(DB::raw('MAX(id)'))
+                        ->from('patient_status_logs')
+                        ->groupBy('patient_id');
+                })
+                ->whereIn('status', [PatientStatusLog::STATUS_DRAFT, PatientStatusLog::STATUS_PROCESSING, PatientStatusLog::STATUS_REJECTED, PatientStatusLog::STATUS_ROLLED_BACK_TO_PROCESSING])
+                ->orderByDesc('status_date')
+                ->get();
+
+
             $recentlySubmitted = PatientStatusLog::with('patient')
-                ->where('status', PatientStatusLog::STATUS_SUBMITTED)
+                ->whereIn('id', function ($query) {
+                    $query->select(DB::raw('MAX(id)'))
+                        ->from('patient_status_logs')
+                        ->groupBy('patient_id');
+                })
+                ->whereIn('status', [PatientStatusLog::STATUS_SUBMITTED, PatientStatusLog::STATUS_SUBMITTED_EMERGENCY, PatientStatusLog::STATUS_ROLLED_BACK_TO_SUBMITTED])
                 ->orderByDesc('status_date')
-                ->take(10)
                 ->get();
 
-            // Recently Approved / Rejected
-            $recentlyApprovedRejected = PatientStatusLog::with('patient')
-                ->whereIn('status', [PatientStatusLog::STATUS_APPROVED, PatientStatusLog::STATUS_REJECTED])
+            // $recentlyApprovedRejected = PatientStatusLog::with('patient')
+            //     ->whereIn('id', function ($query) {
+            //         $query->select(DB::raw('MAX(id)'))
+            //             ->from('patient_status_logs')
+            //             ->groupBy('patient_id');
+            //     })
+            //     ->whereIn('status', [PatientStatusLog::STATUS_APPROVED, PatientStatusLog::STATUS_REJECTED])
+            //     ->orderByDesc('status_date')
+            //     ->get();
+
+            $recentlyApproved = PatientStatusLog::with('patient')
+                ->whereIn('id', function ($query) {
+                    $query->select(DB::raw('MAX(id)'))
+                        ->from('patient_status_logs')
+                        ->groupBy('patient_id');
+                })
+                ->whereIn('status', [PatientStatusLog::STATUS_APPROVED, PatientStatusLog::STATUS_ROLLED_BACK_TO_APPROVED])
                 ->orderByDesc('status_date')
-                ->take(10)
                 ->get();
 
-            // Recently Budget Allocated
-            $recentlyBudgetAllocated = PatientStatusLog::with('patient')
-                ->where('status', PatientStatusLog::STATUS_BUDGET_ALLOCATED)
+
+            $recentlyBudgetAllocated = PatientStatusLog::with('patient')->whereIn('id', function ($query) {
+                $query->select(DB::raw('MAX(id)'))
+                    ->from('patient_status_logs')
+                    ->groupBy('patient_id');
+            })
+                ->whereIn('status', [PatientStatusLog::STATUS_BUDGET_ALLOCATED, PatientStatusLog::STATUS_ROLLED_BACK_TO_BUDGET_ALLOCATED])
                 ->orderByDesc('status_date')
-                ->take(10)
                 ->get();
 
-            // Recently DV Submitted
-            $recentlyDvSubmitted = PatientStatusLog::with('patient')
+            $recentlyDvSubmitted = PatientStatusLog::with('patient')->whereIn('id', function ($query) {
+                $query->select(DB::raw('MAX(id)'))
+                    ->from('patient_status_logs')
+                    ->groupBy('patient_id');
+            })
                 ->where('status', PatientStatusLog::STATUS_DV_SUBMITTED)
                 ->orderByDesc('status_date')
-                ->take(10)
                 ->get();
 
-            // Recently Disbursed
-            $recentlyDisbursed = PatientStatusLog::with('patient')
-                ->where('status', PatientStatusLog::STATUS_DISBURSED)
-                ->orderByDesc('status_date')
-                ->take(10)
-                ->get();
 
 
             return view('dashboard_offices', compact(
@@ -169,10 +228,10 @@ class HomeController
                 'monthlyLabels',
                 'monthlyData',
                 'recentlySubmitted',
-                'recentlyApprovedRejected',
                 'recentlyBudgetAllocated',
                 'recentlyDvSubmitted',
-                'recentlyDisbursed',
+                'recentlyDraft',
+                'recentlyApproved'
             ));
         }
     }

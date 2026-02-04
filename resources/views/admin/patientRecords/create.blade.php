@@ -75,10 +75,10 @@
 
                         {{-- Diagnosis --}}
                         <div class="mb-3">
-                            <label for="diagnosis" class="form-label">Diagnosis <span class="text-danger">*</span></label>
+                            <label for="diagnosis" class="form-label">Diagnosis</label>
                             <textarea name="diagnosis" id="diagnosis"
-                                class="form-control {{ $errors->has('diagnosis') ? 'is-invalid' : '' }}" rows="2"
-                                style="resize: none;" placeholder="Enter diagnosis..." required>{{ old('diagnosis') }}</textarea>
+                                class="form-control diagnosis-textarea {{ $errors->has('diagnosis') ? 'is-invalid' : '' }}" rows="2"
+                                style="resize: none;" placeholder="Enter diagnosis...">{{ old('diagnosis') }}</textarea>
                             @error('diagnosis') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                     </div>
@@ -107,9 +107,10 @@
 
                     <div class="col-md-3 mb-3">
                         <label for="contact_number" class="form-label">Contact Number <span class="text-danger">*</span></label>
-                        <input type="text" name="contact_number" id="contact_number"
+                        <input type="tel" name="contact_number" id="contact_number"
                             class="form-control {{ $errors->has('contact_number') ? 'is-invalid' : '' }}"
-                            value="{{ old('contact_number') }}" required>
+                            value="{{ old('contact_number') }}" maxlength="11" pattern="[0-9]{11}"
+                                    oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);" required>
                         @error('contact_number') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
 

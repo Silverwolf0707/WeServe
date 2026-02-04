@@ -6,6 +6,7 @@
     <title>Budget Statistical Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
             background-color: #f8f9fa;
@@ -41,20 +42,47 @@
         .card-body {
             padding: 1rem;
         }
+        
+        .filter-container {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-item {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+        
+        .filter-label {
+            font-size: 0.85rem;
+            color: #666;
+            white-space: nowrap;
+        }
     </style>
 </head>
 
 <body>
     <div class="card shadow-sm border-0 rounded-4 mt-3">
-        <div
-            class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2 border-bottom">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2 border-bottom">
             <div class="text-success fw-semibold">
                 <i class="fas fa-coins me-2"></i>Budget Analysis
             </div>
             <div class="d-flex gap-2">
-                <select id="yearDropdown" class="form-select form-select-sm">
-                    <!-- Years populated dynamically -->
-                </select>
+                <div class="filter-item">
+                    <span class="filter-label">Year:</span>
+                    <select id="yearDropdown" class="form-select form-select-sm">
+                        <!-- Years populated dynamically -->
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <span class="filter-label">Month:</span>
+                    <select id="monthDropdown" class="form-select form-select-sm">
+                        <option value="yearly">Yearly View</option>
+                        <!-- Months populated dynamically -->
+                    </select>
+                </div>
                 <select id="statDropdown" class="form-select form-select-sm">
                     <option value="case_type">Case Type</option>
                     <option value="case_category">Case Category</option>
@@ -109,7 +137,7 @@
                                 <i class="fas fa-braille text-success me-3 fs-5 mt-1"></i>
                                 <span><strong>Variance:</strong> <span class="text-muted" id="summaryVariance">—</span></span>
                             </div>
-                                                      <p class="text-secondary small mt-3 mb-0">
+                            <p class="text-secondary small mt-3 mb-0">
                                 This summary interprets the selected category's data for easier understanding. <br>
                                 <strong>Mean:</strong> Average value.<br>
                                 <strong>Median:</strong> Middle value.<br>
@@ -136,7 +164,8 @@
                         <p id="pieSummary" class="mt-2 small text-muted text-center"></p>
                     </div>
                 </div>
-                                <!-- Document Deficiency Breakdown Panel -->
+                
+                <!-- Document Deficiency Breakdown Panel -->
                 <div class="col-md-4">
                     <div class="card shadow-sm summary-equal-height h-100 border border-warning"
                         style="background: #fef9e7; border-radius: 1rem;">
@@ -148,16 +177,14 @@
                         </div>
                         <div class="card-body d-flex flex-column justify-content-between">
                             <canvas id="deficiencyChart" style="max-height: 260px;"></canvas>
-
-                            <p id="deficiencySummary" class="text-muted small mt-3 text-center"></p>
+                            <p id="deficiencySummary" class="text-muted small mt-3 text-center">No Deficiency Data</p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-            </div>
-        </div>
     </div>
+
 <script>
     let meanMedianModeChart = null;
     let dispersionChart = null;
@@ -174,23 +201,41 @@
                 const yearDropdown = document.getElementById('yearDropdown');
                 const years = Object.keys(cachedData.yearly || {});
                 yearDropdown.innerHTML = '';
+                
+                // Sort years descending (newest first)
+                years.sort((a, b) => b - a);
+                
                 years.forEach((y, i) => {
                     const opt = document.createElement('option');
                     opt.value = y;
                     opt.textContent = y;
-                    if (i === 0) opt.selected = true;
+                    
+                    // Set default to current year if available in data
+                    const currentYear = new Date().getFullYear();
+                    if (y == currentYear || i === 0) {
+                        opt.selected = true;
+                    }
                     yearDropdown.appendChild(opt);
                 });
+
+                // Initialize month dropdown
+                updateMonthDropdown();
             }
 
             const year = document.getElementById('yearDropdown').value;
+            const month = document.getElementById('monthDropdown').value;
             const statType = document.getElementById('statDropdown').value;
 
-            const yearData = cachedData.yearly[year];
-            if (!yearData) return;
+            // Get the appropriate data based on view (yearly or monthly)
+            let dataSource = cachedData.yearly[year];
+            if (month !== 'yearly' && cachedData.monthly && cachedData.monthly[year] && cachedData.monthly[year][month]) {
+                dataSource = cachedData.monthly[year][month];
+            }
+
+            if (!dataSource) return;
 
             const statsKey = statType === 'case_type' ? 'budget_stats_by_type' : 'budget_stats_by_category';
-            const stats = yearData[statsKey];
+            const stats = dataSource[statsKey];
             if (!stats) return;
 
             const labels = Object.keys(stats);
@@ -201,11 +246,45 @@
             const stdDev = labels.map(l => stats[l].std_dev);
 
             updateCharts(labels, mean, median, mode, variance, stdDev);
-            updateBudgetSummary(stats); // ✅ Fixed function call
-            renderPieChart('total_applications_by_category', year);
+            updateBudgetSummary(stats);
+            
+            // Update pie chart
+            const pieDataKey = document.getElementById('pieChartTypeSelector').value;
+            renderPieChart(pieDataKey, year, month);
 
         } catch (err) {
             console.error(err);
+        }
+    }
+
+    function updateMonthDropdown() {
+        const yearDropdown = document.getElementById('yearDropdown');
+        const monthDropdown = document.getElementById('monthDropdown');
+        const selectedYear = yearDropdown.value;
+        
+        monthDropdown.innerHTML = '<option value="yearly">Yearly View</option>';
+        
+        if (cachedData.monthly && cachedData.monthly[selectedYear]) {
+            const months = Object.keys(cachedData.monthly[selectedYear]);
+            
+            // Sort months numerically
+            months.sort((a, b) => a - b);
+            
+            months.forEach(monthNum => {
+                const monthData = cachedData.monthly[selectedYear][monthNum];
+                const monthName = monthData.month_name || `Month ${monthNum}`;
+                const opt = document.createElement('option');
+                opt.value = monthNum;
+                opt.textContent = monthName;
+                
+                // Set default to current month if available
+                const currentMonth = new Date().getMonth() + 1; // JavaScript months are 0-indexed
+                if (monthNum == currentMonth) {
+                    opt.selected = true;
+                }
+                
+                monthDropdown.appendChild(opt);
+            });
         }
     }
 
@@ -295,12 +374,18 @@
         };
     }
 
-    function renderPieChart(dataKey, year) {
+    function renderPieChart(dataKey, year, month) {
         if (!cachedData) return;
-        const yearData = cachedData.yearly[year];
-        if (!yearData || !yearData[dataKey]) return;
+        
+        // Get the appropriate data source
+        let dataSource = cachedData.yearly[year];
+        if (month !== 'yearly' && cachedData.monthly && cachedData.monthly[year] && cachedData.monthly[year][month]) {
+            dataSource = cachedData.monthly[year][month];
+        }
+        
+        if (!dataSource || !dataSource[dataKey]) return;
 
-        const dataObj = yearData[dataKey];
+        const dataObj = dataSource[dataKey];
         const labels = Object.keys(dataObj);
         const data = Object.values(dataObj);
 
@@ -324,10 +409,19 @@
     }
 
     // Event listeners
-    document.getElementById('yearDropdown').addEventListener('change', fetchStats);
+    document.getElementById('yearDropdown').addEventListener('change', function() {
+        updateMonthDropdown();
+        fetchStats();
+    });
+    
+    document.getElementById('monthDropdown').addEventListener('change', fetchStats);
     document.getElementById('statDropdown').addEventListener('change', fetchStats);
     document.getElementById('pieChartTypeSelector').addEventListener('change', () =>
-        renderPieChart(document.getElementById('pieChartTypeSelector').value, document.getElementById('yearDropdown').value)
+        renderPieChart(
+            document.getElementById('pieChartTypeSelector').value,
+            document.getElementById('yearDropdown').value,
+            document.getElementById('monthDropdown').value
+        )
     );
 
     // Initial fetch

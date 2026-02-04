@@ -7,7 +7,6 @@ use App\Http\Requests\MassDestroyPermissionRequest;
 use App\Http\Requests\StorePermissionRequest;
 use App\Http\Requests\UpdatePermissionRequest;
 use App\Models\Permission;
-
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Symfony\Component\HttpFoundation\Response;

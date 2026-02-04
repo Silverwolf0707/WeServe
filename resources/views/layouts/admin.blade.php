@@ -10,7 +10,7 @@
 
   <title>WeServe</title>
   <!-- Favicon -->
-  <link rel="icon" type="image/png+xml" href="{{ asset('WeServe Logo.png') }}">
+  <link rel="icon" type="image/png+xml" href="{{ asset('logo.png') }}">
 
   <!-- Bootstrap 5.3 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -40,7 +40,17 @@
   <!-- AdminLTE and Custom Styles -->
   <link href="{{ asset('css/adminltev3.css') }}" rel="stylesheet">
   <link href="{{ asset('css/custom.css') }}" rel="stylesheet">
-  @vite(['resources/js/app.js', 'resources/css/app.css'])
+  <link href="{{ asset('css/context-menu.css') }}" rel="stylesheet">
+  @if(app()->isLocal())
+    @vite(['resources/js/app.js', 'resources/css/app.css'])
+    <script src="{{ asset('js/context-menu.js') }}"></script>
+@else
+    <!-- Production assets -->
+    <link rel="stylesheet" href="{{ asset('resources/css/app.css') }}">
+    <link href="{{ asset('css/context-menu.css') }}" rel="stylesheet">
+    <script src="{{ asset('resources/js/app.js') }}" defer></script>
+    <script src="{{ asset('js/context-menu.js') }}"></script>
+@endif
 
 
   @yield('styles')
@@ -56,46 +66,146 @@
   @php
     $toast = session('toast');
     $bgClass = match ($toast['type']) {
-    'success' => 'bg-success text-white',
-    'danger' => 'bg-danger text-white',
-    'warning' => 'bg-warning text-dark',
-    'info' => 'bg-info text-dark',
-    default => 'bg-secondary text-white',
+        'success' => 'toast-success',
+        'danger' => 'toast-danger',
+        'warning' => 'toast-warning',
+        'info' => 'toast-info',
+        default => 'bg-secondary',
     };
+    
+    $icons = [
+        'success' => 'fas fa-check-circle',
+        'danger' => 'fas fa-exclamation-triangle',
+        'warning' => 'fas fa-exclamation-circle',
+        'info' => 'fas fa-info-circle'
+    ];
+    $icon = $icons[$toast['type']] ?? 'fas fa-bell';
   @endphp
 
-  <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1055">
-    <div id="liveToast" class="toast {{ $bgClass }} hide" role="alert" aria-live="assertive" aria-atomic="true">
-    <div class="toast-header bg-white text-dark">
-      <strong class="me-auto">{{ $toast['title'] ?? 'Notice' }}</strong>
-      <small id="toast-timer">Closing in 5s</small>
-      <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-    </div>
-    <div class="toast-body">
-      {!! session('toast')['message'] !!}
-    </div>
+  <div class="position-fixed top-0 end-0 p-3" style="z-index: 1055">
+    <div id="liveToast" class="toast custom-toast {{ $bgClass }}" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="toast-progress"></div>
+      <div class="toast-header bg-white text-dark">
+        <i class="{{ $icon }} toast-icon text-{{ $toast['type'] }}"></i>
+        <strong class="me-auto">{{ $toast['title'] ?? 'Notification' }}</strong>
+        <small class="text-muted" id="toast-timer">Just now</small>
+        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div class="toast-body">
+        {!! session('toast')['message'] !!}
+      </div>
     </div>
   </div>
-
 @endif
 
 
 <body class="sidebar-mini layout-fixed" style="height: auto;">
-      <!-- Loading Screen -->
-    <div id="loading-overlay">
-        <div class="loader-wrapper">
-            <div class="circle"></div>
-            <div class="loader-text">WS</div>
+<!-- Loading Screen -->
+<div id="loading-overlay">
+    <div class="loader-wrapper">
+        <div class="circle"></div>
+        <div class="loader-logo"></div>
+    </div>
+</div>
+  <div class="wrapper">
+<nav class="main-header navbar navbar-expand bg-white navbar-light border-bottom">
+    <!-- Left navbar links -->
+    <ul class="navbar-nav d-flex align-items-center">
+        <li class="nav-item">
+            <a class="nav-link" data-widget="pushmenu" href="#"><i class="fa fa-bars"></i></a>
+        </li>
+        <!-- WeServe Logo -->
+        <li class="nav-item ms-2">
+            <a href="{{ route('admin.home') }}" class="d-flex align-items-center text-decoration-none">
+                <img src="{{ asset('logo.png') }}" alt="Logo" style="height: 30px; width: 30px; object-fit: cover;">
+                <img src="{{ asset('WeServe1.png') }}" alt="WeServe Logo" class="ms-2" style="height: 25px; width: auto;">
+            </a>
+        </li>
+    </ul>
+
+    <!-- Right navbar links -->
+    <ul class="navbar-nav ms-auto">
+        <!-- Notification Bell -->
+        <li class="nav-item dropdown">
+            <a class="nav-link" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false" id="notificationDropdown">
+                <i class="fa fa-bell"></i>
+                <!-- Notification Badge -->
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notification-badge" id="notification-badge" style="display: none;">
+                    0
+                    <span class="visually-hidden">unread notifications</span>
+                </span>
+            </a>
+            <!-- Replace the notification dropdown section in your layout -->
+<div class="dropdown-menu dropdown-menu-end dropdown-menu-lg notification-dropdown" style="width: 400px;">
+    <!-- Dropdown Header -->
+    <div class="dropdown-header bg-light py-3 notification-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0"><i class="fas fa-bell me-2"></i>Notifications<span class="beta-tag">BETA</span></h6>
+            <div>
+                <span class="badge bg-primary" id="notification-count" style="display: none;">0 new</span>
+                
+            </div>
         </div>
     </div>
-  <div class="wrapper">
-    <nav class="main-header navbar navbar-expand bg-white navbar-light border-bottom">
-      <!-- Left navbar links -->
-      <ul class="navbar-nav">
-        <li class="nav-item">
-          <a class="nav-link" data-widget="pushmenu" href="#"><i class="fa fa-bars"></i></a>
+    
+    <!-- Filter Section -->
+    <div class="dropdown-header bg-light py-2 border-bottom">
+        <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">Filter by Department</small>
+            <button class="btn btn-sm btn-outline-secondary" id="clear-filter" style="display: none;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="px-3 py-2">
+        <select class="form-select form-select-sm" id="department-filter">
+            <option value="">All Departments</option>
+            <option value="CSWD Office">CSWD Office</option>
+            <option value="Mayor's Office">Mayor's Office</option>
+            <option value="Budget Office">Budget Office</option>
+            <option value="Accounting Office">Accounting Office</option>
+            <option value="Treasury Office">Treasury Office</option>
+        </select>
+    </div>
+    
+    <!-- Notification Items Container with Scroll -->
+    <div class="notification-items-container" style="max-height: 400px; overflow-y: auto;">
+        <div class="notification-items" id="notification-items">
+            <!-- Notifications will be dynamically loaded here -->
+            <div class="dropdown-item text-center py-4 notification-loading">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Load More Button (hidden initially) -->
+        <div class="dropdown-item text-center py-2" id="load-more-container" style="display: none;">
+            <button class="btn btn-sm btn-outline-primary w-100" id="load-more-notifications">
+                <i class="fas fa-arrow-down me-1"></i> Load More
+            </button>
+        </div>
+    </div>
+    
+    <!-- Statistics -->
+    <div class="dropdown-item text-center py-2 border-top" id="notification-stats" style="display: none;">
+        <small class="text-muted" id="notification-stats-text">Showing <span id="shown-count">0</span> of <span id="total-count">0</span></small>
+    </div>
+    
+    <div class="dropdown-divider"></div>
+    <div class="d-flex justify-content-between px-3 py-2 notification-actions">
+        <button class="btn btn-sm btn-outline-secondary" id="mark-all-read">
+            <i class="fas fa-check-double me-1"></i> Mark All Read
+        </button>
+        <a class="btn btn-sm btn-outline-info">
+            <i class="fas fa-list me-1"></i> View All
+        </a>
+    </div>
+</div>
         </li>
-      </ul>
+    </ul>
+</nav>
 
       <!-- Right navbar links -->
       @if(count(config('panel.available_languages', [])) > 1)
@@ -143,16 +253,43 @@
       </section>
       <!-- /.content -->
     </div>
-
-    <footer class="main-footer">
-      <div class="float-right d-none d-sm-block">
-        <b>Version</b> 3.0.0-alpha
-      </div>
-      <strong> &copy;</strong> {{ trans('global.allRightsReserved') }}
-    </footer>
     <form id="logoutform" action="{{ route('logout') }}" method="POST" style="display: none;">
       {{ csrf_field() }}
     </form>
+    <!-- Logout Confirmation Modal -->
+<div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="logoutModalLabel">
+                    <i class="fas fa-sign-out-alt text-danger me-2"></i>
+                    Confirm Logout
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to logout?</p>
+                <p class="text-muted small">You will need to login again to access the system.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-danger" 
+                        onclick="
+                            const btn = this;
+                            btn.disabled = true;
+                            btn.innerHTML = '<i class=\'fas fa-spinner fa-spin me-1\'></i> Logging out...';
+                            setTimeout(() => {
+                                document.getElementById('logoutform').submit();
+                            }, 500);
+                        ">
+                    <i class="fas fa-sign-out-alt me-1"></i> Yes, Logout
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
   </div>
 
   <!-- jQuery -->
@@ -196,14 +333,14 @@
 
   <script src="{{ asset('js/main.js') }}"></script>
 
-  <script>
+  {{-- <script>
     $(document).ready(function () {
       $('.suggested-amount').on('click', function () {
         const value = $(this).data('value');
         $('#amount').val(value); 
       });
     });
-  </script>
+  </script> --}}
 
   <script>
     $(function () {
@@ -365,7 +502,499 @@
                 setTimeout(() => loader.style.display = "none", 500);
             });
         });
+
+           document.addEventListener('DOMContentLoaded', function () {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.body.classList.toggle('dark-mode', savedTheme === 'dark');
+    });
     </script>
+ <script>
+class NotificationManager {
+    constructor() {
+        this.notificationBadge = document.getElementById('notification-badge');
+        this.notificationCount = document.getElementById('notification-count');
+        this.notificationItemsContainer = document.getElementById('notification-items');
+        this.departmentFilter = document.getElementById('department-filter');
+        this.clearFilterBtn = document.getElementById('clear-filter');
+        this.loadMoreBtn = document.getElementById('load-more-notifications');
+        this.loadMoreContainer = document.getElementById('load-more-container');
+        this.notificationStats = document.getElementById('notification-stats');
+        this.statsText = document.getElementById('notification-stats-text');
+        this.shownCount = document.getElementById('shown-count');
+        this.totalCount = document.getElementById('total-count');
+        
+        this.currentFilter = '';
+        this.currentPage = 1;
+        this.hasMore = false;
+        this.isLoading = false;
+        this.notifications = [];
+        this.shownNotifications = 0;
+        this.totalNotifications = 0;
+        
+        this.init();
+    }
+
+    init() {
+        this.loadNotifications();
+        this.setupEventListeners();
+        this.startPolling();
+    }
+
+    setupEventListeners() {
+        // Handle notification click
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.notification-item')) {
+                e.preventDefault();
+                const notificationItem = e.target.closest('.notification-item');
+                const notificationId = notificationItem.dataset.id;
+                const patientId = notificationItem.dataset.patientId;
+                
+                // Mark as read first
+                this.markAsRead(notificationId);
+                
+                // Then redirect to process tracking
+                if (patientId) {
+                    window.location.href = `/admin/process-tracking/${patientId}`;
+                }
+            }
+        });
+
+        // Department filter change
+        if (this.departmentFilter) {
+            this.departmentFilter.addEventListener('change', (e) => {
+                this.resetAndLoad(e.target.value);
+            });
+        }
+
+        // Clear filter button
+        if (this.clearFilterBtn) {
+            this.clearFilterBtn.addEventListener('click', () => {
+                this.clearFilter();
+            });
+        }
+
+        // Load more button
+        if (this.loadMoreBtn) {
+            this.loadMoreBtn.addEventListener('click', () => {
+                this.loadMore();
+            });
+        }
+
+        // Mark all as read
+        const markAllReadBtn = document.getElementById('mark-all-read');
+        if (markAllReadBtn) {
+            markAllReadBtn.addEventListener('click', () => this.markAllAsRead());
+        }
+
+     
+        
+        // Infinite scroll on notification container
+        const container = document.querySelector('.notification-items-container');
+        if (container) {
+            container.addEventListener('scroll', () => {
+                const { scrollTop, scrollHeight, clientHeight } = container;
+                if (scrollTop + clientHeight >= scrollHeight - 10 && this.hasMore && !this.isLoading) {
+                    this.loadMore();
+                }
+            });
+        }
+    }
+
+    resetAndLoad(filterValue = '') {
+        this.currentFilter = filterValue;
+        this.currentPage = 1;
+        this.notifications = [];
+        this.shownNotifications = 0;
+        
+        // Update UI
+        if (this.departmentFilter) {
+            this.departmentFilter.value = filterValue;
+        }
+        
+        // Show/hide clear filter button
+        if (this.clearFilterBtn) {
+            this.clearFilterBtn.style.display = filterValue ? 'block' : 'none';
+        }
+        
+        // Hide load more button initially
+        this.loadMoreContainer.style.display = 'none';
+        
+        // Reload notifications
+        this.loadNotifications();
+    }
+
+    clearFilter() {
+        this.resetAndLoad('');
+    }
+
+    async loadNotifications(isLoadMore = false) {
+        if (this.isLoading) return;
+        
+        this.isLoading = true;
+        
+        try {
+            const params = new URLSearchParams();
+            if (this.currentFilter) {
+                params.append('department', this.currentFilter);
+            }
+            if (isLoadMore) {
+                params.append('load_more', 'true');
+                params.append('page', this.currentPage);
+            }
+            
+            // Show loading state
+            if (!isLoadMore) {
+                this.notificationItemsContainer.innerHTML = `
+                    <div class="dropdown-item text-center py-4 notification-loading">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                `;
+                this.loadMoreContainer.style.display = 'none';
+            } else {
+                this.loadMoreBtn.disabled = true;
+                this.loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Loading...';
+            }
+            
+            const response = await fetch(`/admin/notifications/list?${params}`);
+            const data = await response.json();
+            
+            this.updateNotificationBadge(data.notifications);
+            
+            if (isLoadMore) {
+                // Append new notifications
+                this.renderNotifications(data.notifications, true);
+            } else {
+                // Replace all notifications
+                this.renderNotifications(data.notifications, false);
+            }
+            
+            // Update pagination state
+            this.hasMore = data.has_more;
+            this.totalNotifications = data.total;
+            this.shownNotifications = this.notifications.length;
+            this.currentPage = data.next_page ? data.current_page + 1 : data.current_page;
+            
+            // Update stats
+            this.updateStats();
+            
+            // Show/hide load more button
+            if (this.hasMore) {
+                this.loadMoreContainer.style.display = 'block';
+                this.loadMoreBtn.disabled = false;
+                this.loadMoreBtn.innerHTML = '<i class="fas fa-arrow-down me-1"></i> Load More';
+            } else {
+                this.loadMoreContainer.style.display = 'none';
+            }
+            
+        } catch (error) {
+            console.error('Failed to load notifications:', error);
+            this.showErrorMessage();
+        } finally {
+            this.isLoading = false;
+        }
+    }
+    
+    loadMore() {
+        if (this.hasMore && !this.isLoading) {
+            this.loadNotifications(true);
+        }
+    }
+    
+    
+
+    updateNotificationBadge(notifications) {
+        const unreadCount = notifications.filter(n => !n.is_read).length;
+        
+        if (this.notificationBadge) {
+            this.notificationBadge.textContent = unreadCount;
+            this.notificationBadge.style.display = unreadCount > 0 ? 'block' : 'none';
+        }
+        
+        if (this.notificationCount) {
+            this.notificationCount.textContent = `${unreadCount} new`;
+            this.notificationCount.style.display = unreadCount > 0 ? 'inline-block' : 'none';
+        }
+    }
+    
+    updateStats() {
+        this.shownCount.textContent = this.shownNotifications;
+        this.totalCount.textContent = this.totalNotifications;
+        this.notificationStats.style.display = 'block';
+    }
+
+    renderNotifications(notifications, append = false) {
+        if (!this.notificationItemsContainer) {
+            console.error('Notification items container not found');
+            return;
+        }
+        
+        if (!append) {
+            // Clear existing content for initial load
+            this.notificationItemsContainer.innerHTML = '';
+            this.notifications = [];
+        }
+        
+        if (notifications.length === 0 && !append) {
+            this.showEmptyMessage();
+            return;
+        }
+        
+        // Add new notifications to our array
+        notifications.forEach(notification => {
+            this.notifications.push(notification);
+        });
+        
+        // Render all notifications
+        this.notificationItemsContainer.innerHTML = '';
+        this.notifications.forEach(notification => {
+            const notificationEl = this.createNotificationElement(notification);
+            this.notificationItemsContainer.insertAdjacentHTML('beforeend', notificationEl);
+        });
+        
+        // Add dividers between notifications
+        this.addDividers();
+    }
+    
+    addDividers() {
+        const items = this.notificationItemsContainer.querySelectorAll('.notification-item');
+        items.forEach((item, index) => {
+            if (index < items.length - 1) {
+                item.insertAdjacentHTML('afterend', '<div class="dropdown-divider"></div>');
+            }
+        });
+    }
+
+    createNotificationElement(notification) {
+        const readClass = notification.is_read ? '' : 'unread-notification';
+        const iconClass = `bg-${notification.icon_color} rounded-circle d-flex align-items-center justify-content-center`;
+        
+        return `
+            <a href="/admin/process-tracking/${notification.patient_id}" 
+               class="dropdown-item d-flex align-items-start py-3 notification-item ${readClass}" 
+               data-id="${notification.id}" 
+               data-patient-id="${notification.patient_id}">
+                <div class="flex-shrink-0 me-3">
+                    <div class="${iconClass}" style="width: 40px; height: 40px;">
+                        <i class="${notification.icon} text-white"></i>
+                    </div>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h6 class="mb-1">${this.escapeHtml(notification.title)}</h6>
+                        <small class="text-muted">${this.escapeHtml(notification.time_ago)}</small>
+                    </div>
+                    <p class="mb-0 text-muted small">${this.escapeHtml(notification.message)}</p>
+                    <div class="d-flex justify-content-between align-items-center mt-1">
+                        <small class="text-muted">By: ${this.escapeHtml(notification.user_name)}</small>
+                        <span class="badge bg-light text-dark border">${this.escapeHtml(notification.department)}</span>
+                    </div>
+                </div>
+            </a>
+        `;
+    }
+
+    showEmptyMessage() {
+        const filterMessage = this.currentFilter 
+            ? `No notifications for ${this.currentFilter}`
+            : 'No notifications';
+
+        this.notificationItemsContainer.innerHTML = `
+            <div class="dropdown-item text-center py-4">
+                <i class="fas fa-bell-slash text-muted mb-2" style="font-size: 2rem;"></i>
+                <p class="text-muted mb-0">${filterMessage}</p>
+                ${this.currentFilter ? `
+                    <button class="btn btn-sm btn-outline-primary mt-2" onclick="notificationManager.clearFilter()">
+                        <i class="fas fa-eye me-1"></i> Show All
+                    </button>
+                ` : ''}
+            </div>
+        `;
+        
+        this.notificationStats.style.display = 'none';
+        this.loadMoreContainer.style.display = 'none';
+    }
+
+    showErrorMessage() {
+        if (this.notificationItemsContainer) {
+            this.notificationItemsContainer.innerHTML = `
+                <div class="dropdown-item text-center py-4">
+                    <i class="fas fa-exclamation-triangle text-warning mb-2" style="font-size: 2rem;"></i>
+                    <p class="text-muted mb-0">Failed to load notifications</p>
+                    <button class="btn btn-sm btn-primary mt-2" onclick="notificationManager.loadNotifications()">
+                        <i class="fas fa-redo me-1"></i> Retry
+                    </button>
+                </div>
+            `;
+        }
+    }
+
+    escapeHtml(unsafe) {
+        if (!unsafe) return '';
+        return unsafe
+            .toString()
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    async markAsRead(notificationId) {
+        try {
+            await fetch(`/admin/notifications/${notificationId}/read`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            });
+            
+            // Update UI immediately
+            const notificationEl = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
+            if (notificationEl) {
+                notificationEl.classList.remove('unread-notification');
+                
+                // Update local notification object
+                const notification = this.notifications.find(n => n.id == notificationId);
+                if (notification) {
+                    notification.is_read = true;
+                }
+            }
+            
+            // Update badge count
+            this.updateNotificationBadge(this.notifications);
+            
+        } catch (error) {
+            console.error('Failed to mark notification as read:', error);
+        }
+    }
+
+    async markAllAsRead() {
+        try {
+            await fetch('/admin/notifications/mark-all-read', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            });
+            
+            // Update all notifications in UI
+            document.querySelectorAll('.notification-item').forEach(item => {
+                item.classList.remove('unread-notification');
+            });
+            
+            // Update all local notifications
+            this.notifications.forEach(notification => {
+                notification.is_read = true;
+            });
+            
+            // Update badge count
+            this.updateNotificationBadge(this.notifications);
+            
+        } catch (error) {
+            console.error('Failed to mark all notifications as read:', error);
+        }
+    }
+
+    startPolling() {
+        // Refresh unread count every 30 seconds (don't reload all notifications)
+        setInterval(() => {
+            this.updateUnreadCount();
+        }, 30000);
+    }
+    
+    async updateUnreadCount() {
+        try {
+            const response = await fetch('/admin/notifications/unread-count');
+            const data = await response.json();
+            
+            if (this.notificationBadge) {
+                this.notificationBadge.textContent = data.count;
+                this.notificationBadge.style.display = data.count > 0 ? 'block' : 'none';
+            }
+            
+            if (this.notificationCount) {
+                this.notificationCount.textContent = `${data.count} new`;
+                this.notificationCount.style.display = data.count > 0 ? 'inline-block' : 'none';
+            }
+        } catch (error) {
+            console.error('Failed to update unread count:', error);
+        }
+    }
+}
+
+// Initialize when DOM is loaded
+let notificationManager;
+document.addEventListener('DOMContentLoaded', function() {
+    notificationManager = new NotificationManager();
+});
+</script>
+  <script>
+        // Initialize toast if exists
+        document.addEventListener('DOMContentLoaded', function () {
+            const toastEl = document.getElementById('liveToast');
+            if (toastEl) {
+                const toast = new bootstrap.Toast(toastEl, {
+                    autohide: true,
+                    delay: 5000
+                });
+                toast.show();
+
+                // Update timer every second
+                const timerElement = document.getElementById('toast-timer');
+                if (timerElement) {
+                    let seconds = 0;
+                    setInterval(() => {
+                        seconds++;
+                        if (seconds < 60) {
+                            timerElement.textContent = `${seconds}s ago`;
+                        } else {
+                            timerElement.textContent = `${Math.floor(seconds / 60)}m ago`;
+                        }
+                    }, 1000);
+                }
+            }
+        });
+    </script>
+    @stack('scripts')
+    <!-- Context Menu for Right Click -->
+<div id="contextMenu" class="context-menu">
+    <div class="context-menu-header">Actions</div>
+    <div class="context-menu-item" data-action="view">
+        <i class="fas fa-eye"></i>
+        <span>View Details</span>
+    </div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item" data-action="approve">
+        <i class="fas fa-check-circle text-success"></i>
+        <span>Approve</span>
+    </div>
+    <div class="context-menu-item" data-action="reject">
+        <i class="fas fa-times-circle text-danger"></i>
+        <span>Reject</span>
+    </div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item" data-action="budget">
+        <i class="fas fa-money-bill-wave text-warning"></i>
+        <span>Allocate Budget</span>
+    </div>
+    <div class="context-menu-item" data-action="dv">
+        <i class="fas fa-file-invoice text-info"></i>
+        <span>Submit DV</span>
+    </div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item" data-action="ready">
+        <i class="fas fa-exclamation-circle text-warning"></i>
+        <span>Ready for Disbursement</span>
+    </div>
+    <div class="context-menu-item" data-action="disburse">
+        <i class="fas fa-money-bill-wave text-success"></i>
+        <span>Quick Disburse</span>
+    </div>
+</div>
 
 </body>
 

@@ -21,11 +21,17 @@ class RolesTableSeeder extends Seeder
             [
                 'id'    => 3,
                 'title' => 'Mayors Office',
-            ],            [
+            ],
+            [
                 'id'    => 4,
                 'title' => 'Budget Office',
-            ],            [
+            ],
+            [
                 'id'    => 5,
+                'title' => 'Accounting Office',
+            ],
+            [
+                'id'    => 6,
                 'title' => 'Treasury Office',
             ],
         ];

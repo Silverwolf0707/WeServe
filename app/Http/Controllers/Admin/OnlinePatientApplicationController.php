@@ -7,6 +7,7 @@ use App\Models\OnlinePatientApplication;
 use App\Models\PatientRecord;
 use App\Models\PatientStatusLog;
 use App\Models\PatientTrackingNumber;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +32,6 @@ class OnlinePatientApplicationController extends Controller
         DB::transaction(function () use ($applicationId) {
             $application = OnlinePatientApplication::findOrFail($applicationId);
 
-            // Generate unique control number
             $today = now()->format('Ymd');
             $latestId = PatientRecord::max('id') + 1;
             $controlNumber = 'CSWD-' . $today . '-' . str_pad($latestId, 4, '0', STR_PAD_LEFT);
@@ -41,7 +41,6 @@ class OnlinePatientApplicationController extends Controller
                 $controlNumber = 'CSWD-' . $today . '-' . str_pad($latestId, 4, '0', STR_PAD_LEFT);
             }
 
-            // Create Patient Record
             $patient = PatientRecord::create([
                 'control_number' => $controlNumber,
                 'case_type'      => $application->case_type,
@@ -56,15 +55,13 @@ class OnlinePatientApplicationController extends Controller
                 'case_worker'    => Auth::user()->name,
             ]);
 
-            // Store tracking number in pivot table
             PatientTrackingNumber::create([
                 'patient_id' => $patient->id,
                 'tracking_number' => $application->tracking_number,
-                'tracking_created_at' => $application->created_at,
+               
             ]);
 
-            // Log initial status
-            PatientStatusLog::create([
+            $statusLog = PatientStatusLog::create([
                 'patient_id' => $patient->id,
                 'status' => 'Processing',
                 'remarks' => 'Application accepted please go to the CSWD office for further processing.',
@@ -72,12 +69,17 @@ class OnlinePatientApplicationController extends Controller
                 'user_id' => Auth::id(),
                 'created_at' => now(),
             ]);
+            NotificationService::createNewPatientNotifications($statusLog);
 
-            // Delete online application (row is moved)
             $application->delete();
         });
 
         return redirect()->route('admin.online-applications.index')
-            ->with('success', 'Application transferred successfully.');
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'Transfer Successful',
+                'message' => 'Application transferred successfully.',
+                'time' => now()->diffForHumans(),
+            ]);
     }
 }

@@ -6,6 +6,7 @@
     <title>Statistical Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         body {
@@ -42,6 +43,24 @@
         .card-body {
             padding: 1rem;
         }
+        
+        .filter-container {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .month-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .month-label {
+            font-size: 0.85rem;
+            color: #666;
+            white-space: nowrap;
+        }
     </style>
 </head>
 
@@ -52,18 +71,34 @@
             <div class="text-primary fw-semibold">
                 <i class="fas fa-chart-line me-2"></i>Statistical Analysis
             </div>
-            <div class="d-flex gap-2">
-                <select id="yearDropdown" class="form-select form-select-sm">
-                    <!-- Years will be populated dynamically -->
-                </select>
-                <select id="statDropdown" class="form-select form-select-sm">
-                    <option value="case_type">Case Type</option>
-                    <option value="case_category">Case Category</option>
-                </select>
-                <select id="typeDropdown" class="form-select form-select-sm">
-                    <option value="Age">Age</option>
-                    <option value="Application">Application</option>
-                </select>
+            <div class="filter-container">
+                <div class="month-container">
+                    <span class="month-label">Year:</span>
+                    <select id="yearDropdown" class="form-select form-select-sm">
+                        <!-- Years will be populated dynamically -->
+                    </select>
+                </div>
+                <div class="month-container">
+                    <span class="month-label">Month:</span>
+                    <select id="monthDropdown" class="form-select form-select-sm">
+                        <option value="yearly">Yearly View</option>
+                        <!-- Months will be populated dynamically -->
+                    </select>
+                </div>
+                <div class="month-container">
+                    <span class="month-label">View:</span>
+                    <select id="statDropdown" class="form-select form-select-sm">
+                        <option value="case_type">Case Type</option>
+                        <option value="case_category">Case Category</option>
+                    </select>
+                </div>
+                <div class="month-container">
+                    <span class="month-label">Data:</span>
+                    <select id="typeDropdown" class="form-select form-select-sm">
+                        <option value="Age">Age</option>
+                        <option value="Application">Application</option>
+                    </select>
+                </div>
             </div>
         </div>
 
@@ -128,8 +163,6 @@
                                         id="summaryVariance">—</span></span>
                             </div>
 
-
-
                             <p class="text-secondary small mt-3 mb-0">
                                 This summary interprets the selected category's data for easier understanding. <br>
                                 <strong>Mean:</strong> Average value.<br>
@@ -177,7 +210,7 @@
                         <div class="card-body d-flex flex-column justify-content-between">
                             <canvas id="deficiencyChart" style="max-height: 260px;"></canvas>
 
-                            <p id="deficiencySummary" class="text-muted small mt-3 text-center"></p>
+                            <p id="deficiencySummary" class="text-muted small mt-3 text-center">No Deficiency Data</p>
                         </div>
                     </div>
                 </div>
@@ -185,13 +218,13 @@
         </div>
     </div>
 
-
     <script>
         let meanMedianModeChart = null;
         let dispersionChart = null;
         let pieChart = null;
 
         let cachedData = null;
+        let currentView = 'yearly'; // 'yearly' or 'monthly'
 
         async function fetchStats() {
             try {
@@ -204,32 +237,71 @@
                     const yearDropdown = document.getElementById('yearDropdown');
                     const years = Object.keys(cachedData.yearly || {});
                     yearDropdown.innerHTML = '';
-                    years.forEach((year, i) => {
+                    
+                    // Sort years in descending order (newest first)
+                    years.sort((a, b) => b - a);
+                    
+                    years.forEach(year => {
                         const opt = document.createElement('option');
                         opt.value = year;
                         opt.textContent = year;
-                        if (i === 0) opt.selected = true; // default to first year
+                        // Set default to current year from data if available
+                        if (year == cachedData.default_selection.year) {
+                            opt.selected = true;
+                        }
                         yearDropdown.appendChild(opt);
                     });
 
+                    // Initialize month dropdown based on selected year
+                    updateMonthDropdown();
+                    
                     renderPieChart('total_applications_by_category');
                 }
 
                 const statType = document.getElementById('statDropdown').value;
                 const dataType = document.getElementById('typeDropdown').value;
                 const selectedYear = document.getElementById('yearDropdown').value;
+                const selectedMonth = document.getElementById('monthDropdown').value;
 
                 if (!statType || !dataType || !selectedYear) {
                     clearChartsAndSummary();
                     return;
                 }
 
-                // Decide which dataset to use (yearly stats)
-                const yearData = cachedData.yearly[selectedYear];
-                if (!yearData) {
+                // Determine which dataset to use based on view
+                let statsData = null;
+                let viewLabel = '';
+                
+                if (selectedMonth === 'yearly' || selectedMonth === '') {
+                    // Yearly view
+                    currentView = 'yearly';
+                    statsData = cachedData.yearly[selectedYear];
+                    viewLabel = `${selectedYear} (Yearly)`;
+                } else {
+                    // Monthly view
+                    currentView = 'monthly';
+                    if (cachedData.monthly && 
+                        cachedData.monthly[selectedYear] && 
+                        cachedData.monthly[selectedYear][selectedMonth]) {
+                        statsData = cachedData.monthly[selectedYear][selectedMonth];
+                        const monthName = statsData.month_name || `Month ${selectedMonth}`;
+                        viewLabel = `${monthName} ${selectedYear}`;
+                    } else {
+                        // Fallback to yearly if monthly data not available
+                        statsData = cachedData.yearly[selectedYear];
+                        viewLabel = `${selectedYear} (Yearly)`;
+                        document.getElementById('monthDropdown').value = 'yearly';
+                    }
+                }
+
+                if (!statsData) {
                     clearChartsAndSummary();
                     return;
                 }
+
+                // Update chart title to show current view
+                document.querySelector('.text-primary.fw-semibold').innerHTML = 
+                    `<i class="fas fa-chart-line me-2"></i>Statistical Analysis - ${viewLabel}`;
 
                 let statsKey = '';
                 if (dataType === 'Age') {
@@ -238,7 +310,7 @@
                     statsKey = statType === 'case_type' ? 'application_stats_by_type' : 'application_stats_by_category';
                 }
 
-                const stats = yearData[statsKey];
+                const stats = statsData[statsKey];
                 if (!stats) {
                     clearChartsAndSummary();
                     return;
@@ -254,20 +326,51 @@
                 const variance = labels.map(label => stats[label].variance);
                 const stdDev = labels.map(label => stats[label].std_dev);
 
-                updateCharts(labels, mean, median, mode, variance, stdDev, dataType);
-                updateSummary(labels, mean, median, mode, variance, stdDev, dataType, yearData);
+                updateCharts(labels, mean, median, mode, variance, stdDev, dataType, viewLabel);
+                updateSummary(labels, mean, median, mode, variance, stdDev, dataType, statsData);
 
             } catch (error) {
                 console.error('Failed to fetch statistics:', error);
             }
         }
 
+        function updateMonthDropdown() {
+            const yearDropdown = document.getElementById('yearDropdown');
+            const monthDropdown = document.getElementById('monthDropdown');
+            const selectedYear = yearDropdown.value;
+            
+            monthDropdown.innerHTML = '<option value="yearly">Yearly View</option>';
+            
+            if (cachedData.monthly && cachedData.monthly[selectedYear]) {
+                const months = Object.keys(cachedData.monthly[selectedYear]);
+                
+                // Sort months numerically
+                months.sort((a, b) => a - b);
+                
+                months.forEach(monthNum => {
+                    const monthData = cachedData.monthly[selectedYear][monthNum];
+                    const monthName = monthData.month_name || `Month ${monthNum}`;
+                    const opt = document.createElement('option');
+                    opt.value = monthNum;
+                    opt.textContent = monthName;
+                    
+                    // Set default to current month from data if available
+                    if (selectedYear == cachedData.default_selection.year && 
+                        monthNum == cachedData.default_selection.month) {
+                        opt.selected = true;
+                    }
+                    
+                    monthDropdown.appendChild(opt);
+                });
+            }
+        }
 
-        function updateCharts(labels, mean, median, mode, variance, stdDev, dataType) {
+        function updateCharts(labels, mean, median, mode, variance, stdDev, dataType, viewLabel) {
             if (meanMedianModeChart) meanMedianModeChart.destroy();
             if (dispersionChart) dispersionChart.destroy();
 
-            meanMedianModeChart = new Chart(document.getElementById('meanMedianModeChart').getContext('2d'), {
+            const ctx1 = document.getElementById('meanMedianModeChart').getContext('2d');
+            meanMedianModeChart = new Chart(ctx1, {
                 type: 'bar',
                 data: {
                     labels: labels,
@@ -293,6 +396,13 @@
                     plugins: {
                         legend: {
                             position: 'top'
+                        },
+                        title: {
+                            display: true,
+                            text: `${dataType} Statistics - ${viewLabel}`,
+                            font: {
+                                size: 14
+                            }
                         }
                     },
                     scales: {
@@ -303,11 +413,18 @@
                                 text: dataType === 'Age' ? 'Age' : 'Application Count'
                             },
                         },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
                     },
                 },
             });
 
-            dispersionChart = new Chart(document.getElementById('standardDeviationVarianceChart').getContext('2d'), {
+            const ctx2 = document.getElementById('standardDeviationVarianceChart').getContext('2d');
+            dispersionChart = new Chart(ctx2, {
                 type: 'line',
                 data: {
                     labels: labels,
@@ -336,6 +453,13 @@
                     plugins: {
                         legend: {
                             position: 'top'
+                        },
+                        title: {
+                            display: true,
+                            text: `Dispersion Analysis - ${viewLabel}`,
+                            font: {
+                                size: 14
+                            }
                         }
                     },
                     scales: {
@@ -346,12 +470,18 @@
                                 text: 'Value'
                             }
                         },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
                     },
                 },
             });
         }
 
-        function updateSummary(labels, meanArr, medianArr, modeArr, varianceArr, stdDevArr, dataType, yearData) {
+        function updateSummary(labels, meanArr, medianArr, modeArr, varianceArr, stdDevArr, dataType, statsData) {
             const typeLabel = dataType === 'Age' ? 'years' : 'applications';
             const dropdown = document.getElementById('summaryLabelDropdown');
             dropdown.innerHTML = '';
@@ -371,14 +501,14 @@
                 const sd = stdDevArr[index];
                 const variance = varianceArr[index];
 
-                // Grab correct stats object from yearData
+                // Grab correct stats object
                 const statKey = dataType === 'Age' ?
                     document.getElementById('statDropdown').value === 'case_type' ? 'age_stats_by_type' :
                     'age_stats_by_category' :
                     document.getElementById('statDropdown').value === 'case_type' ? 'application_stats_by_type' :
                     'application_stats_by_category';
 
-                const statObj = yearData[statKey][label];
+                const statObj = statsData[statKey][label];
 
                 let spreadText = 'N/A';
                 if (statObj.sample_spread && statObj.sample_spread.length) {
@@ -387,7 +517,7 @@
                     spreadText = `${minVal} – ${maxVal} ${typeLabel} (range of values)`;
                 }
 
-                // ✅ Proper summary output
+                // Proper summary output
                 document.getElementById('summaryMean').innerHTML =
                     `${m.toFixed(0)} ${typeLabel} <br><small>Average value across the group</small>`;
                 document.getElementById('summaryMedian').innerHTML =
@@ -406,18 +536,43 @@
             };
         }
 
-
         function renderPieChart(dataKey) {
             if (!cachedData) return;
 
             const selectedYear = document.getElementById('yearDropdown').value;
-            const yearData = cachedData.yearly[selectedYear];
-            if (!yearData || !yearData[dataKey]) return;
+            const selectedMonth = document.getElementById('monthDropdown').value;
+            
+            let dataObj = null;
+            let viewLabel = '';
+            
+            if (selectedMonth === 'yearly' || selectedMonth === '') {
+                // Yearly view
+                const yearData = cachedData.yearly[selectedYear];
+                if (!yearData || !yearData[dataKey]) return;
+                dataObj = yearData[dataKey];
+                viewLabel = `${selectedYear} (Yearly)`;
+            } else {
+                // Monthly view
+                if (cachedData.monthly && 
+                    cachedData.monthly[selectedYear] && 
+                    cachedData.monthly[selectedYear][selectedMonth]) {
+                    const monthData = cachedData.monthly[selectedYear][selectedMonth];
+                    if (!monthData[dataKey]) return;
+                    dataObj = monthData[dataKey];
+                    const monthName = monthData.month_name || `Month ${selectedMonth}`;
+                    viewLabel = `${monthName} ${selectedYear}`;
+                } else {
+                    // Fallback to yearly
+                    const yearData = cachedData.yearly[selectedYear];
+                    if (!yearData || !yearData[dataKey]) return;
+                    dataObj = yearData[dataKey];
+                    viewLabel = `${selectedYear} (Yearly)`;
+                }
+            }
 
             const pieCtx = document.getElementById('categoryChart').getContext('2d');
             if (pieChart) pieChart.destroy();
 
-            const dataObj = yearData[dataKey];
             const labels = Object.keys(dataObj);
             const data = Object.values(dataObj);
 
@@ -441,6 +596,13 @@
                     plugins: {
                         legend: {
                             display: false
+                        },
+                        title: {
+                            display: true,
+                            text: viewLabel,
+                            font: {
+                                size: 12
+                            }
                         },
                         tooltip: {
                             callbacks: {
@@ -468,9 +630,8 @@
                 legend.appendChild(li);
             });
 
-            document.getElementById('pieSummary').textContent = `📝 Summary of ${dataKey.replace(/_/g, ' ')}`;
+            document.getElementById('pieSummary').textContent = `📝 ${viewLabel} - ${dataKey.replace(/_/g, ' ')}`;
         }
-
 
         function clearChartsAndSummary() {
             if (meanMedianModeChart) meanMedianModeChart.destroy();
@@ -482,26 +643,35 @@
             document.getElementById('summaryMode').textContent = '—';
             document.getElementById('summaryStdDev').textContent = '—';
             document.getElementById('summaryVariance').textContent = '—';
-            document.getElementById('summaryTimeLabel').textContent = '—';
 
             const legend = document.getElementById('customLegend');
             if (legend) legend.innerHTML = '';
             document.getElementById('pieSummary').textContent = '';
         }
 
+        // Event Listeners
         document.getElementById('statDropdown').addEventListener('change', fetchStats);
         document.getElementById('typeDropdown').addEventListener('change', fetchStats);
         document.getElementById('pieChartTypeSelector').addEventListener('change', function() {
             renderPieChart(this.value);
         });
-        fetchStats();
-        document.getElementById('yearDropdown').addEventListener('change', () => {
+        
+        document.getElementById('yearDropdown').addEventListener('change', function() {
+            updateMonthDropdown();
+            fetchStats();
+            renderPieChart(document.getElementById('pieChartTypeSelector').value);
+        });
+        
+        document.getElementById('monthDropdown').addEventListener('change', function() {
             fetchStats();
             renderPieChart(document.getElementById('pieChartTypeSelector').value);
         });
 
-
+        // Initialize
         document.addEventListener('DOMContentLoaded', function() {
+            fetchStats();
+            
+            // Load deficiency data
             fetch("{{ route('admin.statistics.deficiencies') }}")
                 .then(res => res.json())
                 .then(data => {
@@ -556,7 +726,5 @@
                 });
         });
     </script>
-
 </body>
-
 </html>

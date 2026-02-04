@@ -18,7 +18,6 @@
         </div>
     </div>
 
-
     <div class="card-body">
         <div class="table-responsive">
             <table class="table table-bordered table-striped table-hover datatable datatable-User">
@@ -28,21 +27,65 @@
                         <th>{{ trans('cruds.user.fields.id') }}</th>
                         <th>{{ trans('cruds.user.fields.name') }}</th>
                         <th>{{ trans('cruds.user.fields.email') }}</th>
+                        <th>status</th>
+                        <th>last_login_at</th>
+                        <th>last_login_ip</th>
                         <th>{{ trans('cruds.user.fields.email_verified_at') }}</th>
                         <th>{{ trans('cruds.user.fields.roles') }}</th>
                         <th class="text-center">{{ trans('global.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($users as $key => $user)
+                    @foreach ($users as $key => $user)
                         <tr data-entry-id="{{ $user->id }}">
                             <td></td>
                             <td>{{ $user->id }}</td>
                             <td>{{ $user->name }}</td>
                             <td>{{ $user->email }}</td>
-                            <td>{{ $user->email_verified_at }}</td>
                             <td>
-                                @foreach($user->roles as $item)
+                                <span class="badge badge-{{ $user->status === 'active' ? 'success' : 'danger' }}">
+                                    {{ ucfirst($user->status) }}
+                                </span>
+                            </td>
+                            <td>
+                                @if ($user->last_login_at)
+                                    @php
+                                        // Safe date handling
+                                        $lastLogin = $user->last_login_at;
+                                        if (is_string($lastLogin)) {
+                                            $lastLogin = \Carbon\Carbon::parse($lastLogin);
+                                        }
+                                    @endphp
+                                    {{ $lastLogin->format('M j, Y g:i A') }}
+                                    <br>
+                                    <small class="text-muted">{{ $lastLogin->diffForHumans() }}</small>
+                                @else
+                                    <span class="text-muted">Never</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if ($user->last_login_ip)
+                                    <code>{{ $user->last_login_ip }}</code>
+                                @else
+                                    <span class="text-muted">-</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if ($user->email_verified_at)
+                                    @php
+                                        // Safe date handling
+                                        $emailVerified = $user->email_verified_at;
+                                        if (is_string($emailVerified)) {
+                                            $emailVerified = \Carbon\Carbon::parse($emailVerified);
+                                        }
+                                    @endphp
+                                    {{ $emailVerified->format('M j, Y g:i A') }}
+                                @else
+                                    <span class="badge badge-warning">Not Verified</span>
+                                @endif
+                            </td>
+                            <td>
+                                @foreach ($user->roles as $item)
                                     <span class="badge badge-info">{{ $item->title }}</span>
                                 @endforeach
                             </td>
@@ -77,13 +120,12 @@
             </table>
         </div>
     </div>
-    </div>
 @endsection
 
 @section('scripts')
     @parent
     <script>
-        $(function () {
+        $(function() {
             let dtButtons = $.extend(true, [], $.fn.dataTable.defaults.buttons);
 
             @can('user_delete')
@@ -91,8 +133,10 @@
                     text: '{{ trans('global.datatables.delete') }}',
                     url: "{{ route('admin.users.massDestroy') }}",
                     className: 'btn-danger',
-                    action: function (e, dt, node, config) {
-                        var ids = $.map(dt.rows({ selected: true }).nodes(), function (entry) {
+                    action: function(e, dt, node, config) {
+                        var ids = $.map(dt.rows({
+                            selected: true
+                        }).nodes(), function(entry) {
                             return $(entry).data('entry-id');
                         });
 
@@ -103,11 +147,18 @@
 
                         if (confirm('{{ trans('global.areYouSure') }}')) {
                             $.ajax({
-                                headers: { 'x-csrf-token': _token },
+                                headers: {
+                                    'x-csrf-token': _token
+                                },
                                 method: 'POST',
                                 url: config.url,
-                                data: { ids: ids, _method: 'DELETE' }
-                            }).done(function () { location.reload(); });
+                                data: {
+                                    ids: ids,
+                                    _method: 'DELETE'
+                                }
+                            }).done(function() {
+                                location.reload();
+                            });
                         }
                     }
                 }
@@ -116,14 +167,17 @@
 
             $.extend(true, $.fn.dataTable.defaults, {
                 orderCellsTop: true,
-                order: [[1, 'desc']],
+                order: [
+                    [1, 'desc']
+                ],
                 pageLength: 100
-                // dom removed so it inherits from admin layout
             });
 
-            let table = $('.datatable-User:not(.ajaxTable)').DataTable({ buttons: dtButtons });
+            let table = $('.datatable-User:not(.ajaxTable)').DataTable({
+                buttons: dtButtons
+            });
 
-            $('a[data-toggle="tab"]').on('shown.bs.tab click', function () {
+            $('a[data-toggle="tab"]').on('shown.bs.tab click', function() {
                 $($.fn.dataTable.tables(true)).DataTable().columns.adjust();
             });
         });

@@ -6,7 +6,6 @@ namespace App\Events;
 use App\Models\PatientRecord;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Queue\SerializesModels;
 
@@ -41,7 +40,7 @@ class PatientRecordCreated implements ShouldBroadcast
             'address' => $this->patient->address,
             'contact_number' => $this->patient->contact_number,
             'case_worker' => $this->patient->case_worker,
-            'action' => 'patient created', // or 'updated' or 'deleted' based on the event
+            'action' => 'patient created', 
         ];
     }
     public function broadcastAs()
