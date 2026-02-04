@@ -657,7 +657,6 @@ class NotificationManager {
                 params.append('page', this.currentPage);
             }
             
-            // Show loading state
             if (!isLoadMore) {
                 this.notificationItemsContainer.innerHTML = `
                     <div class="dropdown-item text-center py-4 notification-loading">
