@@ -1,35 +1,42 @@
 @extends('layouts.home')
 @section('content')
-    <header class="header" role="banner">
+    <header class="header1">
         <div class="header-container">
-            <a href="#home" class="logo-title block w-50 lg:w-38 md:w-34 sm:w-30" aria-label="WeServe Home">
-                <img src="{{ asset('WeServe.png') }}" alt="WeServe Logo" class="logo-full w-full h-auto" loading="eager">
+            <a href="#home" class="logo-title" aria-label="WeServe Home">
+                <img src="{{ asset('WeServe.png') }}" alt="WeServe Logo" class="logo-full" loading="eager">
             </a>
+
+            <nav class="nav-links" id="navMenu" aria-label="Primary">
+                <span class="close-btn" onclick="toggleMenu()">&times;</span>
+                <a href="#home">HOME</a>
+                <a href="#about">ABOUT</a>
+                <a href="#categories">SERVICES</a>
+                <a href="#review-process">TRACK APPLICATION</a>
+            </nav>
+
+            <button type="button" class="btn-neon" data-bs-toggle="modal" data-bs-target="#applicationModal">
+                APPLY HERE!
+            </button>
 
             <button class="burger" onclick="toggleMenu()" aria-label="Toggle Menu">
                 <i class="fas fa-bars"></i>
             </button>
-
-            <nav class="nav-links" id="navMenu" aria-label="Primary">
-                <a href="#home">Home</a>
-                <a href="#about">About</a>
-                <a href="#categories">Services</a>
-                <a href="#review-process">Track</a>
-            </nav>
         </div>
     </header>
+
 
     <main id="home">
         <section class="hero">
             <div class="container hero-container">
                 <div class="hero-text">
-                    <h1>CSWD Financial Assistance</h1>
+                    <h1>WELCOME TO WESERVE</h1>
                     <p>
-                        The City Social Welfare and Development Office (CSWD) provides financial support to residents
+                        The <span class="highlight">City Social Welfare and Development Office (CSWD)</span> web system for
+                        online tracking and application of financial support to residents
                         facing
                         emergencies or difficult situations. Apply now to check if you qualify for assistance.
                     </p>
-                    <button type="button" class="btn btn-green" data-bs-toggle="modal" data-bs-target="#applicationModal"
+                    <button type="button" class="btn-neon" data-bs-toggle="modal" data-bs-target="#applicationModal"
                         aria-label="Start Application">
                         Start Application
                     </button>
@@ -41,11 +48,10 @@
             </div>
         </section>
 
-        <!-- About Us Section -->
         <section id="about" class="about">
             <div class="about-container">
                 <div class="about-text">
-                    <h2>About Us</h2>
+                    <h2>ABOUT US</h2>
                     <p>
                         The <b>City Social Welfare and Development (CSWD) Office of San Pedro, Laguna</b> is dedicated
                         to
@@ -73,21 +79,21 @@
 
         <section id="categories" class="categories">
             <div class="container">
-                <h2>Service Categories</h2>
+                <h2>SERVICE CATEGORIES</h2>
                 <div class="categories-grid">
                     <div class="category-card educational">
                         <div class="category-icon-circle">
                             <i class="fas fa-graduation-cap"></i>
                         </div>
-                        <h3>Educational</h3>
-                        <p>Support for school fees, supplies, and scholarships.</p>
+                        <h3>EDUCATIONAL ASSISTANCE</h3>
+                        <p>Support for school fees.</p>
                     </div>
 
                     <div class="category-card burial">
                         <div class="category-icon-circle">
                             <i class="fas fa-cross"></i>
                         </div>
-                        <h3>Burial</h3>
+                        <h3>BURIAL ASSISTANCE</h3>
                         <p>Help with funeral and burial expenses.</p>
                     </div>
 
@@ -95,7 +101,7 @@
                         <div class="category-icon-circle">
                             <i class="fas fa-hospital-user"></i>
                         </div>
-                        <h3>Medical</h3>
+                        <h3>MEDICAL ASSISTANCE</h3>
                         <p>Support for treatments, medications, and hospital bills.</p>
                     </div>
 
@@ -103,8 +109,8 @@
                         <div class="category-icon-circle">
                             <i class="fas fa-bolt"></i>
                         </div>
-                        <h3>Emergency</h3>
-                        <p>Immediate support during emergencies and disasters.</p>
+                        <h3>EMERGENCY ASSISTANCE</h3>
+                        <p>Immediate support.</p>
                     </div>
                 </div>
             </div>
@@ -112,16 +118,16 @@
 
         <section id="process" class="process">
             <div class="container text-center">
-                <h2>Application Process</h2>
+                <h2>APPLICATION PROCESS</h2>
                 <div class="grid-3">
                     <div class="process-card">
                         <div class="step-circle step-1">
                             <i class="fas fa-file-alt"></i>
                         </div>
-                        <h3>Complete Application</h3>
-                        <p>Fill out our simple online form with your info and financial needs.</p>
-                        <button type="button" class="btn btn-green" data-bs-toggle="modal"
-                            data-bs-target="#applicationModal" aria-label="Open Application Form">
+                        <h3>Application</h3>
+                        <p>Fill out the simple online form with your information and financial needs.</p>
+                        <button type="button" class="btn-neon" data-bs-toggle="modal" data-bs-target="#applicationModal"
+                            aria-label="Open Application Form">
                             Start Application
                         </button>
                     </div>
@@ -131,8 +137,9 @@
                             <i class="fas fa-search"></i>
                         </div>
                         <h3>Review Process</h3>
-                        <p>Our team reviews your application and may contact you for more info.</p>
-                        <button type="button" class="btn btn-blue" data-bs-toggle="modal" data-bs-target="#trackModal"
+                        <p><span class="highlight">CSWD Office</span> or <span class="highlight">Aksyon Mamamayan
+                                Center</span> will review your application.</p>
+                        <button type="button" class="btn-neon" data-bs-toggle="modal" data-bs-target="#trackModal"
                             aria-label="Track Application">
                             Track Process
                         </button>
@@ -143,34 +150,84 @@
                             <i class="fas fa-hand-holding-usd"></i>
                         </div>
                         <h3>Receive Assistance</h3>
-                        <p>If approved, assistance is sent directly to your medical provider.</p>
+                        <p>If approved, assistance is claimable through the City Treasury Office</p>
                     </div>
+                </div>
+            </div>
+        </section>
+        <section id="contact" class="contact">
+            <div class="contact-container">
+                <div class="contact-content">
+                    <h2>CONTACT US</h2>
+                    <p>Have questions or need assistance? Reach out to us!</p>
+                    <button class="btn-neon">Contact Us</button>
                 </div>
             </div>
         </section>
 
         <footer class="footer">
-            <div class="container footer-container">
-                <div>
-                    <h2>WeServe</h2>
-                    <p>Providing support when it's needed most</p>
+            <div class="footer-container">
+                <!-- Brand / Logo -->
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <img src="" alt="WeServe Logo" class="logo-full" loading="eager">
+                    </div>
+                    <p>Providing support when it's needed most. Dedicated to helping communities and individuals achieve
+                        their best.</p>
                 </div>
-                <div class="socials" aria-label="Social media">
-                    <a href="#" aria-label="Facebook"><i class="fab fa-facebook" aria-hidden="true"></i></a>
-                    <a href="#" aria-label="Twitter"><i class="fab fa-twitter" aria-hidden="true"></i></a>
-                    <a href="#" aria-label="Instagram"><i class="fab fa-instagram" aria-hidden="true"></i></a>
+
+                <!-- Quick Links -->
+                <div class="footer-links">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#about">About Us</a></li>
+                        <li><a href="#services">Services</a></li>
+                        <li><a href="#process">Application Process</a></li>
+                        <li><a href="#contact">Contact</a></li>
+                    </ul>
+                </div>
+
+                <!-- Contact Info -->
+                <div class="footer-contact">
+                    <h3>Contacts</h3>
+                    <p>Email: cswdosanpedro@gmail.com</p>
+                    <p>Phone: 8-8082020</p>
+                    <p>Address: Basement, New City Hall Bldg., Brgy. Poblacion, City of San Pedro, Laguna</p>
+                    <p>Office Hours: Mon - Fri, 8:00 AM - 5:00 PM</p>
+                </div>
+
+                <!-- Social Media -->
+                <div class="footer-socials" aria-label="Social media">
+                    <h3>Follow Us</h3>
+                    <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                    <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                    <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
                 </div>
             </div>
-            <div class="copyright">&copy; 2023 WeServe. All rights reserved.</div>
+
+            <!-- Footer Bottom -->
+            <div class="footer-bottom">
+                <div class="footer-left">
+                    &copy; 2026 WeServe. All rights reserved.
+                </div>
+                <div class="footer-right">
+                    <a href="">Terms of Service</a> | <a href="">Privacy Policy</a>
+                </div>
+            </div>
         </footer>
+
+
     </main>
 
     <!-- Application Modal - Bootstrap -->
-    <div class="modal fade" id="applicationModal" tabindex="-1" aria-labelledby="applicationModalTitle" aria-hidden="true">
+    <div class="modal fade" id="applicationModal" tabindex="-1" aria-labelledby="applicationModalTitle"
+        aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="applicationModalTitle">📑 Application Form</h5>
+                    <h5 class="modal-title" id="applicationModalTitle">Application Form</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -179,12 +236,14 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Applicant Name <span class="text-danger">*</span></label>
-                                <input type="text" name="applicant_name" id="applicant_name" class="form-control" required>
+                                <input type="text" name="applicant_name" id="applicant_name" class="form-control"
+                                    required>
                                 <div class="invalid-feedback">Please provide the applicant's full name.</div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Age <span class="text-danger">*</span></label>
-                                <input type="number" name="age" id="age" class="form-control" min="1" max="120" required>
+                                <input type="number" name="age" id="age" class="form-control" min="1"
+                                    max="120" required>
                                 <div class="invalid-feedback">Please provide a valid age (1-120).</div>
                             </div>
                             <div class="col-12 mb-3">
@@ -202,7 +261,8 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Claimant Name <span class="text-danger">*</span></label>
-                                <input type="text" name="claimant_name" id="claimant_name" class="form-control" required>
+                                <input type="text" name="claimant_name" id="claimant_name" class="form-control"
+                                    required>
                                 <div class="invalid-feedback">Please provide the claimant's full name.</div>
                             </div>
                             <div class="col-12 mb-3">
@@ -235,14 +295,15 @@
 
                         <!-- Requirements -->
                         <div id="requirements" class="requirements d-none mt-3 p-3 bg-light rounded">
-                            <h6>📂 Required Documents</h6>
+                            <h6>Required Documents</h6>
                             <ul id="requirementsList" class="mb-0"></ul>
                         </div>
                     </form>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-success" id="reviewSubmitBtn" onclick="validateAndShowConfirmation()">
+                <div class="modal-footer flex justify-content-between">
+                    <button type="button" class="btn-neon btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn-neon" id="reviewSubmitBtn"
+                        onclick="validateAndShowConfirmation()">
                         Review & Submit
                     </button>
                 </div>
@@ -328,7 +389,8 @@
                     <div class="tracking-display mb-3">
                         <code id="trackingNumberDisplay" class="fs-5 fw-bold d-block p-2 bg-light rounded"></code>
                     </div>
-                    <button type="button" id="copyTrackingBtn" onclick="copyTrackingNumber()" class="btn btn-primary w-100">
+                    <button type="button" id="copyTrackingBtn" onclick="copyTrackingNumber()"
+                        class="btn btn-primary w-100">
                         <i class="fas fa-copy"></i> Copy Tracking Number
                     </button>
                 </div>
@@ -362,7 +424,7 @@
 
     @if (session('tracking_number'))
         <script>
-            document.addEventListener("DOMContentLoaded", function () {
+            document.addEventListener("DOMContentLoaded", function() {
                 document.getElementById("trackingNumberDisplay").innerText = "{{ session('tracking_number') }}";
                 var trackingModal = new bootstrap.Modal(document.getElementById('trackingNumberModal'));
                 trackingModal.show();
@@ -418,7 +480,7 @@
 
             // Get all required fields
             const requiredFields = [
-                'applicant_name', 'age', 'address', 'contact_number', 
+                'applicant_name', 'age', 'address', 'contact_number',
                 'claimant_name', 'case_type', 'serviceCategory'
             ];
 
@@ -466,16 +528,16 @@
                     reviewSubmitBtn.disabled = false;
                     reviewSubmitBtn.innerHTML = 'Review & Submit';
                 }
-                
+
                 // Scroll to first invalid field
                 if (firstInvalidField) {
-                    firstInvalidField.scrollIntoView({ 
-                        behavior: 'smooth', 
-                        block: 'center' 
+                    firstInvalidField.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
                     });
                     firstInvalidField.focus();
                 }
-                
+
                 // Show error message
                 showAlert('Please fill in all required fields correctly.', 'danger');
                 return;
@@ -483,7 +545,7 @@
 
             // If validation passes, show confirmation
             showConfirmation();
-            
+
             // Re-enable button after showing confirmation
             if (reviewSubmitBtn) {
                 setTimeout(() => {
@@ -542,13 +604,13 @@
             // Enable buttons first
             const editDetailsBtn = document.getElementById('editDetailsBtn');
             const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
-            
+
             if (editDetailsBtn) editDetailsBtn.disabled = false;
             if (confirmSubmitBtn) {
                 confirmSubmitBtn.disabled = false;
                 confirmSubmitBtn.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Confirm & Submit';
             }
-            
+
             // Close confirmation modal and reopen application modal
             const confirmationModal = bootstrap.Modal.getInstance(document.getElementById('confirmationModal'));
             if (confirmationModal) {
@@ -565,16 +627,16 @@
             // Disable both buttons immediately to prevent duplicate submission
             const editDetailsBtn = document.getElementById('editDetailsBtn');
             const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
-            
+
             if (editDetailsBtn) editDetailsBtn.disabled = true;
             if (confirmSubmitBtn) {
                 confirmSubmitBtn.disabled = true;
                 confirmSubmitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
             }
-            
+
             // Show processing alert
             showAlert('Submitting your application...', 'info');
-            
+
             // Submit the form after a short delay to show the loading state
             setTimeout(() => {
                 document.getElementById('applicationForm').submit();
@@ -649,17 +711,17 @@
         function copyTrackingNumber() {
             const copyTrackingBtn = document.getElementById('copyTrackingBtn');
             const track = document.getElementById("trackingNumberDisplay");
-            
+
             if (track && copyTrackingBtn) {
                 // Disable button immediately
                 copyTrackingBtn.disabled = true;
                 copyTrackingBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Copying...';
-                
+
                 navigator.clipboard.writeText(track.innerText).then(() => {
                     // Show success state
                     copyTrackingBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
                     showAlert('Tracking number copied to clipboard!', 'success');
-                    
+
                     // Re-enable button after 2 seconds
                     setTimeout(() => {
                         copyTrackingBtn.disabled = false;
@@ -673,6 +735,12 @@
                 });
             }
         }
+
+        function toggleMenu() {
+            const nav = document.getElementById('navMenu');
+            nav.classList.toggle('show');
+        }
+
 
         function showAlert(message, type = 'info') {
             // Remove existing alerts
@@ -703,7 +771,7 @@
         document.getElementById('contact_number').addEventListener('input', function(e) {
             const value = e.target.value.replace(/[^0-9]/g, '');
             e.target.value = value.slice(0, 11);
-            
+
             if (value.length === 11) {
                 e.target.classList.remove('is-invalid');
                 e.target.classList.add('is-valid');
@@ -763,18 +831,18 @@
         });
 
         // Reset form state when modal is closed
-        document.getElementById('applicationModal').addEventListener('hidden.bs.modal', function () {
+        document.getElementById('applicationModal').addEventListener('hidden.bs.modal', function() {
             // Re-enable review submit button
             const reviewSubmitBtn = document.getElementById('reviewSubmitBtn');
             if (reviewSubmitBtn) {
                 reviewSubmitBtn.disabled = false;
                 reviewSubmitBtn.innerHTML = 'Review & Submit';
             }
-            
+
             // Re-enable confirmation modal buttons
             const editDetailsBtn = document.getElementById('editDetailsBtn');
             const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
-            
+
             if (editDetailsBtn) editDetailsBtn.disabled = false;
             if (confirmSubmitBtn) {
                 confirmSubmitBtn.disabled = false;

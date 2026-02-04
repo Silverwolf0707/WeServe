@@ -41,16 +41,31 @@
   <link href="{{ asset('css/adminltev3.css') }}" rel="stylesheet">
   <link href="{{ asset('css/custom.css') }}" rel="stylesheet">
   <link href="{{ asset('css/context-menu.css') }}" rel="stylesheet">
-  @if(app()->isLocal())
-    @vite(['resources/js/app.js', 'resources/css/app.css'])
-    <script src="{{ asset('js/context-menu.js') }}"></script>
+
+@php
+    $isLocal = app()->environment('local');
+@endphp
+
+@if ($isLocal)
+    {{-- Dev mode: use Vite dev server --}}
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 @else
-    <!-- Production assets -->
-    <link rel="stylesheet" href="{{ asset('resources/css/app.css') }}">
-    <link href="{{ asset('css/context-menu.css') }}" rel="stylesheet">
-    <script src="{{ asset('resources/js/app.js') }}" defer></script>
-    <script src="{{ asset('js/context-menu.js') }}"></script>
+    {{-- Production mode: use built assets from public/build --}}
+    @php
+        $manifest = json_decode(file_get_contents(public_path('build/manifest.json')), true);
+        $css = $manifest['resources/css/app.css']['file'] ?? null;
+        $js  = $manifest['resources/js/app.js']['file'] ?? null;
+    @endphp
+
+    @if ($css)
+        <link rel="stylesheet" href="{{ asset('build/' . $css) }}">
+    @endif
+
+    @if ($js)
+        <script type="module" src="{{ asset('build/' . $js) }}"></script>
+    @endif
 @endif
+
 
 
   @yield('styles')
@@ -118,7 +133,7 @@
         <li class="nav-item ms-2">
             <a href="{{ route('admin.home') }}" class="d-flex align-items-center text-decoration-none">
                 <img src="{{ asset('logo.png') }}" alt="Logo" style="height: 30px; width: 30px; object-fit: cover;">
-                <img src="{{ asset('WeServe1.png') }}" alt="WeServe Logo" class="ms-2" style="height: 25px; width: auto;">
+                <img src="{{ asset('Weserve1.png') }}" alt="WeServe Logo" class="ms-2" style="height: 25px; width: auto;">
             </a>
         </li>
     </ul>

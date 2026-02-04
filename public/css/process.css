@@ -1,0 +1,102 @@
+section.process {
+    padding: 6rem 1.5rem;
+    background: #ffffff;
+    color: #1f2937;
+    text-align: center;
+}
+
+section.process h2 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 3rem;
+    color: #064e3b;
+}
+
+.grid-3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    align-items: start;
+    justify-items: center;
+
+}
+
+.process-card {
+    border-radius: 1.5rem;
+    border-color: #064e3b;
+    border-style: solid;
+    border-width: 1px;
+    padding: 3rem 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    color: white;
+    min-height: 100%;
+}
+
+.process-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+}
+
+.process-card:nth-child(1) {
+    background: white;
+}
+
+.process-card:nth-child(2) {
+    background:white;
+}
+
+.process-card:nth-child(3) {
+    background: white;
+}
+
+.step-circle {
+    background: none;
+    width: auto;
+    height: auto;
+    border-radius: 0;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #064e3b;
+    margin-bottom: 10px;
+}
+
+.process-card h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0.5rem 0;
+    color: #064e3b;
+}
+
+.process-card p {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #064e3b;
+}
+
+.process-card .btn-neon {
+    margin-top: auto;
+}
+
+@media (max-width: 425px) {
+    section.process h2 {
+        font-size: 2rem;
+    }
+    
+    .grid-3 {
+        grid-template-columns: 1fr;
+        justify-items: center; 
+        max-width: 400px; 
+        margin: 0 auto; 
+    }
+    
+    .process-card {
+        max-width: 100%;
+        padding: 2.5rem 1.5rem; 
+    }
+}
