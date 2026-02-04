@@ -10,11 +10,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
+          username: weserve-system
           key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
           script: |
             /usr/local/bin/deploy-laravel.sh
