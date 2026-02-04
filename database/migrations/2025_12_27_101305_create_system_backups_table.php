@@ -15,7 +15,7 @@ return new class extends Migration
             $table->integer('size')->nullable();
             $table->string('type')->default('full'); // full, partial, database_only
             $table->text('description')->nullable();
-            $table->foreignId('created_by')->constrained('users')->onDelete('set null');
+            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamp('restored_at')->nullable();
             $table->foreignId('restored_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamps();
