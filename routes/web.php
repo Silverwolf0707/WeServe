@@ -124,7 +124,6 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     Route::resource('document-management', DocumentManagementController::class)
         ->names('document-management');
 
-    //time series
     Route::get('time-series', [TimeSeriesController::class, 'index'])->name('time-series.index');
     Route::get('timeseries/get-stl-json', [TimeSeriesController::class, 'getStlJson']);
     Route::get('statistics/get-statistics', [StatisticsController::class, 'index'])->name('statistics.getStatistics');
@@ -132,7 +131,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     Route::get('statistics/deficiencies', [StatisticsController::class, 'getDeficiencyData'])->name('statistics.deficiencies');
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::delete('settings/delete-all', [SettingsController::class, 'deleteAll'])->name('settings.deleteAll');
-    // Backup & Restore Routes
+    
     Route::post('settings/backup/create', [SettingsController::class, 'createBackup'])->name('settings.backup.create');
     Route::post('settings/backup/restore', [SettingsController::class, 'restoreBackup'])->name('settings.backup.restore');
     Route::get('settings/backup/download/{id}', [SettingsController::class, 'downloadBackup'])->name('settings.backup.download');
