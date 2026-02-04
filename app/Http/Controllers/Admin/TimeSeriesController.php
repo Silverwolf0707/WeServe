@@ -20,14 +20,18 @@ class TimeSeriesController extends Controller
 
         // Always run Python script when analytics page is accessed
         if ($type === 'budget') {
+            Log::info("Running budget Python script");
             $this->runBudgetPython();
         } else {
+            Log::info("Running CSWD Python script");
             $this->runPythonStl();
         }
 
         $analyticsViews = [
             'cswd'       => ['permission' => 'CSWD-ANALYTICS',     'view' => 'admin.timeseries.cswd.index'],
             'budget'     => ['permission' => 'BUDGET-ANALYTICS',   'view' => 'admin.timeseries.budget.index'],
+            'treasury'   => ['permission' => 'TREASURY-ANALYTICS', 'view' => 'admin.timeseries.treasury.index'],
+            'accounting' => ['permission' => 'ACCOUNTING-ANALYTICS', 'view' => 'admin.timeseries.accounting.index'],
         ];
 
         if (!isset($analyticsViews[$type])) {
@@ -46,6 +50,8 @@ class TimeSeriesController extends Controller
 
     public function exportToCsvFile()
     {
+        Log::info("Starting CSV export...");
+        
         $data = DB::table('patient_records as pr')
             ->join('patient_status_logs as psl', function ($join) {
                 $join->on('psl.patient_id', '=', 'pr.id')
@@ -64,6 +70,8 @@ class TimeSeriesController extends Controller
             ->orderBy('month')
             ->get();
 
+        Log::info("Data fetched for CSV", ['row_count' => $data->count()]);
+
         $csv = "month,case_category,case_type,age,date_processed,budget_allocated\n";
         foreach ($data as $row) {
             $csv .= "{$row->month},{$row->case_category},{$row->case_type},{$row->age},{$row->date_processed},{$row->budget_allocated}\n";
@@ -71,57 +79,205 @@ class TimeSeriesController extends Controller
 
         // Store in private analytics folder
         Storage::disk('private')->put('analytics/full_patient_data.csv', $csv);
-        return storage_path('app/private/analytics/full_patient_data.csv');
+        $csvPath = storage_path('app/private/analytics/full_patient_data.csv');
+        
+        Log::info("CSV saved to private storage", [
+            'path' => $csvPath,
+            'file_exists' => file_exists($csvPath),
+            'csv_size' => strlen($csv)
+        ]);
+        
+        return $csvPath;
+    }
+
+    private function findPythonPath()
+    {
+        // Try Linux venv paths first (production)
+        $paths = [
+            base_path('venv/bin/python'),
+            base_path('venv/bin/python3'),
+            '/usr/bin/python3',
+            '/usr/bin/python',
+            // Windows fallback (local development)
+            base_path('venv/Scripts/python.exe'),
+            base_path('venv/Scripts/python3.exe'),
+        ];
+        
+        foreach ($paths as $path) {
+            if (file_exists($path) && is_executable($path)) {
+                Log::info("Found Python at: {$path}");
+                
+                // Test if pandas is available
+                $testCmd = escapeshellarg($path) . " -c \"import pandas; print('OK')\" 2>&1";
+                exec($testCmd, $testOutput, $testReturn);
+                
+                if ($testReturn === 0) {
+                    Log::info("Python at {$path} has pandas installed");
+                    return $path;
+                }
+            }
+        }
+        
+        Log::warning("No Python with pandas found, using fallback");
+        return base_path('venv/bin/python');
+    }
+
+    private function executePythonScript($scriptName, $outputJsonName)
+    {
+        $pythonPath = $this->findPythonPath();
+        $scriptPath = base_path("python/{$scriptName}");
+        $csvPath = storage_path('app/private/analytics/full_patient_data.csv');
+        
+        // Check if files exist
+        if (!file_exists($csvPath)) {
+            Log::error("CSV file not found: {$csvPath}");
+            return false;
+        }
+        
+        if (!file_exists($scriptPath)) {
+            Log::error("Python script not found: {$scriptPath}");
+            return false;
+        }
+        
+        if (!file_exists($pythonPath)) {
+            Log::error("Python executable not found: {$pythonPath}");
+            return false;
+        }
+        
+        // Build command with proper escaping
+        $pythonPath = escapeshellarg($pythonPath);
+        $scriptPath = escapeshellarg($scriptPath);
+        $csvPath = escapeshellarg($csvPath);
+        
+        $command = "cd " . escapeshellarg(base_path()) . " && {$pythonPath} {$scriptPath} {$csvPath} 2>&1";
+        
+        Log::info("Executing Python script", [
+            'command' => $command,
+            'script' => $scriptName
+        ]);
+        
+        set_time_limit(300);
+        exec($command, $output, $return_var);
+        
+        $outputStr = implode("\n", $output);
+        
+        Log::info("Python script execution result", [
+            'script' => $scriptName,
+            'return_code' => $return_var,
+            'output_length' => strlen($outputStr),
+            'output_preview' => strlen($outputStr) > 500 ? substr($outputStr, 0, 500) . '...' : $outputStr
+        ]);
+        
+        if ($return_var !== 0) {
+            Log::error("Python script {$scriptName} failed", [
+                'full_output' => $outputStr
+            ]);
+            return false;
+        }
+        
+        // Check if output was created
+        $outputJsonPath = storage_path("app/private/analytics/{$outputJsonName}");
+        if (file_exists($outputJsonPath)) {
+            $size = filesize($outputJsonPath);
+            Log::info("✅ Python script {$scriptName} SUCCESS!", [
+                'output_file' => $outputJsonPath,
+                'file_size' => $size
+            ]);
+            return true;
+        }
+        
+        Log::warning("Python script ran but output file not created", [
+            'expected_file' => $outputJsonPath
+        ]);
+        return false;
     }
 
     public function runPythonStl()
     {
-        $pythonPath = base_path('venv/Scripts/python.exe');
-        $scriptPath = base_path('python/stl_analysis.py');
-        
-        // Get the CSV file path from private storage
-        $csvPath = storage_path('app/private/analytics/full_patient_data.csv');
-        
-        // Pass the CSV path as an argument to Python script
-        exec("\"$pythonPath\" \"$scriptPath\" \"$csvPath\"", $output, $return_var);
-
-        if ($return_var !== 0) {
-            Log::error("CSWD STL Python script failed", ['output' => $output]);
-        }
+        return $this->executePythonScript('stl_analysis.py', 'stl_output.json');
     }
 
     public function runBudgetPython()
     {
-        $pythonPath = base_path('venv/Scripts/python.exe');
-        $scriptPath = base_path('python/budget_stl_analysis.py');
-        
-        // Get the CSV file path from private storage
-        $csvPath = storage_path('app/private/analytics/full_patient_data.csv');
-        
-        // Pass the CSV path as an argument to Python script
-        exec("\"$pythonPath\" \"$scriptPath\" \"$csvPath\"", $output, $return_var);
-
-        if ($return_var !== 0) {
-            Log::error("Budget STL Python script failed", ['output' => $output]);
-        }
+        return $this->executePythonScript('budget_stl_analysis.py', 'stl_budget_output.json');
     }
 
     public function getStlJson(Request $request)
     {
         $type = $request->query('type');
 
+        // Check permissions
+        $permissions = [
+            'cswd' => 'CSWD-ANALYTICS',
+            'budget' => 'BUDGET-ANALYTICS',
+            'treasury' => 'TREASURY-ANALYTICS',
+            'accounting' => 'ACCOUNTING-ANALYTICS',
+        ];
+        
+        if (!isset($permissions[$type])) {
+            abort(404, 'Invalid analytics type.');
+        }
+        
+        if (!Gate::allows($permissions[$type])) {
+            abort(403, 'You do not have permission to view this analytics.');
+        }
+
         // Define private file paths
         $file = $type === 'budget' 
             ? 'analytics/stl_budget_output.json' 
             : 'analytics/stl_output.json';
 
+        Log::info("Looking for JSON file", [
+            'file' => $file,
+            'full_path' => storage_path('app/private/' . $file),
+            'exists' => Storage::disk('private')->exists($file)
+        ]);
+
         // Check if file exists in private storage
         if (!Storage::disk('private')->exists($file)) {
-            return response()->json(['error' => 'STL output not found'], 404);
+            Log::warning("JSON file not found, attempting to generate it");
+            
+            // Try to generate the file
+            $success = false;
+            if ($type === 'budget') {
+                $success = $this->runBudgetPython();
+            } else {
+                $success = $this->runPythonStl();
+            }
+            
+            if (!$success || !Storage::disk('private')->exists($file)) {
+                Log::error("Failed to generate JSON file after attempt", [
+                    'file' => $file,
+                    'generation_success' => $success,
+                    'now_exists' => Storage::disk('private')->exists($file)
+                ]);
+                return response()->json(['error' => 'Analytics data not available.'], 404);
+            }
         }
 
-        // Read and return JSON content
-        $jsonContent = Storage::disk('private')->get($file);
-        return response()->json(json_decode($jsonContent, true));
+        try {
+            // Read and return JSON content
+            $jsonContent = Storage::disk('private')->get($file);
+            $data = json_decode($jsonContent, true);
+            
+            if (empty($data)) {
+                Log::warning("JSON file is empty", ['file' => $file]);
+                return response()->json(['error' => 'No analytics data available.'], 404);
+            }
+            
+            Log::info("Successfully returned JSON data", [
+                'file' => $file,
+                'data_keys' => array_keys($data),
+                'data_count' => count($data)
+            ]);
+            
+            return response()->json($data);
+        } catch (\Exception $e) {
+            Log::error("Error reading STL JSON: " . $e->getMessage(), [
+                'file' => $file,
+                'exception' => $e
+            ]);
+            return response()->json(['error' => 'Failed to read analytics data.'], 500);
+        }
     }
 }

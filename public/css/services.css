@@ -1,0 +1,116 @@
+section.categories {
+    padding: 6rem 1.5rem;
+    background: white;
+    color: #1f2937;
+    text-align: center;
+    font-family: Helvetica;
+}
+
+section.categories h2 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 2rem;
+    color: #064e3b;
+}
+
+.categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+}
+
+.category-card {
+    border-radius: 1.5rem;
+    border-color: #064e3b;
+    border-style: solid;
+    border-width: 1px;
+    padding: 2.5rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    cursor: pointer;
+    color: #fff;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.category-card.educational {
+    background: white;
+}
+
+.category-card.burial {
+    background: white;
+}
+
+.category-card.medical {
+    background: white
+}
+.category-card.emergency {
+    background: white;
+}
+
+.category-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+}
+
+.category-icon-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    color: #064e3b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.4s ease, background 0.4s ease;
+    transform-origin: center;
+}
+
+.category-icon-circle i {
+    display: block;
+    font-size: 2.5rem;
+    color: #064e3b;
+    transition: transform 0.4s ease;
+    transform-origin: center;
+}
+
+.category-card:hover .category-icon-circle {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.15);
+}
+
+.category-card:hover .category-icon-circle i {
+    transform: scale(1.2);
+}
+
+.category-card h3 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin: 0;
+    color: #064e3b;
+}
+
+.category-card p {
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #064e3b;
+}
+
+@media (min-width: 768px) {
+    .categories-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .categories-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 425px) {
+    section.categories h2 {
+        font-size: 2rem;
+    }
+}
