@@ -13,9 +13,7 @@ use Illuminate\Support\Facades\Broadcast;
 |
 */
 Broadcast::channel('process-tracking', function ($user) {
-    return true; // Allow all authenticated users
-    // Or use role-based authorization:
-    // return $user->hasAnyRole(['admin', 'mayor', 'budget', 'accounting', 'treasury']);
+    return true;
 });
 
 Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
