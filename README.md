@@ -1,5 +1,5 @@
 # WeServe: Web-based Integrated System for Managing and Tracking Financial Application
-link: https://github.com/Silverwolf0707/Prototype/tree/v5
+link: https://github.com/Silverwolf0707/Prototype.git
 
 ## Overview
 
