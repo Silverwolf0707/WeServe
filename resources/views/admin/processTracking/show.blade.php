@@ -126,58 +126,69 @@
             </div>
 
             {{-- VISUAL PROCESS TRACKER --}}
-            @php
-                $steps = ['Submitted', 'Approved', 'Budget Allocated', 'DV Submitted', 'Disbursed'];
+@php
+    $steps = ['Submitted', 'Approved', 'Budget Allocated', 'DV Submitted', 'Ready for Disbursement', 'Disbursed'];
 
-                $stepLabels = [
-                    'Submitted' => 'CSWD Office',
-                    'Approved' => 'Mayor\'s Office',
-                    'Budget Allocated' => 'Budget Office',
-                    'DV Submitted' => 'Accounting Office',
-                    'Disbursed' => 'Treasury Office',
-                ];
+    $stepLabels = [
+        'Submitted' => 'CSWD Office',
+        'Approved' => 'Mayor\'s Office',
+        'Budget Allocated' => 'Budget Office',
+        'DV Submitted' => 'Accounting Office',
+        'Ready for Disbursement' => 'Treasury Office',
+        'Disbursed' => 'Treasury Office',
+    ];
 
-                // Normalize status
-                $rawStatus = $latestStatus->status ?? '';
-                $baseStatus = trim(preg_replace('/\[.*?\]/', '', $rawStatus));
+    $statusNames = [
+        'Submitted' => 'Submitted',
+        'Approved' => 'Approved',
+        'Budget Allocated' => 'Budget Allocated',
+        'DV Submitted' => 'DV Submitted',
+        'Ready for Disbursement' => 'Ready for Disbursement',
+        'Disbursed' => 'Disbursed',
+    ];
 
-                // Find the last completed step
-                $currentIndex = array_search($baseStatus, $steps);
-                if ($currentIndex === false) {
-                    $currentIndex = -1;
-                }
-            @endphp
+    // Normalize status
+    $rawStatus = $latestStatus->status ?? '';
+    $baseStatus = trim(preg_replace('/\[.*?\]/', '', $rawStatus));
 
-            <div class="stepper">
-                @foreach ($steps as $index => $step)
-                    @php
-                        $isCompleted = $index <= $currentIndex;
-                        $isNext = $index === $currentIndex + 1;
-                        $hasBlueLine = $index === $currentIndex; // blue line after current
-                    @endphp
+    // Find the last completed step
+    $currentIndex = array_search($baseStatus, $steps);
+    if ($currentIndex === false) {
+        $currentIndex = -1;
+    }
+@endphp
 
-                    <div
-                        class="stepper-step
-                                    {{ $isCompleted ? 'completed' : '' }}
-                                    {{ $isNext ? 'next' : '' }}
-                                    {{ $hasBlueLine ? 'has-blue-line' : '' }}">
+<div class="stepper">
+    @foreach ($steps as $index => $step)
+        @php
+            $isCompleted = $index <= $currentIndex;
+            $isCurrent = $index === $currentIndex;
+            $isNext = $index === $currentIndex + 1;
+        @endphp
 
-                        <div class="stepper-circle">
-                            @if ($isCompleted)
-                                <i class="fas fa-check"></i>
-                            @else
-                                {{ $index + 1 }}
-                            @endif
-                        </div>
-
-                        <div class="stepper-label">{{ $stepLabels[$step] ?? $step }}</div>
-                    </div>
-                @endforeach
+        <div class="stepper-step
+                    {{ $isCompleted ? 'completed' : '' }}
+                    {{ $isCurrent ? 'current' : '' }}
+                    {{ $isNext ? 'next' : '' }}">
+            
+            <div class="stepper-circle">
+                @if ($isCompleted)
+                    <i class="fas fa-check"></i>
+                @else
+                    {{ $index + 1 }}
+                @endif
             </div>
-            {{-- END PROCESS TRACKER --}}
+
+            <div class="stepper-label">
+                <div class="office-name">{{ $stepLabels[$step] ?? $step }}</div>
+                <div class="status-name">{{ $statusNames[$step] ?? '' }}</div>
+            </div>
+        </div>
+    @endforeach
+</div>
+{{-- END PROCESS TRACKER --}}
 
 
-            {{-- PROCESS SUMMARY --}}
             {{-- PROCESS SUMMARY --}}
             @if ($patient->statusLogs->count())
                 <style>
