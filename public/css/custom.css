@@ -919,6 +919,12 @@ div.dt-button-collection {
     font-weight: 600;
 }
 
+.status-name {
+    font-size: 11px;
+    color: #6c757d;
+    line-height: 1.1;
+    opacity: 0.8;
+}
 /* Labels */
 .stepper-label {
     margin-top: 0.5rem;

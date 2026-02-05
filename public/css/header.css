@@ -304,13 +304,11 @@ html, body {
 .tracking-log-card {
     width: 100%;
     max-width: 850px;
-    background: rgba(255, 255, 255, 0.6);
+    
     backdrop-filter: blur(16px) saturate(180%);
     -webkit-backdrop-filter: blur(16px) saturate(180%);
-    border-radius: 20px;
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
     padding: 30px 25px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    
 }
 
 /* 🔹 Tracking Entry Card */
@@ -364,10 +362,19 @@ html, body {
 }
 
 .status-details {
-    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
+    flex: 1;
+    position: relative; /* needed for absolute badge inside */
+}
+
+/* Badge inside details, right-aligned */
+.status-badge-container.right {
+    position: absolute;
+    top: 50%;
+    right: 15px;
+    transform: translateY(-50%);
 }
 
 .tracking-date {
@@ -465,6 +472,113 @@ html, body {
     .process-card {
         min-height: 250px;
         padding: 1.5rem 0.5rem;
+    }
+}
+
+/* ===================== */
+/* PROCESS STEPPER BASE */
+/* ===================== */
+
+.process-stepper {
+    margin-top: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap; /* wrap on small screens */
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 10px; /* spacing on small screens */
+}
+
+/* ICON CIRCLE */
+.step-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.3s ease;
+}
+
+/* LABEL */
+.step-label {
+    margin-top: 6px;
+    font-size: 14px;
+    text-align: center;
+}
+
+/* CONNECTOR LINE */
+.step-line {
+    width: 60px;
+    height: 4px;
+    border-radius: 2px;
+    margin: 0 6px;
+    transform: translateY(-10px);
+}
+
+/* COMPLETED / CURRENT / PENDING COLORS */
+.step.completed .step-icon { background: #16a34a; color: white; }
+.step.current .step-icon { background: #2563eb; color: white; }
+.step.pending .step-icon { background: #2563eb; color: white; }
+
+.line-green { background-color: #28a745; } 
+.line-blue  { background-color: #2563eb; } 
+
+
+/* ===================== */
+/* RESPONSIVE BREAKPOINTS */
+/* ===================== */
+
+/* Large desktop: 1440px+ */
+@media (min-width: 1440px) {
+    .step-icon { width: 56px; height: 56px; font-size: 22px; }
+    .step-label { font-size: 16px; }
+    .step-line { width: 80px; height: 5px; margin: 0 8px; transform: translateY(-12px); }
+}
+
+/* Desktop: 1025px - 1439px */
+@media (min-width: 1025px) and (max-width: 1439px) {
+    .step-icon { width: 50px; height: 50px; font-size: 20px; }
+    .step-label { font-size: 15px; }
+    .step-line { width: 70px; height: 4px; margin: 0 7px; transform: translateY(-11px); }
+}
+
+/* Tablet: 768px - 1024px */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .process-stepper { flex-wrap: wrap; justify-content: center; }
+    .step-icon { width: 44px; height: 44px; font-size: 18px; }
+    .step-label { font-size: 14px; }
+    .step-line { width: 55px; height: 4px; margin: 0 5px; transform: translateY(-10px); }
+}
+
+@media (max-width: 425px) {
+    .process-stepper {
+        display: none !important;
+    }
+}
+
+
+@media (max-width: 425px) {
+    .tracking-entry .status-badge-container.right {
+        top: -1px;
+        right: 10px;    
+        transform: none; 
+    }
+
+    .tracking-entry .status-details {
+        padding-right: 60px; 
+    }
+
+    .tracking-entry .tracking-date {
+        display: inline-block;
+        width: calc(100% - 70px); 
     }
 }
 

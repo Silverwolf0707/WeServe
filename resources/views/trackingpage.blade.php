@@ -81,13 +81,11 @@
     <div class="container tracking-container">
         <div class="tracking-header text-center">
             <h1>Tracking Summary</h1>
-        </div>
 
-        <div class="tracking-log-card-wrapper">
-            <div class="tracking-log-card">
-                @php
+            @php
                     // Initialize filteredLogs as empty array
                     $filteredLogs = [];
+                    $currentStatus = null;
                     
                     // Define the order of statuses for comparison
                     $statusOrder = [
@@ -169,7 +167,7 @@
                         $filteredLogs = $processedLogs;
                         
                         // Determine current status for completion logic
-                        $currentStatus = null;
+                        
                         if (count($filteredLogs) > 0) {
                             $latestLog = end($filteredLogs);
                             if ($latestLog) {
@@ -178,175 +176,228 @@
                         }
                     }
                 @endphp
+     @php
+    $steps = [
+        'Processing' => ['label' => 'CSWD', 'icon' => 'fa-users'],
+        'Submitted' => ['label' => 'Mayor', 'icon' => 'fa-building'],
+        'Approved' => ['label' => 'Budget', 'icon' => 'fa-wallet'],
+        'Budget Allocated' => ['label' => 'Accounting', 'icon' => 'fa-calculator'],
+        'Disbursed' => ['label' => 'Treasury', 'icon' => 'fa-coins'],
+    ];
+
+    $currentOrder = $statusOrder[$currentStatus] ?? 0;
+@endphp
+
+<div class="process-stepper">
+@foreach($steps as $status => $data)
+    @php
+        $order = $statusOrder[$status];
+
+        // Special case: if current status is Disbursed, mark all steps as completed
+        if ($currentStatus === 'Disbursed') {
+            $state = 'completed';
+        } else {
+            if ($order < $currentOrder) {
+                $state = 'completed';
+            } elseif ($order === $currentOrder) {
+                $state = 'current';
+            } else {
+                $state = 'pending';
+            }
+        }
+
+        // Determine the line color: green only if NEXT step is completed
+        $nextOrder = $loop->index + 1 < count($steps) ? $statusOrder[array_keys($steps)[$loop->index + 1]] : null;
+
+        if ($currentStatus === 'Disbursed') {
+            $lineColorClass = 'line-green'; // make all lines green
+        } else {
+            if ($nextOrder !== null && $nextOrder <= $currentOrder) {
+                $lineColorClass = 'line-green';
+            } else {
+                $lineColorClass = 'line-blue';
+            }
+        }
+    @endphp
+
+    <div class="step {{ $state }}">
+        <div class="step-icon">
+            <i class="fas {{ $data['icon'] }}"></i>
+        </div>
+        <span class="step-label">{{ $data['label'] }}</span>
+    </div>
+
+    @if(!$loop->last)
+        <div class="step-line {{ $lineColorClass }}"></div>
+    @endif
+@endforeach
+</div>
+
+
+
+
+        </div>
+
+        <div class="tracking-log-card-wrapper">
+            <div class="tracking-log-card">
+                
 
                 @if (count($filteredLogs) > 0)
                     @foreach ($filteredLogs as $index => $log)
-                        @php
-                            $status = $log->status;
-                            $isRollback = str_contains($status, '[ROLLED BACK]');
-                            $baseStatus = $isRollback ? trim(str_replace('[ROLLED BACK]', '', $status)) : $status;
-                            
-                            // Determine if this is current or completed
-                            $isCurrentStatus = false;
-                            $isCompletedStatus = false;
-                            
-                            if (isset($currentStatus)) {
-                                if ($baseStatus === $currentStatus) {
-                                    $isCurrentStatus = true;
-                                } else {
-                                    // Check if this status should be marked as completed
-                                    if (isset($statusOrder[$baseStatus]) && isset($statusOrder[$currentStatus])) {
-                                        $isCompletedStatus = ($statusOrder[$baseStatus] < $statusOrder[$currentStatus]);
-                                    }
-                                }
-                            }
-                            
-                            // Define styling based on actual status, not completion state
-                            $department = '';
-                            $statusText = '';
-                            $color = '#6c757d';
-                            $icon = 'fa-question-circle';
-                            $textColor = 'white';
-                            
-                            switch ($baseStatus) {
-                                case 'Processing':
-                                    $department = 'CSWD Office';
-                                    $statusText = 'Application is on-process at CSWD Office';
-                                    $color = '#6c757d'; // Always gray for processing
-                                    $icon = 'fa-hourglass-half';
-                                    break;
-                                case 'Submitted':
-                                case 'Submitted[Emergency]':
-                                    $department = 'Mayor\'s Office';
-                                    $statusText = 'Application is on-process at Mayor\'s Office';
-                                    $color = '#17a2b8'; // Blue for submitted
-                                    $icon = 'fa-paper-plane';
-                                    break;
-                                case 'Approved':
-                                    $department = 'Budget Office';
-                                    $statusText = 'Application is on-process at Budget Office';
-                                    $color = '#28a745'; // Green for approved
-                                    $icon = 'fa-check-circle';
-                                    break;
-                                case 'Budget Allocated':
-                                    $department = 'Accounting Office';
-                                    $statusText = 'Application is on-process at Accounting Office';
-                                    $color = '#d4a017'; // Yellow/gold for budget allocated
-                                    $icon = 'fa-wallet';
-                                    // FIX: Changed from black to white
-                                    $textColor = 'white';
-                                    break;
-                                case 'DV Submitted':
-                                    $department = 'Treasury Office';
-                                    $statusText = 'Application is on-process at Treasury Office';
-                                    $color = '#17a2b8'; // Blue for DV submitted
-                                    $icon = 'fa-file-invoice-dollar';
-                                    break;
-                                case 'Ready for Disbursement':
-                                    $department = 'Treasury Office';
-                                    $statusText = 'Please wait for a text message to be sent via SMS';
-                                    $color = '#28a745'; // Green for ready
-                                    $icon = 'fa-clock';
-                                    break;
-                                case 'Disbursed':
-                                    $department = 'Treasury Office';
-                                    $statusText = 'Disbursed';
-                                    $color = '#28a745'; // Green for disbursed
-                                    $icon = 'fa-hand-holding-usd';
-                                    // Disbursed is always completed
-                                    $isCompletedStatus = true;
-                                    $isCurrentStatus = false;
-                                    break;
-                                case 'Rejected':
-                                    $department = '';
-                                    $statusText = 'Discrepancy is detected on your application. Please call CSWD or Aksyon Mamamayan Center for more inquiries.';
-                                    $color = '#ffc107'; // Yellow for warning
-                                    $icon = 'fa-exclamation-triangle';
-                                    $textColor = 'black';
-                                    $isCurrentStatus = true; // Rejected is always current when shown
-                                    break;
-                                default:
-                                    $department = '';
-                                    $statusText = $log->remarks ?? 'No remarks provided';
-                                    $color = '#6c757d';
-                                    $icon = 'fa-question-circle';
-                                    break;
-                            }
-                            
-                            // For completed statuses, add checkmark overlay and adjust color slightly
-                            if ($isCompletedStatus && $baseStatus !== 'Disbursed' && $baseStatus !== 'Rejected') {
-                                $color = '#28a745'; // Make completed statuses green
-                                $icon = 'fa-check-circle';
-                            }
-                            
-                            // Convert to correct timezone
-                            if (!empty($log->status_date)) {
-                                $date = \Carbon\Carbon::parse($log->status_date);
-                                $date->setTimezone('Asia/Manila');
-                                $formattedDate = $date->format('F j, Y g:i A');
-                            } else {
-                                $formattedDate = now()->setTimezone('Asia/Manila')->format('F j, Y g:i A');
-                            }
-                            
-                            // Determine badge type - FIXED LOGIC
-                            $badgeType = '';
-                            $badgeIcon = '';
-                            $badgeText = '';
-                            
-                            // FIX: Disbursed should show "Completed" not "Current"
-                            if ($isCompletedStatus || $baseStatus === 'Disbursed') {
-                                $badgeType = 'completed';
-                                $badgeIcon = 'fa-check-circle';
-                                $badgeText = 'Completed';
-                            } elseif ($isCurrentStatus && $baseStatus !== 'Rejected') {
-                                $badgeType = 'current';
-                                $badgeIcon = 'fa-spinner fa-pulse';
-                                $badgeText = 'Current';
-                            } elseif ($baseStatus === 'Rejected') {
-                                $badgeType = 'rejected';
-                                $badgeIcon = 'fa-exclamation-triangle';
-                                $badgeText = 'On Hold';
-                            }
-                        @endphp
+    @php
+        $status = $log->status;
+        $isRollback = str_contains($status, '[ROLLED BACK]');
+        $baseStatus = $isRollback ? trim(str_replace('[ROLLED BACK]', '', $status)) : $status;
 
-                        <div class="tracking-entry {{ $isCurrentStatus ? 'current-status' : '' }}"
-                            style="background-color: {{ $color }}; border-left: 6px solid {{ $color }}; color: {{ $textColor }};">
-                            <div class="status-with-badge">
-                                @if($badgeType)
-                                    <div class="status-badge-container">
-                                        <div class="status-badge {{ $badgeType }}-badge">
-                                            <i class="fas {{ $badgeIcon }}"></i>
-                                            <span>{{ $badgeText }}</span>
-                                        </div>
-                                    </div>
-                                @endif
-                                <div class="status-icon-main" style="background-color: rgba(255,255,255,0.2);">
-                                    <i class="fas {{ $icon }}" style="color: {{ $textColor }};"></i>
-                                    @if($isCompletedStatus || $baseStatus === 'Disbursed')
-                                        <div class="checkmark-overlay">
-                                            <i class="fas fa-check" style="color: white; font-size: 0.7em;"></i>
-                                        </div>
-                                    @endif
-                                </div>
-                            </div>
+        // Determine if this is current or completed
+        $isCurrentStatus = ($baseStatus === $currentStatus);
+        $isStepCompleted = false;
 
-                            <div class="status-details">
-                                <p class="tracking-date" style="color: {{ $textColor }};">
-                                    {{ $formattedDate }}
-                                </p>
-                                @if($department)
-                                    <p class="tracking-department" style="color: {{ $textColor }}; font-weight: bold; margin-bottom: 5px;">
-                                        {{ $department }}
-                                    </p>
-                                @endif
-                                <p class="tracking-status" style="color: {{ $textColor }};">
-                                    <b>Status:</b> {{ $statusText }}
-                                </p>
-                            </div>
-                        </div>
-                    @endforeach
+        if (!$isCurrentStatus && isset($statusOrder[$baseStatus], $statusOrder[$currentStatus])) {
+            $isStepCompleted = $statusOrder[$baseStatus] < $statusOrder[$currentStatus];
+        }
+
+        // Define styling based on actual status
+        $department = '';
+        $statusText = '';
+        $color = '#6c757d';
+        $icon = 'fa-question-circle';
+        $textColor = 'white';
+
+        switch ($baseStatus) {
+            case 'Processing':
+                $department = 'CSWD Office';
+                $statusText = 'Application is on-process at CSWD Office';
+                $icon = 'fa-hourglass-half';
+                break;
+            case 'Submitted':
+            case 'Submitted[Emergency]':
+                $department = 'Mayor\'s Office';
+                $statusText = 'Application is on-process at Mayor\'s Office';
+                $icon = 'fa-paper-plane';
+                break;
+            case 'Approved':
+                $department = 'Budget Office';
+                $statusText = 'Application is on-process at Budget Office';
+                $icon = 'fa-check-circle';
+                break;
+            case 'Budget Allocated':
+                $department = 'Accounting Office';
+                $statusText = 'Application is on-process at Accounting Office';
+                $icon = 'fa-wallet';
+                break;
+            case 'DV Submitted':
+                $department = 'Treasury Office';
+                $statusText = 'Application is on-process at Treasury Office';
+                $icon = 'fa-file-invoice-dollar';
+                break;
+            case 'Ready for Disbursement':
+                $department = 'Treasury Office';
+                $statusText = 'Please wait for a text message to be sent via SMS';
+                $icon = 'fa-clock';
+                break;
+            case 'Disbursed':
+                $department = 'Treasury Office';
+                $statusText = 'Disbursed';
+                $icon = 'fa-hand-holding-usd';
+                $isStepCompleted = true;
+                $isCurrentStatus = false;
+                break;
+            case 'Rejected':
+                $department = '';
+                $statusText = 'Discrepancy is detected on your application. Please call CSWD or Aksyon Mamamayan Center for more inquiries.';
+                $icon = 'fa-exclamation-triangle';
+                $textColor = 'black';
+                $isCurrentStatus = true;
+                break;
+            default:
+                $department = '';
+                $statusText = $log->remarks ?? 'No remarks provided';
+                $icon = 'fa-question-circle';
+                break;
+        }
+
+        // Determine badge type
+        $badgeType = '';
+        $badgeIcon = '';
+        $badgeText = '';
+
+        if ($isStepCompleted) {
+            $badgeType = 'completed';
+            $badgeIcon = 'fa-check-circle';
+            $badgeText = 'Completed';
+        } elseif ($isCurrentStatus && $baseStatus !== 'Rejected') {
+            $badgeType = 'current';
+            $badgeIcon = 'fa-spinner fa-pulse';
+            $badgeText = 'Current';
+        } elseif ($baseStatus === 'Rejected') {
+            $badgeType = 'rejected';
+            $badgeIcon = 'fa-exclamation-triangle';
+            $badgeText = 'On Hold';
+        }
+
+        // Determine background, border, and text color
+        if ($baseStatus === 'Rejected') {
+            $entryBg = '#ffc107';
+            $entryBorder = '#ffc107';
+            $entryText = 'black';
+        } elseif ($isCurrentStatus) {
+            $entryBg = '#17a2b8'; // Blue for current
+            $entryBorder = '#17a2b8';
+            $entryText = 'white';
+        } elseif ($isStepCompleted) {
+            $entryBg = '#28a745'; // Green for completed
+            $entryBorder = '#28a745';
+            $entryText = 'white';
+        } else {
+            $entryBg = '#6c757d'; // Gray for pending
+            $entryBorder = '#6c757d';
+            $entryText = 'white';
+        }
+
+        // Convert to correct timezone
+        if (!empty($log->status_date)) {
+            $date = \Carbon\Carbon::parse($log->status_date);
+            $date->setTimezone('Asia/Manila');
+            $formattedDate = $date->format('F j, Y g:i A');
+        } else {
+            $formattedDate = now()->setTimezone('Asia/Manila')->format('F j, Y g:i A');
+        }
+    @endphp
+
+    <div class="tracking-entry {{ $isCurrentStatus ? 'current-status' : '' }}"
+         style="background-color: {{ $entryBg }};
+                border-left: 6px solid {{ $entryBorder }};
+                color: {{ $entryText }};">
+
+        <div class="status-details">
+            <p class="tracking-date" style="color: {{ $entryText }};">
+                {{ $formattedDate }}
+            </p>
+            @if ($department)
+                <p class="tracking-department"
+                   style="color: {{ $entryText }}; font-weight: bold; margin-bottom: 5px;">
+                    {{ $department }}
+                </p>
+            @endif
+            <p class="tracking-status" style="color: {{ $entryText }};">
+                <b>Status:</b> {{ $statusText }}
+            </p>
+
+            @if ($badgeType && $baseStatus !== 'Rejected')
+                <div class="status-badge-container right">
+                    <div class="status-badge {{ $badgeType }}-badge">
+                        <i class="fas {{ $badgeIcon }}"></i>
+                        <span>{{ $badgeText }}</span>
+                    </div>
+                </div>
+            @endif
+        </div>
+    </div>
+@endforeach
+
                 @else
-                    {{-- Show "Please wait" message when there are no logs --}}
+                
                     <div class="tracking-entry" 
                          style="background-color: #6c757d; border-left: 6px solid #6c757d; color: white;">
                         <div class="status-with-badge">
@@ -378,148 +429,7 @@
     </div>
 </section>
 
-<style>
-    .tracking-entry {
-        display: flex;
-        align-items: flex-start;
-        padding: 15px;
-        margin-bottom: 10px;
-        border-radius: 8px;
-        transition: all 0.3s ease;
-    }
-    
-    .status-with-badge {
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        margin-right: 15px;
-        min-width: 80px;
-    }
-    
-    .status-badge-container {
-        position: relative;
-        width: 100%;
-        margin-bottom: 8px;
-    }
-    
-    .status-badge {
-        display: inline-flex;
-        align-items: center;
-        padding: 4px 10px;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: bold;
-        white-space: nowrap;
-        gap: 5px;
-        justify-content: center;
-    }
-    
-    .status-badge i {
-        font-size: 0.7em;
-    }
-    
-    .completed-badge {
-        background-color: #28a745;
-        color: white;
-        border: 1px solid #218838;
-    }
-    
-    .current-badge {
-        background-color: #17a2b8;
-        color: white;
-        border: 1px solid #138496;
-    }
-    
-    .rejected-badge {
-        background-color: #dc3545;
-        color: white;
-        border: 1px solid #c82333;
-    }
-    
-    .pending-badge {
-        background-color: #6c757d;
-        color: white;
-        border: 1px solid #545b62;
-    }
-    
-    .status-icon-main {
-        position: relative;
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-    }
-    
-    .checkmark-overlay {
-        position: absolute;
-        bottom: -5px;
-        right: -5px;
-        background-color: #28a745;
-        border-radius: 50%;
-        width: 24px;
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 2px solid white;
-    }
-    
-    .status-details {
-        flex: 1;
-    }
-    
-    .tracking-date {
-        font-size: 0.85rem;
-        margin-bottom: 5px;
-        opacity: 0.9;
-    }
-    
-    .tracking-department {
-        font-size: 1.1rem;
-        margin-bottom: 8px;
-    }
-    
-    .tracking-status {
-        font-size: 0.95rem;
-        line-height: 1.4;
-    }
-    
-    .tracking-entry.current-status {
-        box-shadow: 0 0 0 2px rgba(23, 162, 184, 0.5);
-        transform: scale(1.01);
-    }
-    
-    .tracking-entry.completed-status {
-        opacity: 0.95;
-    }
-    
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-        .status-with-badge {
-            min-width: 70px;
-        }
-        
-        .status-icon-main {
-            width: 50px;
-            height: 50px;
-            font-size: 1.2rem;
-        }
-        
-        .status-badge {
-            font-size: 0.7rem;
-            padding: 3px 8px;
-        }
-        
-        .checkmark-overlay {
-            width: 20px;
-            height: 20px;
-        }
-    }
-</style>
+
 <footer class="footer">
             <div class="footer-container">
                 <div class="footer-brand">
