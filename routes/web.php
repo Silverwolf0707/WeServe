@@ -156,9 +156,6 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
         ->middleware('auth');
 });
 
-
-
-
 Route::group(['prefix' => 'profile', 'as' => 'profile.', 'middleware' => ['auth']], function () {
     Route::get('password', [ChangePasswordController::class, 'edit'])->name('password.edit');
     Route::post('password', [ChangePasswordController::class, 'update'])->name('password.update');
@@ -166,3 +163,14 @@ Route::group(['prefix' => 'profile', 'as' => 'profile.', 'middleware' => ['auth'
     Route::post('profile/destroy', [ChangePasswordController::class, 'destroy'])->name('password.destroyProfile');
 });
 Broadcast::routes();
+
+
+
+Route::get('/terms-and-conditions', function () {
+    return view('terms-and-conditions'); 
+})->name('terms-and-conditions');
+
+Route::get('/privacy-policy', function () {
+    return view('privacy-policy'); 
+})->name('privacy-policy');
+

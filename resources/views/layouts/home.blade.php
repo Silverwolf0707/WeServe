@@ -8,7 +8,6 @@
     <link rel="icon" type="image/png+xml" href="{{ asset('logo.png') }}">
     <link rel="stylesheet" href="{{ asset('css/onlineApplication.css') }}">
     <link rel="stylesheet" href="{{ asset('css/header.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/body.css') }}">
     <link rel="stylesheet" href="{{ asset('css/buttons.css') }}">
     <link rel="stylesheet" href="{{ asset('css/hero.css') }}">
     <link rel="stylesheet" href="{{ asset('css/about.css') }}">

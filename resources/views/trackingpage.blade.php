@@ -2,23 +2,28 @@
 @section('title', 'WeServe - Application Tracking')
 @section('content')
 
-<header class="header" role="banner">
+<header class="header1" role="banner">
     <div class="header-container">
-       <a href="#home" class="logo-title block w-50 lg:w-38 md:w-34 sm:w-30" aria-label="WeServe Home">
-                <img src="{{ asset('WeServe.png') }}" alt="WeServe Logo" class="logo-full w-full h-auto" loading="eager">
-            </a>
+        <!-- Logo -->
+        <a href="#home" class="logo-title" aria-label="WeServe Home">
+            <img src="{{ asset('WeServe.png') }}" alt="WeServe Logo" class="logo-full" loading="eager">
+        </a>
 
-        <button class="burger" onclick="toggleMenu()" aria-label="Toggle Menu">
-            <i class="fas fa-bars"></i>
-        </button>
-
+        <!-- Nav menu -->
         <nav class="nav-links" id="navMenu" aria-label="Primary">
+            <span class="close-btn" onclick="toggleMenu()">&times;</span>
             <a href="/" class="apply-link">Go to Application</a>
             <a href="#process">Process</a>
             <a href="#tracking">Track</a>
         </nav>
+
+        <!-- Burger button -->
+        <button class="burger" onclick="toggleMenu()" aria-label="Toggle Menu">
+            <i class="fas fa-bars"></i>
+        </button>
     </div>
 </header>
+
 
 <section class="process" id="process">
     <div class="container text-center">
@@ -516,19 +521,56 @@
     }
 </style>
 <footer class="footer">
-    <div class="container footer-container">
-        <div>
-            <h2>WeServe</h2>
-            <p>Providing support when it's needed most</p>
-        </div>
-        <div class="socials">
-            <a href="#"><i class="fab fa-facebook"></i></a>
-            <a href="#"><i class="fab fa-twitter"></i></a>
-            <a href="#"><i class="fab fa-instagram"></i></a>
-        </div>
-    </div>
-    <div class="copyright">&copy; 2025 WeServe. All rights reserved.</div>
-</footer>
+            <div class="footer-container">
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <img src="WeServe.png" alt="WeServe Logo" class="logo-full" loading="eager">
+                    </div>
+                    <p>Providing support when it's needed most. Dedicated to helping communities and individuals achieve
+                        their best.</p>
+                </div>
+
+                <div class="footer-links">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#about">About Us</a></li>
+                        <li><a href="#services">Services</a></li>
+                        <li><a href="#process">Application Process</a></li>
+                        <li><a href="#contact">Contact</a></li>
+                    </ul>
+                </div>
+
+                <!-- Contact Info -->
+                <div class="footer-contact">
+                    <h3>Contacts</h3>
+                    <p>Email: cswdosanpedro@gmail.com</p>
+                    <p>Phone: 8-8082020</p>
+                    <p>Address: Basement, New City Hall Bldg., Brgy. Poblacion, City of San Pedro, Laguna</p>
+                    <p>Office Hours: Mon - Fri, 8:00 AM - 5:00 PM</p>
+                </div>
+
+                <!-- Social Media -->
+                <div class="footer-socials" aria-label="Social media">
+                    <h3>Follow Us</h3>
+                    <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                    <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                    <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                </div>
+            </div>
+
+            <!-- Footer Bottom -->
+            <div class="footer-bottom">
+                <div class="footer-left">
+                    &copy; 2026 WeServe. All rights reserved.
+                </div>
+                <div class="footer-right">
+                    <a href="{{ route('terms-and-conditions') }}">Terms and Conditions</a> |
+                    <a href="{{ route('privacy-policy') }}">Privacy Policy</a>
+                </div>
+            </div>
+        </footer>
 
 <script>
     function toggleMenu() {

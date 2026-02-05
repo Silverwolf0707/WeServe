@@ -167,16 +167,14 @@
 
         <footer class="footer">
             <div class="footer-container">
-                <!-- Brand / Logo -->
                 <div class="footer-brand">
                     <div class="footer-logo">
-                        <img src="" alt="WeServe Logo" class="logo-full" loading="eager">
+                        <img src="WeServe.png" alt="WeServe Logo" class="logo-full" loading="eager">
                     </div>
                     <p>Providing support when it's needed most. Dedicated to helping communities and individuals achieve
                         their best.</p>
                 </div>
 
-                <!-- Quick Links -->
                 <div class="footer-links">
                     <h3>Quick Links</h3>
                     <ul>
@@ -213,7 +211,8 @@
                     &copy; 2026 WeServe. All rights reserved.
                 </div>
                 <div class="footer-right">
-                    <a href="">Terms of Service</a> | <a href="">Privacy Policy</a>
+                    <a href="{{ route('terms-and-conditions') }}">Terms and Conditions</a> |
+                    <a href="{{ route('privacy-policy') }}">Privacy Policy</a>
                 </div>
             </div>
         </footer>
@@ -254,11 +253,15 @@
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Contact Number <span class="text-danger">*</span></label>
                                 <input type="tel" name="contact_number" id="contact_number" class="form-control"
-                                    maxlength="11" pattern="[0-9]{11}"
-                                    oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);"
-                                    title="Please enter exactly 11 digits" required>
-                                <div class="invalid-feedback">Please enter a valid 11-digit mobile number.</div>
+                                    maxlength="11" pattern="09\d{9}"
+                                    oninput="this.value = this.value.replace(/[^0-9]/g,'').slice(0,11);"
+                                    title="Please enter a valid 11-digit Philippine mobile number starting with 09"
+                                    required>
+                                <div class="invalid-feedback">
+                                    Please enter a valid 11-digit mobile number starting with 09.
+                                </div>
                             </div>
+
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Claimant Name <span class="text-danger">*</span></label>
                                 <input type="text" name="claimant_name" id="claimant_name" class="form-control"
@@ -298,6 +301,14 @@
                             <h6>Required Documents</h6>
                             <ul id="requirementsList" class="mb-0"></ul>
                         </div>
+                        <small class="text-muted">
+                            Note: Please refer to the
+                            <a href="{{ asset('cc_cswd25.pdf') }}" target="_blank"
+                                rel="noopener noreferrer">
+                                Citizen’s Charter
+                            </a>
+                            for the full details of required documents.
+                        </small>
                     </form>
                 </div>
                 <div class="modal-footer flex justify-content-between">
@@ -317,7 +328,7 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="confirmationModalTitle">📋 Confirm Application Details</h5>
+                    <h5 class="modal-title" id="confirmationModalTitle">Confirm Application Details</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -364,10 +375,10 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" id="editDetailsBtn" onclick="editApplication()">
+                    <button type="button" class="btn-neon btn-secondary" id="editDetailsBtn" onclick="editApplication()">
                         Edit Details
                     </button>
-                    <button type="button" class="btn btn-success" id="confirmSubmitBtn" onclick="submitApplication()">
+                    <button type="button" class="btn-neon" id="confirmSubmitBtn" onclick="submitApplication()">
                         <i class="fas fa-paper-plane me-1"></i> Confirm & Submit
                     </button>
                 </div>
@@ -384,13 +395,13 @@
                     <div class="success-icon mb-3">
                         <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
                     </div>
-                    <h5 class="text-success mb-3">🎉 Application Submitted!</h5>
+                    <h5 class="text-success mb-3">Application Submitted!</h5>
                     <p class="mb-2">Your tracking number is:</p>
                     <div class="tracking-display mb-3">
                         <code id="trackingNumberDisplay" class="fs-5 fw-bold d-block p-2 bg-light rounded"></code>
                     </div>
                     <button type="button" id="copyTrackingBtn" onclick="copyTrackingNumber()"
-                        class="btn btn-primary w-100">
+                        class="btn-neon">
                         <i class="fas fa-copy"></i> Copy Tracking Number
                     </button>
                 </div>
@@ -403,7 +414,7 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="trackModalTitle">🔍 Track Application</h5>
+                    <h5 class="modal-title" id="trackModalTitle">Track Application</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -412,9 +423,9 @@
                             <label class="form-label">Tracking Number</label>
                             <input type="text" name="tracking_number" class="form-control" required>
                         </div>
-                        <div class="modal-footer px-0 pb-0">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn btn-primary">Track Now</button>
+                        <div class="modal-footer px-0 pb-0 justify-content-between">
+                            <button type="button" class="btn-neon btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn-neon">Track Now</button>
                         </div>
                     </form>
                 </div>
@@ -466,19 +477,16 @@
             goToSlide(0);
         }
 
-        // Form validation and modal functions
         function validateAndShowConfirmation() {
-            // Disable review submit button immediately
+
             const reviewSubmitBtn = document.getElementById('reviewSubmitBtn');
             if (reviewSubmitBtn) {
                 reviewSubmitBtn.disabled = true;
                 reviewSubmitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
             }
 
-            // Clear previous validation
             clearValidation();
 
-            // Get all required fields
             const requiredFields = [
                 'applicant_name', 'age', 'address', 'contact_number',
                 'claimant_name', 'case_type', 'serviceCategory'
@@ -504,13 +512,14 @@
 
             // Additional validation for contact number
             const contactNumber = document.getElementById('contact_number');
-            if (contactNumber.value && !/^\d{11}$/.test(contactNumber.value)) {
+            if (contactNumber.value && !/^09\d{9}$/.test(contactNumber.value)) {
                 isValid = false;
                 contactNumber.classList.add('is-invalid');
                 if (!firstInvalidField) {
                     firstInvalidField = contactNumber;
                 }
             }
+
 
             // Additional validation for age
             const age = document.getElementById('age');
@@ -769,10 +778,11 @@
 
         // Real-time validation for contact number
         document.getElementById('contact_number').addEventListener('input', function(e) {
-            const value = e.target.value.replace(/[^0-9]/g, '');
+            let value = e.target.value.replace(/[^0-9]/g, '');
             e.target.value = value.slice(0, 11);
 
-            if (value.length === 11) {
+            // Check if it starts with '09' and has 11 digits
+            if (/^09\d{9}$/.test(value)) {
                 e.target.classList.remove('is-invalid');
                 e.target.classList.add('is-valid');
             } else if (value.length > 0) {
@@ -829,6 +839,14 @@
                 e.preventDefault();
             }
         });
+        // Close burger menu when a nav link is clicked
+        document.querySelectorAll('#navMenu a').forEach(link => {
+            link.addEventListener('click', () => {
+                const navMenu = document.getElementById('navMenu');
+                navMenu.classList.remove('show'); // remove the "show" class
+            });
+        });
+
 
         // Reset form state when modal is closed
         document.getElementById('applicationModal').addEventListener('hidden.bs.modal', function() {
