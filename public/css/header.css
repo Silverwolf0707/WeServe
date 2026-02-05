@@ -366,7 +366,7 @@ html, body {
     flex-direction: column;
     align-items: flex-start;
     flex: 1;
-    position: relative; /* needed for absolute badge inside */
+    position: relative;
 }
 
 /* Badge inside details, right-aligned */
@@ -475,6 +475,7 @@ html, body {
     }
 }
 
+
 /* ===================== */
 /* PROCESS STEPPER BASE */
 /* ===================== */
@@ -523,14 +524,15 @@ html, body {
     transform: translateY(-10px);
 }
 
-/* COMPLETED / CURRENT / PENDING COLORS */
-.step.completed .step-icon { background: #16a34a; color: white; }
-.step.current .step-icon { background: #2563eb; color: white; }
-.step.pending .step-icon { background: #2563eb; color: white; }
-
+/* STEPPER LINE COLORS */
+.line-grey { background-color: #e5e7eb; } 
 .line-green { background-color: #28a745; } 
 .line-blue  { background-color: #2563eb; } 
 
+/* COMPLETED / CURRENT / PENDING COLORS */
+.step.completed .step-icon { background: #16a34a; color: white; }
+.step.current .step-icon { background: #2563eb; color: white; }
+.step.pending .step-icon { background: #f9fafb; color: #6b7280; border: 1px solid #e5e7eb; }
 
 /* ===================== */
 /* RESPONSIVE BREAKPOINTS */
