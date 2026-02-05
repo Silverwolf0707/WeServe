@@ -257,3 +257,214 @@ html, body {
     }
 }
 
+
+
+/* ===================== */
+/* TRACKING PAGE STYLES */
+/* ===================== */
+
+
+/* Modern Tracking Section */
+.tracking {
+    padding: 70px 0;
+    background: white;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Section Header */
+.tracking-header {
+    margin-bottom: 40px;
+    text-align: center;
+}
+
+.tracking-header h1 {
+    font-size: 42px;
+    font-weight: 800;
+    color: #064e3b;
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+}
+
+.tracking-subtitle {
+    font-size: 16px;
+    color: #374151;
+    opacity: 0.8;
+}
+
+/* Card Wrapper */
+.tracking-log-card-wrapper {
+    display: flex;
+    justify-content: center;
+}
+
+/* Glassmorphic Card */
+.tracking-log-card {
+    width: 100%;
+    max-width: 850px;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border-radius: 20px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
+    padding: 30px 25px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* 🔹 Tracking Entry Card */
+.tracking-entry {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    padding: 18px 20px;
+    border-left: 5px solid transparent;
+    margin-bottom: 18px;
+    background: #f9f9f9; /* default fallback */
+    border-radius: 14px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-align: left;
+    position: relative;
+}
+
+.tracking-entry:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+}
+
+/* Inside each entry */
+.tracking-entry h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.tracking-entry p {
+    font-size: 14px;
+    margin: 0;
+    opacity: 0.95;
+}
+
+.status-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+.status-icon i {
+    font-size: 18px;
+}
+
+.status-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.tracking-date {
+    font-size: 12px;
+    margin-bottom: 4px;
+}
+
+.tracking-status {
+    font-size: 14px;
+    margin: 0;
+}
+
+.rollback-badge {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: #ff6b6b;
+    color: white;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.empty-entry {
+    text-align: center;
+    color: #999;
+    font-style: italic;
+}
+
+.grid-5 {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr); 
+    gap: 1.5rem;
+}
+
+
+
+.process-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+}
+
+
+
+/* Process icon */
+.process-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: #064e3b; 
+    box-shadow: inset 0 4px 6px rgba(0, 0, 0, 0.2), 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, background 0.3s ease;
+}
+
+.process-card:hover .process-icon {
+    transform: scale(1.2);
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Step circle */
+.step-circle {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #f4f5f4;
+    margin-bottom: 5px;
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+    .grid-5 {
+        grid-template-columns: repeat(3, 1fr); /* 3 columns on medium screens */
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .grid-5 {
+        grid-template-columns: repeat(2, 1fr); /* 2 columns on tablets */
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .grid-5 {
+        grid-template-columns: 1fr; /* 1 column on mobile */
+        gap: 1rem;
+    }
+
+    .process-card {
+        min-height: 250px;
+        padding: 1.5rem 0.5rem;
+    }
+}
+

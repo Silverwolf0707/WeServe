@@ -129,7 +129,7 @@ class OnlineApplicationController
         ];
     }
 
-   public function track(Request $request)
+  public function track(Request $request)
 {
     $request->validate([
         'tracking_number' => 'required|string',
@@ -154,17 +154,18 @@ class OnlineApplicationController
 
     $application = OnlinePatientApplication::where('tracking_number', $trackingNumber)->first();
     if ($application) {
-        // Return an empty collection instead of an array
         return view('trackingpage')->with([
             'status' => 'Application is still on process.',
             'application' => $application,
-            'logs' => collect([]), // Use collect() to create an empty collection
+            'logs' => collect([]),
         ]);
     }
-
-    return view('trackingpage')->with([
-        'status' => 'Tracking number not found.',
-        'logs' => collect([]), // Use collect() here too
+    // If tracking number not found, redirect back with toast
+    return redirect()->back()->with('toast', [
+        'type' => 'danger',
+        'title' => 'Tracking Number Not Found',
+        'message' => 'The tracking number you entered does not exist. Please check and try again.',
     ]);
 }
+
 }
