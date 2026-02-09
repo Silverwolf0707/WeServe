@@ -10,7 +10,7 @@
 
   <title>WeServe</title>
   <!-- Favicon -->
-  <link rel="icon" type="image/png+xml" href="{{ asset('logo.png') }}">
+  <link rel="icon" type="image/png+xml" href="{{ asset('home-icon (1).png') }}">
 
   <!-- Bootstrap 5.3 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -41,30 +41,6 @@
   <link href="{{ asset('css/adminltev3.css') }}" rel="stylesheet">
   <link href="{{ asset('css/custom.css') }}" rel="stylesheet">
   <link href="{{ asset('css/context-menu.css') }}" rel="stylesheet">
-
-@php
-    $isLocal = app()->environment('local');
-@endphp
-
-@if ($isLocal)
-    {{-- Dev mode: use Vite dev server --}}
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-@else
-    {{-- Production mode: use built assets from public/build --}}
-    @php
-        $manifest = json_decode(file_get_contents(public_path('build/manifest.json')), true);
-        $css = $manifest['resources/css/app.css']['file'] ?? null;
-        $js  = $manifest['resources/js/app.js']['file'] ?? null;
-    @endphp
-
-    @if ($css)
-        <link rel="stylesheet" href="{{ asset('build/' . $css) }}">
-    @endif
-
-    @if ($js)
-        <script type="module" src="{{ asset('build/' . $js) }}"></script>
-    @endif
-@endif
 
 
 
@@ -123,7 +99,7 @@
     </div>
 </div>
   <div class="wrapper">
-<nav class="main-header navbar navbar-expand bg-white navbar-light border-bottom">
+<nav class="main-header navbar navbar-expand navbar-light border-bottom">
     <!-- Left navbar links -->
     <ul class="navbar-nav d-flex align-items-center">
         <li class="nav-item">
@@ -132,8 +108,7 @@
         <!-- WeServe Logo -->
         <li class="nav-item ms-2">
             <a href="{{ route('admin.home') }}" class="d-flex align-items-center text-decoration-none">
-                <img src="{{ asset('logo.png') }}" alt="Logo" style="height: 30px; width: 30px; object-fit: cover;">
-                <img src="{{ asset('Weserve1.png') }}" alt="WeServe Logo" class="ms-2" style="height: 25px; width: auto;">
+                <img src="{{ asset('home-logo (1).png') }}" alt="WeServe Logo" class="ms-2" >
             </a>
         </li>
     </ul>
@@ -155,7 +130,7 @@
     <!-- Dropdown Header -->
     <div class="dropdown-header bg-light py-3 notification-header">
         <div class="d-flex justify-content-between align-items-center">
-            <h6 class="mb-0"><i class="fas fa-bell me-2"></i>Notifications<span class="beta-tag">BETA</span></h6>
+            <h6 class="mb-0"></i>Notifications<span class="beta-tag">BETA</span></h6>
             <div>
                 <span class="badge bg-primary" id="notification-count" style="display: none;">0 new</span>
                 

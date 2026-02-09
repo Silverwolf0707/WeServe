@@ -3,7 +3,7 @@
     <header class="header1">
         <div class="header-container">
             <a href="#home" class="logo-title" aria-label="WeServe Home">
-                <img src="{{ asset('WeServe.png') }}" alt="WeServe Logo" class="logo-full" loading="eager">
+                <img src="{{ asset('home-logo.png') }}" alt="WeServe Logo" class="logo-full" loading="eager">
             </a>
 
             <nav class="nav-links" id="navMenu" aria-label="Primary">
@@ -155,21 +155,114 @@
                 </div>
             </div>
         </section>
+
         <section id="contact" class="contact">
             <div class="contact-container">
                 <div class="contact-content">
                     <h2>CONTACT US</h2>
                     <p>Have questions or need assistance? Reach out to us!</p>
-                    <button class="btn-neon">Contact Us</button>
+                    <button type="button" class="btn-neon" data-bs-toggle="modal" data-bs-target="#contactModal">
+                        Contact Us
+                    </button>
                 </div>
             </div>
         </section>
+
+        <!-- Contact Us Modal - Bootstrap -->
+<div class="modal fade" id="contactModal" tabindex="-1" aria-labelledby="contactModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="contactModalTitle">Contact Us</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-primary mb-3"><i class="fas fa-info-circle me-2"></i>Office Information</h6>
+                        <div class="contact-info mb-4">
+                            <div class="d-flex align-items-start mb-3">
+                                <i class="fas fa-building text-primary mt-1 me-3"></i>
+                                <div>
+                                    <strong>Office:</strong>
+                                    <p class="mb-0">City Social Welfare and Development Office (CSWD)</p>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-start mb-3">
+                                <i class="fas fa-map-marker-alt text-primary mt-1 me-3"></i>
+                                <div>
+                                    <strong>Address:</strong>
+                                    <p class="mb-0">Basement, New City Hall Bldg., Brgy. Poblacion, City of San Pedro, Laguna</p>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-start mb-3">
+                                <i class="fas fa-clock text-primary mt-1 me-3"></i>
+                                <div>
+                                    <strong>Office Hours:</strong>
+                                    <p class="mb-0">Monday to Friday, 8:00 AM - 5:00 PM</p>
+                                    <small class="text-muted">Closed on weekends and holidays</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6 class="text-primary mb-3"><i class="fas fa-address-book me-2"></i>Contact Details</h6>
+                        <div class="contact-info mb-4">
+                            <div class="d-flex align-items-start mb-3">
+                                <i class="fas fa-envelope text-primary mt-1 me-3"></i>
+                                <div>
+                                    <strong>Email:</strong>
+                                    <p class="mb-0">cswdosanpedro@gmail.com</p>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-start mb-3">
+                                <i class="fas fa-phone-alt text-primary mt-1 me-3"></i>
+                                <div>
+                                    <strong>Phone:</strong>
+                                    <p class="mb-0">8-8082020</p>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-start mb-3">
+                                <i class="fas fa-fax text-primary mt-1 me-3"></i>
+                                <div>
+                                    <strong>Fax:</strong>
+                                    <p class="mb-0">(049) 555-1234</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Social Media Links -->
+                <div class="social-section text-center mt-4 pt-4 border-top">
+                    <h6 class="text-primary mb-3"><i class="fas fa-share-alt me-2"></i>Follow Us on Social Media</h6>
+                    <div class="social-icons">
+                        <a href="https://facebook.com" target="_blank" class="social-icon facebook" aria-label="Facebook">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="https://twitter.com" target="_blank" class="social-icon twitter" aria-label="Twitter">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="https://instagram.com" target="_blank" class="social-icon instagram" aria-label="Instagram">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="mailto:cswdosanpedro@gmail.com" class="social-icon email" aria-label="Email">
+                            <i class="fas fa-envelope"></i>
+                        </a>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
 
         <footer class="footer">
             <div class="footer-container">
                 <div class="footer-brand">
                     <div class="footer-logo">
-                        <img src="WeServe.png" alt="WeServe Logo" class="logo-full" loading="eager">
+                        <img src="home-logo (1).png" alt="WeServe Logo" class="logo-full" loading="eager">
                     </div>
                     <p>Providing support when it's needed most. Dedicated to helping communities and individuals achieve
                         their best.</p>
@@ -303,8 +396,7 @@
                         </div>
                         <small class="text-muted">
                             Note: Please refer to the
-                            <a href="{{ asset('cc_cswd25.pdf') }}" target="_blank"
-                                rel="noopener noreferrer">
+                            <a href="{{ asset('cc_cswd25.pdf') }}" target="_blank" rel="noopener noreferrer">
                                 Citizen’s Charter
                             </a>
                             for the full details of required documents.
@@ -375,7 +467,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn-neon btn-secondary" id="editDetailsBtn" onclick="editApplication()">
+                    <button type="button" class="btn-neon btn-secondary" id="editDetailsBtn"
+                        onclick="editApplication()">
                         Edit Details
                     </button>
                     <button type="button" class="btn-neon" id="confirmSubmitBtn" onclick="submitApplication()">
@@ -400,8 +493,7 @@
                     <div class="tracking-display mb-3">
                         <code id="trackingNumberDisplay" class="fs-5 fw-bold d-block p-2 bg-light rounded"></code>
                     </div>
-                    <button type="button" id="copyTrackingBtn" onclick="copyTrackingNumber()"
-                        class="btn-neon">
+                    <button type="button" id="copyTrackingBtn" onclick="copyTrackingNumber()" class="btn-neon">
                         <i class="fas fa-copy"></i> Copy Tracking Number
                     </button>
                 </div>

@@ -4,7 +4,7 @@
 
             <!-- Profile Header -->
             <div class="position-relative text-center py-4"
-                style="background: linear-gradient(135deg, #4e73df, #1cc88a);">
+                style="background: linear-gradient(135deg, hsl(225, 69%, 59%), #1cc88a);">
 
                 <div class="position-relative mx-auto mb-2" style="width: 120px; height: 120px;">
                     <div class="rounded-circle border border-4 border-white shadow w-100 h-100 overflow-hidden"

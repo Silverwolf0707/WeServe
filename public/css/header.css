@@ -28,7 +28,7 @@ html, body {
 
 /* Desktop */
 .header1 .logo-title img {
-    height: 50px;
+    height: 65px;
 }
 
 @media (max-width: 926px) {
@@ -216,7 +216,7 @@ html, body {
         transition-delay: 0.25s;
     }
 
-    /* Link hover effects */
+
     .header1 nav.nav-links a:hover {
         color: var(--primary-accent, #064e3b);
         background: rgba(6, 78, 59, 0.05);
@@ -224,7 +224,7 @@ html, body {
         transform: scale(1.05);
     }
 
-    /* Show burger button on mobile */
+ 
     .burger {
         display: flex !important;
         align-items: center;
@@ -232,11 +232,9 @@ html, body {
         padding: 0.5rem;
     }
 
-    /* Hide Apply Now button on mobile */
 
 }
 
-/* For very small screens */
 @media (max-width: 480px) {
     .header1 nav.nav-links a {
         font-size: 1.1rem;
@@ -258,329 +256,4 @@ html, body {
 }
 
 
-
-/* ===================== */
-/* TRACKING PAGE STYLES */
-/* ===================== */
-
-
-/* Modern Tracking Section */
-.tracking {
-    padding: 70px 0;
-    background: white;
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-}
-
-/* Section Header */
-.tracking-header {
-    margin-bottom: 40px;
-    text-align: center;
-}
-
-.tracking-header h1 {
-    font-size: 42px;
-    font-weight: 800;
-    color: #064e3b;
-    margin-bottom: 8px;
-    letter-spacing: -0.5px;
-}
-
-.tracking-subtitle {
-    font-size: 16px;
-    color: #374151;
-    opacity: 0.8;
-}
-
-/* Card Wrapper */
-.tracking-log-card-wrapper {
-    display: flex;
-    justify-content: center;
-}
-
-/* Glassmorphic Card */
-.tracking-log-card {
-    width: 100%;
-    max-width: 850px;
-    
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
-    padding: 30px 25px;
-    
-}
-
-/* 🔹 Tracking Entry Card */
-.tracking-entry {
-    display: flex;
-    align-items: flex-start;
-    gap: 15px;
-    padding: 18px 20px;
-    border-left: 5px solid transparent;
-    margin-bottom: 18px;
-    background: #f9f9f9; /* default fallback */
-    border-radius: 14px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-    transition: all 0.3s ease;
-    cursor: pointer;
-    text-align: left;
-    position: relative;
-}
-
-.tracking-entry:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
-}
-
-/* Inside each entry */
-.tracking-entry h3 {
-    font-size: 18px;
-    font-weight: 600;
-    margin: 0;
-}
-
-.tracking-entry p {
-    font-size: 14px;
-    margin: 0;
-    opacity: 0.95;
-}
-
-.status-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 15px;
-    flex-shrink: 0;
-}
-
-.status-icon i {
-    font-size: 18px;
-}
-
-.status-details {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    flex: 1;
-    position: relative;
-}
-
-/* Badge inside details, right-aligned */
-.status-badge-container.right {
-    position: absolute;
-    top: 50%;
-    right: 15px;
-    transform: translateY(-50%);
-}
-
-.tracking-date {
-    font-size: 12px;
-    margin-bottom: 4px;
-}
-
-.tracking-status {
-    font-size: 14px;
-    margin: 0;
-}
-
-.rollback-badge {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    background: #ff6b6b;
-    color: white;
-    font-size: 10px;
-    font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 12px;
-}
-
-.empty-entry {
-    text-align: center;
-    color: #999;
-    font-style: italic;
-}
-
-.grid-5 {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr); 
-    gap: 1.5rem;
-}
-
-
-
-.process-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
-}
-
-
-
-/* Process icon */
-.process-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    color: #064e3b; 
-    box-shadow: inset 0 4px 6px rgba(0, 0, 0, 0.2), 0 4px 6px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease, background 0.3s ease;
-}
-
-.process-card:hover .process-icon {
-    transform: scale(1.2);
-    background: rgba(255, 255, 255, 0.3);
-}
-
-/* Step circle */
-.step-circle {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: #f4f5f4;
-    margin-bottom: 5px;
-}
-
-/* Responsive design */
-@media (max-width: 1200px) {
-    .grid-5 {
-        grid-template-columns: repeat(3, 1fr); /* 3 columns on medium screens */
-        gap: 1rem;
-    }
-}
-
-@media (max-width: 768px) {
-    .grid-5 {
-        grid-template-columns: repeat(2, 1fr); /* 2 columns on tablets */
-        gap: 1rem;
-    }
-}
-
-@media (max-width: 576px) {
-    .grid-5 {
-        grid-template-columns: 1fr; /* 1 column on mobile */
-        gap: 1rem;
-    }
-
-    .process-card {
-        min-height: 250px;
-        padding: 1.5rem 0.5rem;
-    }
-}
-
-
-/* ===================== */
-/* PROCESS STEPPER BASE */
-/* ===================== */
-
-.process-stepper {
-    margin-top: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-wrap: wrap; /* wrap on small screens */
-}
-
-.step {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin: 10px; /* spacing on small screens */
-}
-
-/* ICON CIRCLE */
-.step-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: #e5e7eb;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    transition: all 0.3s ease;
-}
-
-/* LABEL */
-.step-label {
-    margin-top: 6px;
-    font-size: 14px;
-    text-align: center;
-}
-
-/* CONNECTOR LINE */
-.step-line {
-    width: 60px;
-    height: 4px;
-    border-radius: 2px;
-    margin: 0 6px;
-    transform: translateY(-10px);
-}
-
-/* STEPPER LINE COLORS */
-.line-grey { background-color: #e5e7eb; } 
-.line-green { background-color: #28a745; } 
-.line-blue  { background-color: #2563eb; } 
-
-/* COMPLETED / CURRENT / PENDING COLORS */
-.step.completed .step-icon { background: #16a34a; color: white; }
-.step.current .step-icon { background: #2563eb; color: white; }
-.step.pending .step-icon { background: #f9fafb; color: #6b7280; border: 1px solid #e5e7eb; }
-
-/* ===================== */
-/* RESPONSIVE BREAKPOINTS */
-/* ===================== */
-
-/* Large desktop: 1440px+ */
-@media (min-width: 1440px) {
-    .step-icon { width: 56px; height: 56px; font-size: 22px; }
-    .step-label { font-size: 16px; }
-    .step-line { width: 80px; height: 5px; margin: 0 8px; transform: translateY(-12px); }
-}
-
-/* Desktop: 1025px - 1439px */
-@media (min-width: 1025px) and (max-width: 1439px) {
-    .step-icon { width: 50px; height: 50px; font-size: 20px; }
-    .step-label { font-size: 15px; }
-    .step-line { width: 70px; height: 4px; margin: 0 7px; transform: translateY(-11px); }
-}
-
-/* Tablet: 768px - 1024px */
-@media (min-width: 768px) and (max-width: 1024px) {
-    .process-stepper { flex-wrap: wrap; justify-content: center; }
-    .step-icon { width: 44px; height: 44px; font-size: 18px; }
-    .step-label { font-size: 14px; }
-    .step-line { width: 55px; height: 4px; margin: 0 5px; transform: translateY(-10px); }
-}
-
-@media (max-width: 425px) {
-    .process-stepper {
-        display: none !important;
-    }
-}
-
-
-@media (max-width: 425px) {
-    .tracking-entry .status-badge-container.right {
-        top: -1px;
-        right: 10px;    
-        transform: none; 
-    }
-
-    .tracking-entry .status-details {
-        padding-right: 60px; 
-    }
-
-    .tracking-entry .tracking-date {
-        display: inline-block;
-        width: calc(100% - 70px); 
-    }
-}
 

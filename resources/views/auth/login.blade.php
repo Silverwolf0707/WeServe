@@ -5,14 +5,13 @@
 @section('content')
     <div class="login-card">
         <div class="brand-section-inside">
-            <div class="logo-circle">
-                <img src="{{ asset('logo.png') }}?v=1.0" alt="WeServe Logo" width="42" height="42" />
-            </div>
+           
+                <img src="{{ asset('home-icon (1).png') }}?v=1.0" alt="WeServe Logo" width="42" height="42" />
+     
             <h1 class="brand-title">WeServe</h1>
             <p class="brand-subtitle">Financial Aid Management System</p>
         </div>
 
-        <!-- Alert Messages (Fallback if JavaScript is disabled) -->
         @if($errors->any())
             <div class="alert alert-error">
                 <i class="fas fa-exclamation-triangle"></i>
@@ -79,20 +78,11 @@
                 </div>
             </div>
 
-            <!-- Remember Me & Forgot Password -->
             <div class="remember-me">
                 <input type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>
                 <label for="remember">Remember me for 30 days</label>
             </div>
 
-            <div class="forgot-password">
-                <a href="{{ route('password.request') }}" class="support-link">
-                    <i class="fas fa-key" style="margin-right: 5px;"></i>
-                    Forgot your password?
-                </a>
-            </div>
-
-            <!-- Attempts Warning -->
             <div class="attempts-warning" id="attemptsWarning">
                 <i class="fas fa-exclamation-triangle"></i>
                 Multiple failed attempts may temporarily lock your account
@@ -185,7 +175,6 @@
             const honeypot = document.querySelector('input[name="username"]').value;
             if (honeypot) {
                 e.preventDefault();
-                console.warn('Potential bot detected');
                 return false;
             }
 
@@ -236,12 +225,6 @@
         let inactivityTimer;
         function resetInactivityTimer() {
             clearTimeout(inactivityTimer);
-            inactivityTimer = setTimeout(() => {
-                if (document.visibilityState === 'visible') {
-                    // Show warning if page is visible
-                    console.log('Session will expire soon due to inactivity');
-                }
-            }, 25 * 60 * 1000); // 25 minutes
         }
 
         // Reset timer on user activity
@@ -250,14 +233,6 @@
         });
 
         resetInactivityTimer();
-    });
-
-    // Handle page visibility changes
-    document.addEventListener('visibilitychange', function() {
-        if (document.visibilityState === 'visible') {
-            // Page became visible again
-            console.log('Page is now visible');
-        }
     });
 </script>
 @endpush

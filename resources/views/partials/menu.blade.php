@@ -1,6 +1,6 @@
 <aside id="sidebar" class="main-sidebar sidebar-dark-primary elevation-4">
     <!-- Profile Section (Replaces Logo) -->
-    <div class="profile-section d-flex align-items-center py-3 px-3 border-bottom">
+    <div class="profile-section d-flex align-items-center py-3 px-3">
         <!-- Profile Image -->
         <div class="profile-image-wrapper me-3">
             @if(Auth::user()->currentProfileImage)
@@ -211,9 +211,8 @@
 </aside>
 
 <style>
-/* Profile Section Styles */
 .profile-section {
-    background: #1c4874;
+    background: #064e3b;
     transition: all 0.3s ease;
     position: sticky;
     top: 0;
@@ -351,19 +350,19 @@ body.sidebar-collapse .main-sidebar:hover .profile-img-placeholder {
 
 /* Existing sidebar styles */
 .nav-sidebar {
-    background: #2c3e50;
+    background: #023628;
 }
 
 .nav-sidebar .nav-link {
     border-radius: 0.5rem;
     margin: 2px 0;
-    color: #ecf0f1;
+    color: white !important;
     transition: all 0.2s ease;
 }
 
 .nav-sidebar .nav-link.active {
-    background-color: #3c8dbc;
-    color: #fff;
+    background-color: #74ff70 !important;
+    color: black !important;
     font-weight: 600;
 }
 
@@ -374,7 +373,7 @@ body.sidebar-collapse .main-sidebar:hover .profile-img-placeholder {
 .main-sidebar {
     width: 250px;
     height: 100vh;
-    background: #2c3e50;
+    background: #023628;
     overflow-y: auto;
     overflow-x: hidden;
     transition: all 0.3s ease;

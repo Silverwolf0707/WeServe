@@ -28,7 +28,7 @@ class PatientRecordsController extends Controller
 {
     use CsvImportTrait;
 
-  public function index(Request $request)
+public function index(Request $request)
 {
     abort_if(Gate::denies('patient_record_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
@@ -58,6 +58,7 @@ class PatientRecordsController extends Controller
     // Apply search term if provided
     if ($searchTerm) {
         $query->where(function ($q) use ($searchTerm) {
+            // Text field searches
             $q->where('control_number', 'like', "%{$searchTerm}%")
               ->orWhere('patient_name', 'like', "%{$searchTerm}%")
               ->orWhere('claimant_name', 'like', "%{$searchTerm}%")
@@ -65,7 +66,13 @@ class PatientRecordsController extends Controller
               ->orWhere('address', 'like', "%{$searchTerm}%")
               ->orWhere('contact_number', 'like', "%{$searchTerm}%")
               ->orWhere('case_worker', 'like', "%{$searchTerm}%")
-              ->orWhere('case_type', 'like', "%{$searchTerm}%");
+              ->orWhere('case_type', 'like', "%{$searchTerm}%")
+              ->orWhere('case_category', 'like', "%{$searchTerm}%")
+              
+              // Date processed search with multiple format support
+              ->orWhere(function ($dateQ) use ($searchTerm) {
+                  $this->addDateProcessedSearch($dateQ, $searchTerm);
+              });
         });
     }
 
@@ -99,6 +106,121 @@ class PatientRecordsController extends Controller
         'showDeleted', 
         'searchTerm'
     ));
+}
+
+/**
+ * Helper method for date_processed searching with multiple format support
+ */
+protected function addDateProcessedSearch($query, $searchTerm)
+{
+    // Remove the time part from display format if present
+    $searchTermWithoutTime = preg_replace('/\s+\d{1,2}:\d{2}\s*(AM|PM)?/i', '', $searchTerm);
+    
+    // List of possible date formats that users might enter
+    $dateFormats = [
+
+        'F j, Y g:i A',    // December 30, 2024 11:32 AM
+        'F j, Y H:i',      // December 30, 2024 11:32
+        'Y-m-d H:i:s',     // 2024-12-30 11:32:00
+        'Y/m/d H:i:s',     // 2024/12/30 11:32:00
+        'm/d/Y H:i:s',     // 12/30/2024 11:32:00
+        'd/m/Y H:i:s',     // 30/12/2024 11:32:00
+        
+        // Date-only formats
+        'F j, Y',          // December 30, 2024
+        'Y-m-d',           // 2024-12-30
+        'Y/m/d',           // 2024/12/30
+        'm/d/Y',           // 12/30/2024
+        'd/m/Y',           // 30/12/2024
+        'M j, Y',          // Dec 30, 2024
+        
+        // Month-year formats
+        'F Y',             // December 2024
+        'M Y',             // Dec 2024
+        'm/Y',             // 12/2024
+        'Y-m',             // 2024-12
+        
+        // Year only
+        'Y',               // 2024
+        
+        // Month only
+        'F',               // December
+        'M',               // Dec
+        'm',               // 12
+        'n',               // 12 (without leading zero)
+    ];
+    
+    $foundMatch = false;
+    
+    foreach ($dateFormats as $format) {
+        try {
+            $date = \Carbon\Carbon::createFromFormat($format, $searchTerm);
+            
+       
+            if (in_array($format, ['Y'])) {
+            
+                $query->whereYear('date_processed', $date->year);
+                $foundMatch = true;
+                break;
+            } elseif (in_array($format, ['F Y', 'M Y', 'm/Y', 'Y-m'])) {
+      
+                $query->whereYear('date_processed', $date->year)
+                      ->whereMonth('date_processed', $date->month);
+                $foundMatch = true;
+                break;
+            } elseif (in_array($format, ['F', 'M', 'm', 'n'])) {
+         
+                $monthNumber = $date->month;
+                $query->whereMonth('date_processed', $monthNumber);
+                $foundMatch = true;
+                break;
+            } elseif (str_contains($format, 'H:i') || str_contains($format, 'g:i')) {
+            
+                $query->where('date_processed', $date->format('Y-m-d H:i:s'));
+                $foundMatch = true;
+                break;
+            } else {
+          
+                $query->whereDate('date_processed', $date->format('Y-m-d'));
+                $foundMatch = true;
+                break;
+            }
+        } catch (\Exception $e) {
+            continue;
+        }
+    }
+   
+    if (!$foundMatch) {
+        try {
+            $date = \Carbon\Carbon::parse($searchTerm);
+            
+            $now = \Carbon\Carbon::now();
+            $diffInDays = $date->diffInDays($now);
+           
+            if ($diffInDays > 365 || preg_match('/\d{4}/', $searchTerm)) {
+               
+                $query->whereDate('date_processed', $date->format('Y-m-d'));
+                $foundMatch = true;
+            }
+        } catch (\Exception $e) {
+           
+        }
+    }
+    
+    
+    if (!$foundMatch) {
+    
+        $query->orWhere('date_processed', 'like', "%{$searchTerm}%")
+       
+              ->orWhereRaw("DATE_FORMAT(date_processed, '%M %d, %Y %h:%i %p') LIKE ?", ["%{$searchTerm}%"]) // December 30, 2024 11:32 AM
+              ->orWhereRaw("DATE_FORMAT(date_processed, '%M %d, %Y') LIKE ?", ["%{$searchTerm}%"]) // December 30, 2024
+              ->orWhereRaw("DATE_FORMAT(date_processed, '%Y-%m-%d %H:%i:%s') LIKE ?", ["%{$searchTerm}%"]) // 2024-12-30 11:32:00
+              ->orWhereRaw("DATE_FORMAT(date_processed, '%Y-%m-%d') LIKE ?", ["%{$searchTerm}%"]) // 2024-12-30
+              ->orWhereRaw("DATE_FORMAT(date_processed, '%m/%d/%Y') LIKE ?", ["%{$searchTerm}%"]) // 12/30/2024
+              ->orWhereRaw("DATE_FORMAT(date_processed, '%d/%m/%Y') LIKE ?", ["%{$searchTerm}%"]) // 30/12/2024
+              ->orWhereRaw("DATE_FORMAT(date_processed, '%W') LIKE ?", ["%{$searchTerm}%"]) // Monday
+              ->orWhereRaw("DATE_FORMAT(date_processed, '%M') LIKE ?", ["%{$searchTerm}%"]); // December
+    }
 }
 
     public function create()

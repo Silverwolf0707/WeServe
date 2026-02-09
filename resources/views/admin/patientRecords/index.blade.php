@@ -2,14 +2,12 @@
 
 @section('content')
     <div class="card shadow-sm border-0">
-        <!-- Modernized Header -->
         <div class="card-header custom-header d-flex align-items-center">
             <h4 class="mb-0 fw-bold d-flex align-items-center text-white">
                 <i class="fas fa-users me-2"></i> {{ trans('cruds.patientRecord.title') }}
             </h4>
 
             <div class="header-actions d-flex align-items-center ms-auto">
-                <!-- Toggle for showing deleted records -->
                 <div class="form-check form-switch me-3">
                     <input class="form-check-input" type="checkbox" id="showDeletedToggle" {{ $showDeleted ? 'checked' : '' }}>
                     <label class="form-check-label text-white" for="showDeletedToggle">

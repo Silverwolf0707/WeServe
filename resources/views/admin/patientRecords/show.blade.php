@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="card mb-4">
-        <div class="card-header">
+        <div class="card-header custom-header d-flex align-items-center">
             <h5 class="m-0">Patient Record Details</h5>
         </div>
 

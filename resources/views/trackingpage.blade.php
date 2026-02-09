@@ -13,7 +13,7 @@
             <nav class="nav-links" id="navMenu" aria-label="Primary">
                 <span class="close-btn" onclick="toggleMenu()">&times;</span>
                 <a href="/" class="apply-link">Go to Application</a>
-                <a href="#process">Process</a>
+                <a href="#tracking-process">Process</a>
                 <a href="#tracking">Track</a>
             </nav>
 
@@ -25,58 +25,61 @@
     </header>
 
 
-    <section class="process" id="process">
-        <div class="container text-center">
-            <h2>Application Process</h2>
-            <div class="grid-5">
-                <div class="process-card">
-                    <div class="step-circle">1</div>
-                    <div class="process-icon">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <h3>CSWD</h3>
-                    <p>Initial review and verification of submitted application.</p>
+    <section class="tracking-process-section" id="tracking-process">
+    <div class="tracking-process-container">
+        <h2 class="tracking-process-title">Application Process</h2>
+        <div class="tracking-process-grid">
+            <div class="tracking-process-card">
+                <div class="tracking-step-circle">1</div>
+                <div class="tracking-process-icon">
+                    <i class="fas fa-users"></i>
                 </div>
+                <h3>CSWD</h3>
+                <p>Initial review and verification of submitted application.</p>
+            </div>
 
-                <div class="process-card">
-                    <div class="step-circle">2</div>
-                    <div class="process-icon">
-                        <i class="fas fa-building"></i>
-                    </div>
-                    <h3>Mayor's Office</h3>
-                    <p>Approval and endorsement of application.</p>
+            <div class="tracking-process-card">
+                <div class="tracking-step-circle">2</div>
+                <div class="tracking-process-icon">
+                    <i class="fas fa-building"></i>
                 </div>
+                <h3>Mayor's Office</h3>
+                <p>Approval and endorsement of application.</p>
+            </div>
 
-                <div class="process-card">
-                    <div class="step-circle">3</div>
-                    <div class="process-icon">
-                        <i class="fas fa-wallet"></i>
-                    </div>
-                    <h3>Budget</h3>
-                    <p>Funding allocation and verification.</p>
+            <div class="tracking-process-card">
+                <div class="tracking-step-circle">3</div>
+                <div class="tracking-process-icon">
+                    <i class="fas fa-wallet"></i>
                 </div>
+                <h3>Budget</h3>
+                <p>Funding allocation and verification.</p>
+            </div>
 
-                <div class="process-card">
-                    <div class="step-circle">4</div>
-                    <div class="process-icon">
-                        <i class="fas fa-calculator"></i>
-                    </div>
-                    <h3>Accounting</h3>
-                    <p>Processing of financial disbursement.</p>
+            <div class="tracking-process-card">
+                <div class="tracking-step-circle">4</div>
+                <div class="tracking-process-icon">
+                    <i class="fas fa-calculator"></i>
                 </div>
+                <h3>Accounting</h3>
+                <p>Processing of financial disbursement.</p>
+            </div>
 
-                <div class="process-card">
-                    <div class="step-circle">5</div>
-                    <div class="process-icon">
-                        <i class="fas fa-coins"></i>
-                    </div>
-                    <h3>Treasury</h3>
-                    <p>Final release of assistance to claimant.</p>
+            <div class="tracking-process-card">
+                <div class="tracking-step-circle">5</div>
+                <div class="tracking-process-icon">
+                    <i class="fas fa-coins"></i>
                 </div>
+                <h3>Treasury</h3>
+                <p>Final release of assistance to claimant.</p>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
+<style>
+
+</style>
     <section class="tracking" id="tracking">
         <div class="container tracking-container">
             <div class="tracking-header text-center">

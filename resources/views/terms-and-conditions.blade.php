@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>WeServe Applicant Terms and Conditions</title>
+    <title>Terms and Conditions</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png+xml" href="{{ asset('home-icon.png') }}">
     
     <!-- CSS -->
     <link rel="stylesheet" href="{{ asset('css/terms.css') }}">

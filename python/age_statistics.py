@@ -33,10 +33,10 @@ df['month_name'] = df['month'].dt.strftime('%B')
 
 # Compute processing_days as difference between disbursed month and processed date
 df['disbursed_month'] = df['month']
-df['processing_days'] = (df['disbursed_month'] - df['date_processed']).dt.days
+df['processing_days'] = (df['date_processed'] - df['disbursed_month']).dt.days
 
 # Compute average processing time
-average_processing_time = round(df['processing_days'].mean(), 2) if not df['processing_days'].dropna().empty else 0
+average_processing_time = int(round(df['processing_days'].mean())) if not df['processing_days'].dropna().empty else 0
 
 # Dashboard summary (overall)
 top_assistance = df['case_type'].mode().iloc[0] if not df['case_type'].mode().empty else 'N/A'
