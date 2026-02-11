@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@yield('title', 'WeServe - Financial Assistance')</title>
-    <link rel="icon" type="image/png+xml" href="{{ asset('logo.png') }}">
+    <link rel="icon" type="image/png+xml" href="{{ asset('home-icon.png') }}">
     <link rel="stylesheet" href="{{ asset('css/onlineApplication.css') }}">
     <link rel="stylesheet" href="{{ asset('css/header.css') }}">
     <link rel="stylesheet" href="{{ asset('css/buttons.css') }}">
@@ -18,30 +18,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     @stack('styles')
-
-    @php
-    $isLocal = app()->environment('local');
-@endphp
-
-@if ($isLocal)
-    {{-- Dev mode: use Vite dev server --}}
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-@else
-    {{-- Production mode: use built assets from public/build --}}
-    @php
-        $manifest = json_decode(file_get_contents(public_path('build/manifest.json')), true);
-        $css = $manifest['resources/css/app.css']['file'] ?? null;
-        $js  = $manifest['resources/js/app.js']['file'] ?? null;
-    @endphp
-
-    @if ($css)
-        <link rel="stylesheet" href="{{ asset('build/' . $css) }}">
-    @endif
-
-    @if ($js)
-        <script type="module" src="{{ asset('build/' . $js) }}"></script>
-    @endif
-@endif
     @yield('styles')
 </head>
 @if(session('toast'))

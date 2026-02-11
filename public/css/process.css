@@ -12,6 +12,10 @@ section.process h2 {
     color: #064e3b;
 }
 
+.process-card .step-circle{
+    color: #064E3B;
+}
+
 .grid-3 {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -25,7 +29,7 @@ section.process h2 {
     border-radius: 1.5rem;
     border-color: #064e3b;
     border-style: solid;
-    border-width: 1px;
+    border-width: 2px;
     padding: 3rem 2rem;
     display: flex;
     flex-direction: column;
@@ -98,5 +102,610 @@ section.process h2 {
     .process-card {
         max-width: 100%;
         padding: 2.5rem 1.5rem; 
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+/* ============================================= */
+/* TRACKING PROCESS SECTION - Unique Classes */
+/* ============================================= */
+
+/* Main Section */
+.tracking-process-section {
+    padding: 6rem 1.5rem;
+    background: #ffffff;
+    color: #1f2937;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Container */
+.tracking-process-container {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+/* Section Title */
+.tracking-process-section .tracking-process-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 3rem;
+    color: #064e3b;
+    position: relative;
+    display: inline-block;
+}
+
+/* 5-Column Grid */
+.tracking-process-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 2rem;
+    align-items: stretch;
+    justify-items: center;
+}
+
+/* Process Cards */
+.tracking-process-card {
+    border-radius: 1.5rem;
+    border: 2px solid #064e3b;
+    padding: 3rem 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    background: white;
+    min-height: 100%;
+    width: 100%;
+    position: relative;
+    overflow: visible;
+}
+
+.tracking-process-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+}
+
+/* Step Number */
+.tracking-step-circle {
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #064e3b;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    border: 4px solid white;
+    box-shadow: 0 4px 12px rgba(6, 78, 59, 0.2);
+    z-index: 2;
+    transition: all 0.3s ease;
+}
+
+.tracking-process-card:hover .tracking-step-circle {
+    transform: translateX(-50%) scale(1.1);
+    box-shadow: 0 8px 20px rgba(6, 78, 59, 0.3);
+}
+
+/* Process Icon */
+.tracking-process-icon {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: rgba(6, 78, 59, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    color: #064e3b;
+    margin-top: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: inset 0 4px 6px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.tracking-process-card:hover .tracking-process-icon {
+    transform: scale(1.15);
+    background: rgba(6, 78, 59, 0.15);
+    color: #042e23;
+}
+
+/* Card Content */
+.tracking-process-card h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0.5rem 0;
+    color: #064e3b;
+    text-align: center;
+}
+
+.tracking-process-card p {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #1f2937;
+    text-align: center;
+    margin: 0;
+    opacity: 0.9;
+}
+
+/* Department-specific text colors */
+.tracking-process-card:nth-child(1) h3 { color: #064E3B; }
+.tracking-process-card:nth-child(2) h3 { color: #064E3B; }
+.tracking-process-card:nth-child(3) h3 { color: #064E3B; }
+.tracking-process-card:nth-child(4) h3 { color: #064E3B; }
+.tracking-process-card:nth-child(5) h3 { color: #064E3B; }
+
+/* ============================================= */
+/* RESPONSIVE DESIGN */
+/* ============================================= */
+
+/* Large screens: 5 columns */
+@media (min-width: 1201px) {
+    .tracking-process-grid {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}
+
+/* Medium-large screens: 3 columns */
+@media (max-width: 1200px) and (min-width: 769px) {
+    .tracking-process-grid {
+        grid-template-columns: repeat(3, 1fr);
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+    
+    .tracking-process-card {
+        min-height: 320px;
+    }
+}
+
+/* Tablet: 2 columns */
+@media (max-width: 768px) and (min-width: 577px) {
+    .tracking-process-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+        max-width: 700px;
+        margin: 0 auto;
+    }
+    
+    .tracking-process-section .tracking-process-title {
+        font-size: 2.25rem;
+    }
+    
+    .tracking-process-card {
+        padding: 2.5rem 1.5rem;
+        min-height: 300px;
+    }
+    
+    .tracking-process-icon {
+        width: 65px;
+        height: 65px;
+        font-size: 1.6rem;
+    }
+    
+    .tracking-step-circle {
+        width: 45px;
+        height: 45px;
+        font-size: 1.3rem;
+        border-width: 3px;
+    }
+}
+
+/* Mobile: 1 column */
+@media (max-width: 576px) {
+    .tracking-process-grid {
+        grid-template-columns: 1fr;
+        gap: 3rem;
+        max-width: 400px;
+        margin: 0 auto;
+    }
+    
+    .tracking-process-section {
+        padding: 4rem 1rem;
+    }
+    
+    .tracking-process-section .tracking-process-title {
+        font-size: 2rem;
+        margin-bottom: 2.5rem;
+    }
+    
+    .tracking-process-card {
+        padding: 2.5rem 1.5rem;
+        min-height: 280px;
+    }
+    
+    .tracking-process-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+    }
+    
+    .tracking-step-circle {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+        top: -20px;
+    }
+    
+    .tracking-process-card h3 {
+        font-size: 1.3rem;
+    }
+    
+    .tracking-process-card p {
+        font-size: 0.95rem;
+    }
+}
+
+/* Small mobile devices */
+@media (max-width: 380px) {
+    .tracking-process-card {
+        padding: 2rem 1.25rem;
+        min-height: 260px;
+    }
+    
+    .tracking-process-section .tracking-process-title {
+        font-size: 1.8rem;
+    }
+}
+
+/* Card entrance animation */
+@keyframes trackingCardEntrance {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.tracking-process-card {
+    animation: trackingCardEntrance 0.6s ease forwards;
+    animation-delay: calc(var(--tracking-card-index, 0) * 0.1s);
+    opacity: 0;
+}
+
+/* Animation delays for each card */
+.tracking-process-card:nth-child(1) { --tracking-card-index: 1; }
+.tracking-process-card:nth-child(2) { --tracking-card-index: 2; }
+.tracking-process-card:nth-child(3) { --tracking-card-index: 3; }
+.tracking-process-card:nth-child(4) { --tracking-card-index: 4; }
+.tracking-process-card:nth-child(5) { --tracking-card-index: 5; }
+
+/* Loading state */
+.tracking-process-grid.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+/* Focus states for accessibility */
+.tracking-process-card:focus {
+    outline: 3px solid #064e3b;
+    outline-offset: 3px;
+}
+
+/* Active state */
+.tracking-process-card:active {
+    transform: translateY(-4px);
+    transition: transform 0.1s ease;
+}
+
+
+
+/* ===================== */
+/* TRACKING PAGE STYLES */
+/* ===================== */
+
+
+/* Modern Tracking Section */
+.tracking {
+    padding: 70px 0;
+    background: white;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Section Header */
+.tracking-header {
+    margin-bottom: 40px;
+    text-align: center;
+}
+
+.tracking-header h1 {
+    font-size: 42px;
+    font-weight: 800;
+    color: #064e3b;
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+}
+
+.tracking-subtitle {
+    font-size: 16px;
+    color: #374151;
+    opacity: 0.8;
+}
+
+/* Card Wrapper */
+.tracking-log-card-wrapper {
+    display: flex;
+    justify-content: center;
+}
+
+/* Glassmorphic Card */
+.tracking-log-card {
+    width: 100%;
+    max-width: 850px;
+    padding: 30px 25px;
+    
+}
+
+/* 🔹 Tracking Entry Card */
+.tracking-entry {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    padding: 18px 20px;
+    border-left: 5px solid transparent;
+    margin-bottom: 18px;
+    background: #f9f9f9; /* default fallback */
+    border-radius: 14px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-align: left;
+    position: relative;
+}
+
+.tracking-entry:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+}
+
+/* Inside each entry */
+.tracking-entry h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.tracking-entry p {
+    font-size: 14px;
+    margin: 0;
+    opacity: 0.95;
+}
+
+.status-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+.status-icon i {
+    font-size: 18px;
+}
+
+.status-details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex: 1;
+    position: relative;
+}
+
+/* Badge inside details, right-aligned */
+.status-badge-container.right {
+    position: absolute;
+    top: 50%;
+    right: 15px;
+    transform: translateY(-50%);
+}
+
+.tracking-date {
+    font-size: 12px;
+    margin-bottom: 4px;
+}
+
+.tracking-status {
+    font-size: 14px;
+    margin: 0;
+}
+
+.rollback-badge {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: #ff6b6b;
+    color: white;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.empty-entry {
+    text-align: center;
+    color: #999;
+    font-style: italic;
+}
+
+
+
+
+.process-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+}
+
+
+
+
+/* Step circle */
+.step-circle {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #f4f5f4;
+    margin-bottom: 5px;
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+    .grid-5 {
+        grid-template-columns: repeat(3, 1fr); /* 3 columns on medium screens */
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .grid-5 {
+        grid-template-columns: repeat(2, 1fr); /* 2 columns on tablets */
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .grid-5 {
+        grid-template-columns: 1fr; /* 1 column on mobile */
+        gap: 1rem;
+    }
+
+    .process-card {
+        min-height: 250px;
+        padding: 1.5rem 0.5rem;
+    }
+}
+
+
+/* ===================== */
+/* PROCESS STEPPER BASE */
+/* ===================== */
+
+.process-stepper {
+    margin-top: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap; /* wrap on small screens */
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 10px; /* spacing on small screens */
+}
+
+/* ICON CIRCLE */
+.step-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.3s ease;
+}
+
+/* LABEL */
+.step-label {
+    margin-top: 6px;
+    font-size: 14px;
+    text-align: center;
+}
+
+/* CONNECTOR LINE */
+.step-line {
+    width: 60px;
+    height: 4px;
+    border-radius: 2px;
+    margin: 0 6px;
+    transform: translateY(-10px);
+}
+
+/* STEPPER LINE COLORS */
+.line-grey { background-color: #e5e7eb; } 
+.line-green { background-color: #28a745; } 
+.line-blue  { background-color: #2563eb; } 
+
+/* COMPLETED / CURRENT / PENDING COLORS */
+.step.completed .step-icon { background: #16a34a; color: white; }
+.step.current .step-icon { background: #2563eb; color: white; }
+.step.pending .step-icon { background: #f9fafb; color: #6b7280; border: 1px solid #e5e7eb; }
+
+/* ===================== */
+/* RESPONSIVE BREAKPOINTS */
+/* ===================== */
+
+/* Large desktop: 1440px+ */
+@media (min-width: 1440px) {
+    .step-icon { width: 56px; height: 56px; font-size: 22px; }
+    .step-label { font-size: 16px; }
+    .step-line { width: 80px; height: 5px; margin: 0 8px; transform: translateY(-12px); }
+}
+
+/* Desktop: 1025px - 1439px */
+@media (min-width: 1025px) and (max-width: 1439px) {
+    .step-icon { width: 50px; height: 50px; font-size: 20px; }
+    .step-label { font-size: 15px; }
+    .step-line { width: 70px; height: 4px; margin: 0 7px; transform: translateY(-11px); }
+}
+
+/* Tablet: 768px - 1024px */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .process-stepper { flex-wrap: wrap; justify-content: center; }
+    .step-icon { width: 44px; height: 44px; font-size: 18px; }
+    .step-label { font-size: 14px; }
+    .step-line { width: 55px; height: 4px; margin: 0 5px; transform: translateY(-10px); }
+}
+
+@media (max-width: 425px) {
+    .process-stepper {
+        display: none !important;
+    }
+}
+
+
+@media (max-width: 425px) {
+    .tracking-entry .status-badge-container.right {
+        top: -1px;
+        right: 10px;    
+        transform: none; 
+    }
+
+    .tracking-entry .status-details {
+        padding-right: 60px; 
+    }
+
+    .tracking-entry .tracking-date {
+        display: inline-block;
+        width: calc(100% - 70px); 
     }
 }
