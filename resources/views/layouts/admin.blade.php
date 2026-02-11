@@ -322,6 +322,7 @@
 
 
   <script src="{{ asset('js/main.js') }}"></script>
+  @vite(['resources/js/app.js'])
 
   {{-- <script>
     $(document).ready(function () {
