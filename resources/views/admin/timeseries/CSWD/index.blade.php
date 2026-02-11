@@ -2,8 +2,8 @@
 
 @can('CSWD-ANALYTICS')
     @section('content')
-        @include('admin.timeseries.CSWD.stl_decomposition')
-        @include('admin.timeseries.CSWD.statistics')     
+        @include('admin.timeseries.cswd.stl_decomposition')
+        @include('admin.timeseries.cswd.statistics')     
     @endsection
 @endcan
 
