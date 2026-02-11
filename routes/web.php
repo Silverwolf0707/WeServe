@@ -126,6 +126,9 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
 
     Route::get('time-series', [TimeSeriesController::class, 'index'])->name('time-series.index');
     Route::get('timeseries/get-stl-json', [TimeSeriesController::class, 'getStlJson']);
+    Route::get('timeseries/get-weekly-stl', [TimeSeriesController::class, 'getWeeklyStlJson'])
+    ->name('admin.timeseries.get-weekly-stl');
+
     Route::get('statistics/get-statistics', [StatisticsController::class, 'index'])->name('statistics.getStatistics');
 
     Route::get('statistics/deficiencies', [StatisticsController::class, 'getDeficiencyData'])->name('statistics.deficiencies');

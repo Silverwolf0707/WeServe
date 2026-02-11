@@ -199,7 +199,8 @@
         <div class="card shadow-sm mb-4">
             <div class="card-header d-flex flex-wrap justify-content-between align-items-center">
                 <div class="d-flex flex-wrap align-items-center gap-2">
-                    <h6 class="mb-0 fw-bold me-3">📈 Time Series</h6>
+                    <i class="fas fa-chart-line    "></i>
+                    <h6 class="mb-0 fw-bold me-3">Monthly Application Pattern</h6>
                     <span class="label">Component:</span>
 
                     <select id="chartSelector" class="form-select form-select-sm me-2" style="width: auto;">
@@ -236,8 +237,7 @@
             <!-- Header -->
             <div class="card-header d-flex align-items-center text-white border-0"
                 style="background-color: #004080; border-radius: 1rem 1rem 0 0; padding: 1rem;">
-                <i class="fas fa-chart-line me-2 fs-5"></i>
-                <h6 class="mb-0 fw-semibold">STL Decomposition Insights</h6>
+                <h6 class="mb-0 fw-semibold">Interpretation</h6>
             </div>
 
             <!-- Body -->
@@ -249,6 +249,151 @@
         </div>
     </div>
 </div>
+
+<!-- Weekly STL Section -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header d-flex align-items-center">
+                <i class="fas fa-calendar-week me-2 text-primary"></i>
+                <h6 class="mb-0 fw-bold">Weekly Application Pattern</h6>
+            </div>
+
+            <div class="card-body">
+                <div class="row">
+                    <!-- Chart -->
+                    <div class="col-md-8">
+                        <canvas id="weeklyStlChart" height="220"></canvas>
+                    </div>
+
+                    <!-- Insight -->
+                    <div class="col-md-4">
+                        <div class="p-3 rounded bg-light h-100">
+                            <h6 class="fw-semibold mb-2">Interpretation</h6>
+                            <div id="weekly-stl-insight" class="small text-muted">
+                                Loading weekly insights…
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function loadWeeklyStl() {
+    try {
+        const res = await fetch('/admin/timeseries/get-weekly-stl');
+
+        const json = await res.json();
+
+        const data = json.weekly_stl.weekday_seasonality;
+
+        const labels = Object.keys(data);
+        const values = Object.values(data);
+
+        const ctx = document.getElementById('weeklyStlChart').getContext('2d');
+        if (window.weeklyChart) window.weeklyChart.destroy();
+
+        window.weeklyChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Seasonal Effect',
+                    data: values,
+                    backgroundColor: values.map(v =>
+                        v > 0 ? 'rgba(16,185,129,0.6)' : 'rgba(239,68,68,0.6)'
+                    ),
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `Seasonal effect: ${ctx.raw.toFixed(2)}`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        title: { display: true, text: 'Deviation from Average' },
+                        grid: { color: '#eee' }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+
+        generateWeeklyInsight(values, labels);
+
+    } catch (err) {
+        console.error('Failed to load weekly STL', err);
+    }
+}
+</script>
+
+<script>
+function generateWeeklyInsight(values, labels) {
+    const absAvg =
+        values.map(v => Math.abs(v)).reduce((a, b) => a + b, 0) / values.length;
+
+    let insight = '';
+
+    if (absAvg < 0.5) {
+        // Minimal variation
+        insight = `
+        <p>
+            Analysis of weekly application patterns shows that activity is <strong>relatively uniform across the week</strong>. 
+            There are no significant spikes or drops on any particular day, indicating that applicants are processed evenly from Monday to Sunday.
+        </p>
+        <p>
+            <strong>What this means for operations:</strong> You likely do not need to adjust staffing levels for specific weekdays. 
+            Current scheduling appears sufficient to handle the weekly workload without bottlenecks.
+        </p>
+        <p>
+            <strong>Recommendation:</strong> Continue monitoring weekly patterns periodically to ensure this stability persists, especially after holidays or policy changes that might affect applicant volume.
+        </p>`;
+    } else {
+        // Noticeable weekday seasonality
+        const max = Math.max(...values);
+        const min = Math.min(...values);
+        const peakDay = labels[values.indexOf(max)];
+        const lowDay = labels[values.indexOf(min)];
+
+        insight = `
+        <p>
+            Weekly STL analysis reveals a clear <strong>weekday pattern in applications</strong>. 
+            The busiest day is <strong>${peakDay}</strong>, with higher-than-average application volume, 
+            while <strong>${lowDay}</strong> has noticeably lower activity.
+        </p>
+        <p>
+            <strong>Operational implications:</strong> Consider scheduling more staff on <strong>${peakDay}</strong> 
+            to handle the increased workload efficiently and avoid delays. Conversely, you may adjust staffing on <strong>${lowDay}</strong> to optimize resources without affecting service quality.
+        </p>
+        <p>
+            <strong>Actionable recommendations:</strong>
+            <ul>
+                <li>Align staff shifts and breaks according to peak and low-volume days.</li>
+                <li>Monitor weekly trends to catch any emerging spikes or dips in workload.</li>
+                <li>Plan for seasonal or special events that may temporarily alter the usual weekday pattern.</li>
+            </ul>
+        </p>
+        <p>
+            This analysis helps ensure that applicants are served efficiently while making the best use of staff resources.
+        </p>`;
+    }
+
+    document.getElementById('weekly-stl-insight').innerHTML = insight;
+}
+</script>
+
+
 
     <script>
         async function loadStlData(category = 'ALL', component = 'observed', year = 'ALL') {
@@ -554,6 +699,7 @@
 
         loadDashboardSummary();
         loadStlData();
+        loadWeeklyStl();
     </script>
 </body>
 
