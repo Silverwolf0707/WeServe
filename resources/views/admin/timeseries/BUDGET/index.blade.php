@@ -3,8 +3,8 @@
     
 
 @section('content')
-      @include('admin.timeseries.BUDGET.stl_decomposition')
-      @include('admin.timeseries.BUDGET.statistics')
+      @include('admin.timeseries.budget.stl_decomposition')
+      @include('admin.timeseries.budget.statistics')
       
 @endsection  
 @endcan    
