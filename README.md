@@ -166,30 +166,23 @@ SSH access to your server
 # SSH into your VPS
 ```bash
 ssh root@your_server_ip
-```
 # Update system
-```bash
 apt update && apt upgrade -y
-```
+
 # Set server hostname
-```bash
 hostnamectl set-hostname weserve.yourdomain.com
-```
+
 # Create deployment user (non-root for security)
-```bash
 adduser weserve-system
 usermod -aG sudo weserve-system
-```
+
 # Switch to new user
-```bash
 su - weserve-system
-```
+
 # Generate SSH key for GitHub (if not already done)
-```bash
 ssh-keygen -t ed25519 -C "weserve-system@vps" -f ~/.ssh/id_ed25519 -N ""
-```
+
 # Display public key to add to GitHub
-```bash
 cat ~/.ssh/id_ed25519.pub
 ```
 
@@ -214,13 +207,12 @@ Check Allow write access (if needed for CI/CD)
 # Switch to root for installation
 sudo su -
 
-# Install PHP 8.3 (latest stable)
+# Install PHP
 add-apt-repository ppa:ondrej/php -y
 apt update
-apt install -y php8.3-fpm php8.3-cli php8.3-mysql \
-               php8.3-zip php8.3-gd php8.3-mbstring \
-               php8.3-curl php8.3-xml php8.3-bcmath \
-               php8.3-redis php8.3-intl php8.3-sqlite3
+apt install -y php8.4-fpm php8.4-cli php8.4-mysql \
+               php8.4-zip php8.4-gd php8.4-mbstring \
+               php8.4-curl php8.4-xml php8.4-bcmath
 
 # Install Composer (latest)
 php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
@@ -228,33 +220,266 @@ php composer-setup.php --install-dir=/usr/local/bin --filename=composer --versio
 php -r "unlink('composer-setup.php');"
 
 # Install Node.js 20.x (latest LTS)
-curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
 apt install -y nodejs
 
 # Install Nginx (latest)
 apt install -y nginx
 
-# Install MySQL 8.0
-apt install -y mysql-server
-
-# Install Redis
-apt install -y redis-server
-
-# Install Supervisor
-apt install -y supervisor
-
 # Install Certbot for SSL
 apt install -y certbot python3-certbot-nginx
 
 # Verify versions
-php -v          # Should show PHP 8.3.x
-composer --version  # Should show 2.7.1
+php -v          # Should show PHP 8.4.x
+composer --version  # Should show 2.x
 node -v         # Should show v20.x
 nginx -v        # Should show latest
-mysql --version # Should show 8.0.x
-redis-server -v # Should show 7.x
 ```
 
+## Create Directory Structure
+```bash
+# Create application directory in htdocs (Cloud Panel default)
+mkdir -p /home/htdocs/weserve.yourdomain.com
+cd /home/htdocs/weserve.yourdomain.com
+
+# Set ownership
+chown -R weserve-system:weserve-system /home/htdocs/weserve.yourdomain.com
+
+# Switch to application user
+su - weserve-system
+cd /home/htdocs/weserve.yourdomain.com
+```
+
+## Clone Repository
+```bash
+# Clone with SSH (using configured key)
+git clone git@github.com:Silverwolf0707/WeServe.git .
+# Note: The dot (.) clones into current directory
+
+# Verify clone
+ls -la
+```
+## Configure Database
+Use CloudPanel for the creation of MySQL database then:
+```bash
+# Switch back to application user
+su - weserve-system
+cd /home/htdocs/weserve.yourdomain.com
+
+# Copy environment file
+cp .env.example .env
+
+# Generate application key
+php artisan key:generate
+
+# Edit .env file to match the db name and pass
+nano .env
+
+# APP_NAME=WeServe
+# APP_ENV=production
+# APP_DEBUG=false
+# APP_URL=https://weserve.yourdomain.com
+
+# DB_CONNECTION=mysql
+# DB_HOST=127.0.0.1
+# DB_PORT=3306
+# DB_DATABASE=weserve_prod
+# DB_USERNAME=weserve_user
+# DB_PASSWORD=YourStrongPasswordHere123!
+
+# # Add these for production
+# SESSION_DOMAIN=.weserve.yourdomain.com
+# SANCTUM_STATEFUL_DOMAINS=weserve.yourdomain.com
+```
+
+## Install Dependencies and Run Migrations
+```bash
+# Install PHP dependencies
+composer install --optimize-autoloader --no-dev
+
+# Install and build frontend
+npm install
+npm run build
+
+# Create storage link
+php artisan storage:link
+
+# Run migrations and seeders
+php artisan migrate --force
+php artisan db:seed --force
+
+# Set proper permissions
+cd /home/htdocs
+chown -R www-data:www-data weserve.yourdomain.com
+chmod -R 755 weserve.yourdomain.com/storage
+chmod -R 755 weserve.yourdomain.com/bootstrap/cache
+```
+
+## Configure Nginx
+```bash
+# Create Nginx configuration
+sudo nano /etc/nginx/sites-available/weserve.yourdomain.com
+
+# server {
+#     listen 80;
+#     server_name weserve.yourdomain.com;
+#     root /home/htdocs/weserve.yourdomain.com/public;
+
+#     add_header X-Frame-Options "SAMEORIGIN";
+#     add_header X-Content-Type-Options "nosniff";
+#     add_header X-XSS-Protection "1; mode=block";
+
+#     index index.php index.html;
+
+#     charset utf-8;
+
+#     location / {
+#         try_files $uri $uri/ /index.php?$query_string;
+#     }
+
+#     location = /favicon.ico { access_log off; log_not_found off; }
+#     location = /robots.txt  { access_log off; log_not_found off; }
+
+#     error_page 404 /index.php;
+
+#     location ~ \.php$ {
+#         fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
+#         fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+#         include fastcgi_params;
+#     }
+
+#     location ~ /\.(?!well-known).* {
+#         deny all;
+#     }
+
+#     client_max_body_size 20M;
+# }
+
+# Enable site
+sudo ln -s /etc/nginx/sites-available/weserve.yourdomain.com /etc/nginx/sites-enabled/
+
+# Test configuration
+sudo nginx -t
+
+# Restart Nginx
+sudo systemctl restart nginx
+sudo systemctl reload php8.4-fpm
+```
+
+## Configure SSL Certificate
+```bash
+# Obtain SSL certificate
+sudo certbot --nginx -d weserve.yourdomain.com --non-interactive --agree-tos --email admin@yourdomain.com
+```
+# Optional
+## For CI/CD using Github Actions
+## Create Deployment Script
+```bash
+#!/bin/bash
+set -e
+
+echo "Laravel Deployment Started - $(date)"
+echo "========================================"
+
+DEPLOY_DIR="/home/weserve-system/htdocs/www.weserve-system.online"
+cd "$DEPLOY_DIR"
+
+echo "Fixing git ownership issues..."
+git config --global --add safe.directory "$DEPLOY_DIR" 2>/dev/null || true
+
+echo "Pulling latest changes..."
+git fetch origin
+git reset --hard origin/main
+
+echo "Running migrations..."
+php artisan migrate 
+
+echo "Optimizing application..."
+php artisan optimize:clear
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+
+echo ""
+echo " Deployment completed at $(date)"
+echo "Your site should be live at: https://www.weserve-system.online"
+```
+```bash
+# Make script executable
+sudo chmod +x /usr/local/bin/deploy-laravel.sh
+
+# Test script
+sudo /usr/local/bin/deploy-laravel.sh
+```
+## Create Workflow files under .github/
+## cd.yml
+```bash
+name: CD - Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: weserve-system
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script: |
+            /usr/local/bin/deploy-laravel.sh
+
+```
+
+## ci.yml
+```bash
+name: CI - Build & Test
+
+on:
+  push:
+    branches-ignore:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  laravel-ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, bcmath, pdo, mysql, tokenizer, xml, curl
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          touch database/database.sqlite
+          php artisan migrate --env=testing --force
+
+      - name: Run tests
+        run: php artisan test
+```
 
 ## License
 
