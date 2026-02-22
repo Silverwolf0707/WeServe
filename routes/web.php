@@ -55,6 +55,16 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     Route::post('patient-records/parse-csv-import', [PatientRecordsController::class, 'parseCsvImport'])->name('patient-records.parseCsvImport');
     Route::post('patient-records/process-csv-import', [PatientRecordsController::class, 'processCsvImport'])->name('patient-records.processCsvImport');
     Route::post('patient-records/{id}/submit', [PatientRecordsController::class, 'submit'])->name('patient-records.submit');
+     
+    Route::put('patient-records/{id}/restore', [PatientRecordsController::class, 'restore'])
+        ->name('patient-records.restore');
+    Route::post('patient-records/mass-restore', [PatientRecordsController::class, 'massRestore'])
+        ->name('patient-records.massRestore');
+    Route::delete('patient-records/{id}/force-delete', [PatientRecordsController::class, 'forceDelete'])
+        ->name('patient-records.force-delete');
+    Route::delete('patient-records/mass-force-delete', [PatientRecordsController::class, 'massForceDelete'])
+        ->name('patient-records.massForceDelete');
+    Route::get('patient-records/export', [PatientRecordsController::class, 'export'])->name('patient-records.export');
     Route::resource('patient-records', PatientRecordsController::class);
     Route::post('patient-records/mass-submit', [PatientRecordsController::class, 'massSubmit'])->name('patient-records.massSubmit');
     Route::post('patient-records/{id}/submit-emergency', [PatientRecordsController::class, 'submitEmergency'])
@@ -66,21 +76,17 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     Route::get('excel/template/{type}', [PatientRecordsController::class, 'excelTemplate'])
         ->name('excel.template');
     
-    Route::put('patient-records/{id}/restore', [PatientRecordsController::class, 'restore'])
-        ->name('patient-records.restore');
-    Route::post('patient-records/mass-restore', [PatientRecordsController::class, 'massRestore'])
-        ->name('patient-records.massRestore');
-    Route::delete('patient-records/{id}/force-delete', [PatientRecordsController::class, 'forceDelete'])
-        ->name('patient-records.force-delete');
-    Route::delete('patient-records/mass-force-delete', [PatientRecordsController::class, 'massForceDelete'])
-        ->name('patient-records.massForceDelete');
-
+   
     Route::resource('online-applications', OnlinePatientApplicationController::class)
         ->only(['index', 'show']);
     Route::post('/applications/{application}/confirm', [OnlinePatientApplicationController::class, 'confirmTransfer'])
         ->name('applications.confirm');
 
+    
+    
 
+    Route::get('process-tracking/export/{format?}', [ProcessTrackingController::class, 'export'])
+     ->name('process-tracking.export');
     Route::resource('process-tracking', ProcessTrackingController::class)->only(['index', 'show']);
     Route::post('process-tracking/{id}/submit', [ProcessTrackingController::class, 'submit'])->name('process-tracking.submit');
     Route::post('process-tracking/{id}/decision', [ProcessTrackingController::class, 'decision'])->name('process-tracking.decision');

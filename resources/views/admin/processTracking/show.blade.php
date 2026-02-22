@@ -1,2090 +1,1517 @@
 @extends('layouts.admin')
 
 @section('content')
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            <h5 class="m-0"><i class="fas fa-tasks me-2"></i> Process Tracking</h5>
-        </div>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
 
-        <div class="card-body">
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    <h6 class="text-primary">Application Info</h6>
-                    <table class="table table-sm table-borderless">
-                        <tr>
-                            <th>Control Number:</th>
-                            <td>{{ $patient->control_number }}</td>
-                        </tr>
-                        <tr>
-                            <th>Date Processed:</th>
-                            <td>{{ \Carbon\Carbon::parse($patient->date_processed)->format('F j, Y g:i A') }}</td>
-                        </tr>
-                        <tr>
-                            <th>Claimant Name:</th>
-                            <td>{{ $patient->claimant_name }}</td>
-                        </tr>
-                        <tr>
-                            <th>Case Category:</th>
-                            <td>{{ $patient->case_category }}</td>
-                        </tr>
-                    </table>
-                </div>
+    <style>
+        :root {
+            --pr-forest: #064e3b; --pr-forest-deep: #052e22; --pr-forest-mid: #065f46;
+            --pr-lime: #74ff70; --pr-lime-dim: #52e84e;
+            --pr-lime-ghost: rgba(116,255,112,.10); --pr-lime-border: rgba(116,255,112,.30);
+            --pr-surface: #ffffff; --pr-surface2: #f0fdf4; --pr-muted: #ecfdf5;
+            --pr-border: #d1fae5; --pr-border-dark: #a7f3d0;
+            --pr-text: #052e22; --pr-sub: #3d7a62; --pr-danger: #ef4444;
+            --pr-radius: 12px;
+            --pr-shadow: 0 2px 8px rgba(6,78,59,.08), 0 8px 24px rgba(6,78,59,.06);
+            --pr-shadow-lg: 0 4px 24px rgba(6,78,59,.16), 0 16px 48px rgba(6,78,59,.10);
+            --pr-shadow-lime: 0 2px 12px rgba(116,255,112,.25);
+        }
 
-                <div class="col-md-6">
-                    <h6 class="text-primary">Process Status</h6>
-                    <table class="table table-sm table-borderless" id="process-status-table">
-                        <tr>
-                            <th>Case Worker:</th>
-                            <td>{{ $patient->case_worker }}</td>
-                        </tr>
-                        <tr>
-                            <th>Current Status:</th>
-                            <td>
-                                <span class="badge {{ getStatusBadgeClass($latestStatus->status) }}"
-                                    id="current-status-badge">
-                                    {{ $latestStatus->status }}
-                                </span>
-                            </td>
-                        </tr>
+        .pr-page { font-family:'DM Sans',sans-serif; color:var(--pr-text); padding:0 0 2rem; }
+
+        /* ── Hero ── */
+        .pr-hero { background:linear-gradient(135deg,#052e22 0%,#064e3b 55%,#065f46 100%); border-radius:var(--pr-radius); padding:22px 28px; margin-bottom:16px; position:relative; overflow:visible; box-shadow:var(--pr-shadow-lg); }
+        .pr-hero::before { content:''; position:absolute; inset:0; border-radius:var(--pr-radius); background:radial-gradient(ellipse 380px 200px at 95% 50%,rgba(116,255,112,.13) 0%,transparent 65%),radial-gradient(ellipse 180px 100px at 5% 80%,rgba(116,255,112,.07) 0%,transparent 70%),radial-gradient(ellipse 250px 120px at 50% -20%,rgba(255,255,255,.04) 0%,transparent 60%); pointer-events:none; z-index:0; overflow:hidden; }
+        .pr-hero::after { content:''; position:absolute; top:0; left:28px; right:28px; height:2px; background:linear-gradient(to right,transparent,var(--pr-lime),transparent); border-radius:2px; opacity:.55; }
+        .pr-hero-inner { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; position:relative; z-index:1; margin-bottom:14px; }
+        .pr-hero-left { display:flex; align-items:center; gap:16px; }
+        .pr-hero-icon { width:46px; height:46px; background:rgba(116,255,112,.12); border:1px solid rgba(116,255,112,.30); border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:1.15rem; color:var(--pr-lime); backdrop-filter:blur(4px); flex-shrink:0; }
+        .pr-hero-title { font-size:1.18rem; font-weight:700; color:#fff; letter-spacing:-.01em; margin:0 0 3px; line-height:1.2; }
+        .pr-hero-meta { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .pr-badge { display:inline-flex; align-items:center; gap:4px; border-radius:20px; font-size:.72rem; font-weight:600; padding:2px 10px; letter-spacing:.03em; line-height:1.6; }
+        .pr-badge-count { background:rgba(116,255,112,.14); border:1px solid rgba(116,255,112,.32); color:var(--pr-lime); }
+        .pr-back-btn { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,.08); color:rgba(255,255,255,.82); border:1px solid rgba(255,255,255,.18); border-radius:8px; padding:7px 14px; font-size:.8rem; font-weight:500; font-family:'DM Sans',sans-serif; cursor:pointer; transition:all .18s; white-space:nowrap; text-decoration:none; }
+        .pr-back-btn:hover { background:rgba(116,255,112,.12); border-color:rgba(116,255,112,.35); color:var(--pr-lime); }
+
+        /* ── Status badges ── */
+        .pt-status { display:inline-flex; align-items:center; gap:6px; border-radius:20px; padding:4px 12px; font-size:.74rem; font-weight:700; white-space:nowrap; line-height:1.4; }
+        .pt-status i { font-size:.72rem; }
+        .pt-s-processing   { background:rgba(107,114,128,.15); color:#1f2937; border:1px solid rgba(107,114,128,.40); }
+        .pt-s-submitted    { background:rgba(59,130,246,.15);  color:#1e3a8a; border:1px solid rgba(59,130,246,.40); }
+        .pt-s-emergency    { background:rgba(239,68,68,.15);   color:#7f1d1d; border:1px solid rgba(239,68,68,.40); }
+        .pt-s-approved     { background:rgba(5,150,105,.15);   color:#052e22; border:1px solid rgba(5,150,105,.40); }
+        .pt-s-rejected     { background:rgba(239,68,68,.15);   color:#7f1d1d; border:1px solid rgba(239,68,68,.40); }
+        .pt-s-budget       { background:rgba(245,158,11,.15);  color:#78350f; border:1px solid rgba(245,158,11,.40); }
+        .pt-s-dv           { background:rgba(6,182,212,.15);   color:#0c4a6e; border:1px solid rgba(6,182,212,.40); }
+        .pt-s-ready        { background:rgba(139,92,246,.15);  color:#3b0764; border:1px solid rgba(139,92,246,.40); }
+        .pt-s-disbursed    { background:rgba(124,58,237,.15);  color:#3b0764; border:1px solid rgba(124,58,237,.40); }
+        .pt-s-rollback-tag { font-size:.62rem; padding:1px 6px; border-radius:10px; margin-left:3px; vertical-align:middle; background:rgba(245,158,11,.18); color:#78350f; border:1px solid rgba(245,158,11,.45); font-weight:700; }
+
+        /* ── Cards ── */
+        .pr-card { background:var(--pr-surface); border-radius:var(--pr-radius); border:1px solid var(--pr-border); box-shadow:var(--pr-shadow); margin-bottom:14px; }
+        .pr-card-header { display:flex; align-items:center; gap:10px; padding:14px 20px; border-bottom:1px solid var(--pr-border); background:var(--pr-surface2); border-radius:var(--pr-radius) var(--pr-radius) 0 0; }
+        .pr-card-header-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:.82rem; flex-shrink:0; }
+        .pr-card-header-title { font-size:.88rem; font-weight:700; color:var(--pr-text); letter-spacing:-.01em; }
+        .pr-card-body { padding:18px 20px; }
+
+        /* ── Info grid ── */
+        .pr-info-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+        .pr-info-row { display:flex; flex-direction:column; gap:2px; }
+        .pr-info-label { font-size:.67rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--pr-sub); }
+        .pr-info-value { font-size:.88rem; font-weight:600; color:var(--pr-text); }
+        .pr-info-value.mono { font-family:monospace; font-size:.85rem; color:var(--pr-forest); font-weight:700; letter-spacing:.03em; }
+
+        /* ── Stepper ── */
+        .pr-stepper { display:flex; align-items:flex-start; gap:0; position:relative; padding:10px 0 4px; overflow-x:auto; }
+        .pr-stepper-step { display:flex; flex-direction:column; align-items:center; flex:1; min-width:80px; position:relative; }
+        .pr-stepper-step:not(:last-child)::after { content:''; position:absolute; top:16px; left:calc(50% + 16px); right:calc(-50% + 16px); height:2px; background:var(--pr-border-dark); z-index:0; transition:background .3s; }
+        .pr-stepper-step.completed:not(:last-child)::after { background:var(--pr-lime-dim); }
+        .pr-stepper-circle { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.75rem; font-weight:700; z-index:1; border:2px solid var(--pr-border-dark); background:var(--pr-surface); color:var(--pr-sub); transition:all .3s; flex-shrink:0; }
+        .pr-stepper-step.completed .pr-stepper-circle { background:var(--pr-forest); border-color:var(--pr-forest); color:var(--pr-lime); }
+        .pr-stepper-step.current .pr-stepper-circle { background:var(--pr-lime); border-color:var(--pr-lime-dim); color:var(--pr-forest); box-shadow:0 0 0 4px var(--pr-lime-ghost); }
+        .pr-stepper-step.next .pr-stepper-circle { border-color:var(--pr-lime-border); color:var(--pr-sub); background:var(--pr-lime-ghost); }
+        .pr-stepper-label { text-align:center; margin-top:7px; }
+        .pr-stepper-office { font-size:.67rem; font-weight:700; color:#374151; text-transform:uppercase; letter-spacing:.05em; line-height:1.3; }
+        .pr-stepper-status { font-size:.68rem; color:#6b7280; font-weight:600; margin-top:2px; line-height:1.2; }
+        .pr-stepper-step.completed .pr-stepper-office { color:var(--pr-forest); }
+        .pr-stepper-step.current .pr-stepper-office { color:var(--pr-forest); font-weight:800; }
+        .pr-stepper-step.current .pr-stepper-status { color:#059669; font-weight:700; }
+
+        /* ── Process log ── */
+        .pr-log-list { display:flex; flex-direction:column; gap:8px; }
+        .pr-log-item { border-radius:10px; padding:12px 16px; border-left:3px solid transparent; font-size:.82rem; position:relative; transition:transform .15s,box-shadow .15s; }
+        .pr-log-item:hover { transform:translateX(2px); box-shadow:0 2px 8px rgba(6,78,59,.08); }
+        .pr-log-item-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px; margin-bottom:4px; }
+        .pr-log-actor { font-size:.78rem; font-weight:600; color:var(--pr-text); }
+        .pr-log-date { font-size:.72rem; color:var(--pr-sub); }
+        .pr-log-flow { font-size:.72rem; color:var(--pr-sub); margin-top:2px; }
+        .pr-log-remarks { font-size:.76rem; color:#374151; margin-top:4px; }
+        .pr-log-remarks em { font-style:normal; color:#6b7280; font-weight:600; }
+
+        .pr-log-processing   { background:#f1f5f9; border-left-color:#94a3b8; }
+        .pr-log-submitted    { background:#eff6ff; border-left-color:#3b82f6; }
+        .pr-log-emergency    { background:#fff7ed; border-left-color:#f59e0b; }
+        .pr-log-approved     { background:#f0fdf4; border-left-color:#10b981; }
+        .pr-log-rejected     { background:#fef2f2; border-left-color:#ef4444; }
+        .pr-log-budget       { background:#fffbeb; border-left-color:#f59e0b; }
+        .pr-log-dv           { background:#f0f9ff; border-left-color:#0ea5e9; }
+        .pr-log-ready        { background:#faf5ff; border-left-color:#8b5cf6; }
+        .pr-log-disbursed    { background:#f0fdf4; border-left-color:#10b981; }
+        .pr-log-rollback     { background:#fffbeb; border-left-color:#f59e0b; }
+
+        /* ── Action sections ── */
+        .pr-action-card { border-radius:var(--pr-radius); border:1px solid var(--pr-border); margin-bottom:14px; overflow:visible; transition:all .3s ease; }
+        .pr-action-card-header { display:flex; align-items:center; gap:10px; padding:14px 20px; border-radius:var(--pr-radius) var(--pr-radius) 0 0; }
+        .pr-action-card-header .ach-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:.82rem; flex-shrink:0; }
+        .pr-action-card-header .ach-title { font-size:.9rem; font-weight:700; color:#fff; }
+        .pr-action-card-header .ach-sub { font-size:.74rem; color:rgba(255,255,255,.7); margin-top:1px; }
+        .pr-action-card-body { padding:18px 20px; background:var(--pr-surface); border-radius:0 0 var(--pr-radius) var(--pr-radius); }
+        .pr-action-btn-row { display:flex; flex-wrap:wrap; gap:10px; }
+        .pr-btn { display:inline-flex; align-items:center; gap:7px; border-radius:9px; padding:9px 20px; font-size:.82rem; font-weight:700; font-family:'DM Sans',sans-serif; cursor:pointer; transition:all .18s; border:none; white-space:nowrap; text-decoration:none; }
+        .pr-btn:hover { transform:translateY(-1px); opacity:.92; }
+        .pr-btn-primary   { background:var(--pr-forest); color:var(--pr-lime); box-shadow:var(--pr-shadow-lime); }
+        .pr-btn-success   { background:#10b981; color:#fff; box-shadow:0 2px 8px rgba(16,185,129,.3); }
+        .pr-btn-danger    { background:#ef4444; color:#fff; box-shadow:0 2px 8px rgba(239,68,68,.25); }
+        .pr-btn-warning   { background:#f59e0b; color:#fff; box-shadow:0 2px 8px rgba(245,158,11,.25); }
+        .pr-btn-ghost     { background:var(--pr-muted); color:var(--pr-sub); border:1px solid var(--pr-border-dark); box-shadow:none; }
+        .pr-btn-ghost:hover { background:var(--pr-border-dark); color:var(--pr-forest); opacity:1; }
+        .pr-btn-info      { background:#0ea5e9; color:#fff; box-shadow:0 2px 8px rgba(14,165,233,.25); }
+
+        /* ── Form controls inside action cards ── */
+        .pr-field { display:flex; flex-direction:column; gap:5px; margin-bottom:14px; }
+        .pr-field label { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--pr-sub); }
+        .pr-field input, .pr-field textarea, .pr-field select {
+            border:1.5px solid var(--pr-border-dark); border-radius:8px; padding:8px 12px;
+            font-size:.82rem; font-family:'DM Sans',sans-serif; color:var(--pr-text);
+            background:var(--pr-surface); transition:border-color .2s,box-shadow .2s; width:100%;
+        }
+        .pr-field input:focus, .pr-field textarea:focus, .pr-field select:focus {
+            outline:none; border-color:var(--pr-forest-mid); box-shadow:0 0 0 3px rgba(6,78,59,.10);
+        }
+
+        /* ── Amount chips ── */
+        .pr-amount-chips { display:flex; flex-wrap:wrap; gap:5px; margin-top:7px; }
+        .pr-amount-chip { border:1.5px solid var(--pr-border-dark); background:var(--pr-surface); border-radius:20px; padding:3px 12px; font-size:.74rem; font-weight:600; color:var(--pr-sub); cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .18s; }
+        .pr-amount-chip:hover, .pr-amount-chip.selected { border-color:var(--pr-forest); background:var(--pr-lime-ghost); color:var(--pr-forest); }
+
+        /* ── Modal overrides ── */
+        .pr-modal .modal-content { border:none; border-radius:var(--pr-radius); font-family:'DM Sans',sans-serif; overflow:hidden; box-shadow:var(--pr-shadow-lg); }
+        .pr-modal .modal-header { border-bottom:none; padding:18px 22px 14px; }
+        .pr-modal .modal-title { font-size:.95rem; font-weight:700; }
+        .pr-modal .modal-body { padding:18px 22px; }
+        .pr-modal .modal-footer { border-top:1px solid var(--pr-border); background:var(--pr-surface2); padding:14px 22px; gap:8px; }
+
+        /* ── Alert inside action cards ── */
+        .pr-alert { border-radius:8px; padding:10px 14px; font-size:.8rem; font-weight:500; border:none; margin-bottom:12px; display:flex; align-items:flex-start; gap:8px; }
+        .pr-alert-info    { background:#eff6ff; color:#1e40af; }
+        .pr-alert-warning { background:#fffbeb; color:#92400e; }
+        .pr-alert-success { background:#f0fdf4; color:#065f46; }
+
+        /* ── Nav bar (replaces pr-nav-footer) ── */
+        .pr-nav-bar {
+            background: var(--pr-surface2); border: 1px solid var(--pr-border);
+            border-radius: var(--pr-radius); padding: 12px 18px; margin-top: 6px;
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 10px; box-shadow: var(--pr-shadow);
+        }
+        .pr-nav-bar-left  { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .pr-nav-bar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .pr-nav-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            border-radius: 8px; padding: 7px 14px; font-size: .8rem; font-weight: 600;
+            font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all .18s;
+            white-space: nowrap; text-decoration: none; border: none;
+        }
+        .pr-nav-btn-back {
+            background: var(--pr-surface); color: var(--pr-sub);
+            border: 1.5px solid var(--pr-border-dark);
+        }
+        .pr-nav-btn-back:hover { background: var(--pr-muted); color: var(--pr-forest); border-color: var(--pr-forest); }
+        .pr-nav-btn-info {
+            background: var(--pr-surface); color: var(--pr-sub);
+            border: 1.5px solid var(--pr-border-dark);
+        }
+        .pr-nav-btn-info:hover { background: var(--pr-lime-ghost); border-color: var(--pr-forest); color: var(--pr-forest); }
+
+        /* ── Rollback notice in process log ── */
+        .pr-log-rollback-icon { font-size:.7rem; }
+
+        @media (max-width:768px) {
+            .pr-info-grid { grid-template-columns:1fr; }
+            .pr-hero-inner { flex-direction:column; align-items:flex-start; }
+            .pr-hero { padding:16px 18px; }
+            .pr-nav-bar { flex-direction:column; align-items:flex-start; }
+        }
+    </style>
+
+    <div class="pr-page">
+
+    {{-- ─── HERO ─── --}}
+    <div class="pr-hero">
+        <div class="pr-hero-inner">
+            <div class="pr-hero-left">
+                <div class="pr-hero-icon"><i class="fas fa-file-medical-alt"></i></div>
+                <div>
+                    <div class="pr-hero-title">Process Tracking</div>
+                    <div class="pr-hero-meta">
+                        <span class="pr-badge pr-badge-count">
+                            <i class="fas fa-hashtag" style="font-size:.6rem;"></i>
+                            {{ $patient->control_number }}
+                        </span>
                         @php
-                            function getStatusBadgeClass($status)
-                            {
-                                $statusClassMap = [
-                                    'Processing' => 'badge-secondary',
-                                    'Draft' => 'badge-secondary',
-                                    'Submitted' => 'badge-primary',
-                                    'Submitted[Emergency]' => 'badge-danger',
-                                    'Approved' => 'badge-success',
-                                    'Rejected' => 'badge-danger',
-                                    'Budget Allocated' => 'badge-warning',
-                                    'DV Submitted' => 'badge-info',
-                                    'Disbursed' => 'badge-success',
-                                    'Ready for Disbursement' => 'badge-warning',
-                                ];
-
-                                // Remove [ROLLED BACK] suffix if present for class mapping
-                                $cleanStatus = trim(preg_replace('/\[ROLLED BACK\]/', '', $status));
-                                return $statusClassMap[$cleanStatus] ?? 'badge-info';
-                            }
+                            $heroStatus  = $latestStatus->status ?? 'Processing';
+                            $heroIsRb    = str_contains($heroStatus, '[ROLLED BACK]');
+                            $heroBase    = trim(str_replace('[ROLLED BACK]','', $heroStatus));
+                            $heroIsEmerg = str_contains($heroStatus, '[Emergency]') || $heroStatus === 'Submitted[Emergency]';
+                            $heroClass   = match(true) {
+                                $heroBase === 'Processing'             => 'pt-s-processing',
+                                $heroBase === 'Submitted' && $heroIsEmerg => 'pt-s-emergency',
+                                $heroBase === 'Submitted'              => 'pt-s-submitted',
+                                $heroBase === 'Submitted[Emergency]'   => 'pt-s-emergency',
+                                $heroBase === 'Approved'               => 'pt-s-approved',
+                                $heroBase === 'Rejected'               => 'pt-s-rejected',
+                                $heroBase === 'Budget Allocated'       => 'pt-s-budget',
+                                $heroBase === 'DV Submitted'           => 'pt-s-dv',
+                                $heroBase === 'Ready for Disbursement' => 'pt-s-ready',
+                                $heroBase === 'Disbursed'              => 'pt-s-disbursed',
+                                default                                => 'pt-s-processing',
+                            };
+                            $heroIcon = match($heroBase) {
+                                'Processing'             => 'fa-spinner',
+                                'Submitted'              => 'fa-paper-plane',
+                                'Submitted[Emergency]'   => 'fa-exclamation-triangle',
+                                'Approved'               => 'fa-thumbs-up',
+                                'Rejected'               => 'fa-ban',
+                                'Budget Allocated'       => 'fa-money-bill-wave',
+                                'DV Submitted'           => 'fa-file',
+                                'Ready for Disbursement' => 'fa-check-circle',
+                                'Disbursed'              => 'fa-coins',
+                                default                  => 'fa-question-circle',
+                            };
                         @endphp
-
-                        {{-- Budget Allocation Info --}}
-                        @if ($patient->budgetAllocation)
-                            <tr id="budget-allocation-row">
-                                <th>Budget Allocated:</th>
-                                <td id="budget-amount-display">
-                                    ₱{{ number_format($patient->budgetAllocation->amount, 2) }}
-                                </td>
-                            </tr>
-                        @else
-                            <tr id="budget-allocation-row" style="display: none;">
-                                <th>Budget Allocated:</th>
-                                <td id="budget-amount-display"></td>
-                            </tr>
-                        @endif
-
-                        {{-- DV Info --}}
-                        @if ($patient->disbursementVoucher)
-                            <tr id="dv-info-row">
-                                <th>DV Code:</th>
-                                <td id="dv-code-display">{{ $patient->disbursementVoucher->dv_code }}</td>
-                            </tr>
-                            <tr id="dv-date-row">
-                                <th>DV Date:</th>
-                                <td id="dv-date-display">
-                                    {{ \Carbon\Carbon::parse($patient->disbursementVoucher->dv_date)->format('F j, Y g:i A') }}
-                                </td>
-                            </tr>
-                        @else
-                            <tr id="dv-info-row" style="display: none;">
-                                <th>DV Code:</th>
-                                <td id="dv-code-display"></td>
-                            </tr>
-                            <tr id="dv-date-row" style="display: none;">
-                                <th>DV Date:</th>
-                                <td id="dv-date-display"></td>
-                            </tr>
-                        @endif
-
-                        @if (!empty($latestStatus->remarks))
-                            <tr id="remarks-row">
-                                <th>Remarks:</th>
-                                <td id="current-remarks">{{ $latestStatus->remarks }}</td>
-                            </tr>
-                        @else
-                            <tr id="remarks-row" style="display: none;">
-                                <th>Remarks:</th>
-                                <td id="current-remarks"></td>
-                            </tr>
-                        @endif
-                        <tr>
-                            <th>Updated At:</th>
-                            <td id="status-updated-at">{{ $latestStatus->updated_at->format('F j, Y g:i A') }}</td>
-                        </tr>
-                    </table>
+                        <span class="pt-status {{ $heroClass }}" id="hero-status-badge">
+                            <i class="fas {{ $heroIcon }}"></i>
+                            {{ $heroBase === 'Submitted[Emergency]' ? 'Emergency' : $heroBase }}
+                            @if($heroIsRb)<span class="pt-s-rollback-tag">ROLLED BACK</span>@endif
+                        </span>
+                    </div>
                 </div>
             </div>
 
-            {{-- VISUAL PROCESS TRACKER --}}
-@php
-    $steps = ['Submitted', 'Approved', 'Budget Allocated', 'DV Submitted', 'Ready for Disbursement', 'Disbursed'];
+            <a href="{{ route('admin.process-tracking.index') }}" class="pr-back-btn">
+                <i class="fas fa-arrow-left" style="font-size:.72rem;"></i> Back to List
+            </a>
+        </div>
 
-    $stepLabels = [
-        'Submitted' => 'CSWD Office',
-        'Approved' => 'Mayor\'s Office',
-        'Budget Allocated' => 'Budget Office',
-        'DV Submitted' => 'Accounting Office',
-        'Ready for Disbursement' => 'Treasury Office',
-        'Disbursed' => 'Treasury Office',
-    ];
+        {{-- Bottom row: quick nav links --}}
+        <div style="position:relative;z-index:1;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <a href="{{ route('admin.document-management.show', $patient->id) }}"
+               style="display:inline-flex;align-items:center;gap:5px;background:rgba(116,255,112,.10);border:1px solid rgba(116,255,112,.28);border-radius:20px;padding:3px 12px;font-size:.72rem;font-weight:600;color:rgba(255,255,255,.82);text-decoration:none;transition:all .18s;"
+               onmouseover="this.style.background='rgba(116,255,112,.20)';this.style.color='#fff'"
+               onmouseout="this.style.background='rgba(116,255,112,.10)';this.style.color='rgba(255,255,255,.82)'">
+                <i class="fas fa-file-alt" style="font-size:.65rem;"></i> Document
+            </a>
+            <a href="{{ route('admin.patient-records.show', $patient->id) }}"
+               style="display:inline-flex;align-items:center;gap:5px;background:rgba(116,255,112,.10);border:1px solid rgba(116,255,112,.28);border-radius:20px;padding:3px 12px;font-size:.72rem;font-weight:600;color:rgba(255,255,255,.82);text-decoration:none;transition:all .18s;"
+               onmouseover="this.style.background='rgba(116,255,112,.20)';this.style.color='#fff'"
+               onmouseout="this.style.background='rgba(116,255,112,.10)';this.style.color='rgba(255,255,255,.82)'">
+                <i class="fas fa-file-medical" style="font-size:.65rem;"></i> Patient Record
+            </a>
+        </div>
+    </div>
 
-    $statusNames = [
-        'Submitted' => 'Submitted',
-        'Approved' => 'Approved',
-        'Budget Allocated' => 'Budget Allocated',
-        'DV Submitted' => 'DV Submitted',
-        'Ready for Disbursement' => 'Ready for Disbursement',
-        'Disbursed' => 'Disbursed',
-    ];
+    {{-- ─── INFO + STATUS GRID ─── --}}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
 
-    // Normalize status
-    $rawStatus = $latestStatus->status ?? '';
-    $baseStatus = trim(preg_replace('/\[.*?\]/', '', $rawStatus));
+        {{-- Application Info --}}
+        <div class="pr-card">
+            <div class="pr-card-header">
+                <div class="pr-card-header-icon" style="background:var(--pr-lime-ghost);color:var(--pr-forest);border:1px solid var(--pr-lime-border);">
+                    <i class="fas fa-clipboard-list"></i>
+                </div>
+                <span class="pr-card-header-title">Application Info</span>
+            </div>
+            <div class="pr-card-body">
+                <div class="pr-info-grid">
+                    <div class="pr-info-row">
+                        <span class="pr-info-label">Control Number</span>
+                        <span class="pr-info-value mono">{{ $patient->control_number }}</span>
+                    </div>
+                    <div class="pr-info-row">
+                        <span class="pr-info-label">Date Processed</span>
+                        <span class="pr-info-value">{{ \Carbon\Carbon::parse($patient->date_processed)->format('M j, Y') }}</span>
+                        <span style="font-size:.72rem;color:var(--pr-sub);">{{ \Carbon\Carbon::parse($patient->date_processed)->format('g:i A') }}</span>
+                    </div>
+                    <div class="pr-info-row">
+                        <span class="pr-info-label">Claimant Name</span>
+                        <span class="pr-info-value">{{ $patient->claimant_name }}</span>
+                    </div>
+                    <div class="pr-info-row">
+                        <span class="pr-info-label">Case Category</span>
+                        <span class="pr-info-value">{{ $patient->case_category }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    // Find the last completed step
-    $currentIndex = array_search($baseStatus, $steps);
-    if ($currentIndex === false) {
-        $currentIndex = -1;
-    }
-@endphp
+        {{-- Process Status --}}
+        <div class="pr-card">
+            <div class="pr-card-header">
+                <div class="pr-card-header-icon" style="background:var(--pr-lime-ghost);color:var(--pr-forest);border:1px solid var(--pr-lime-border);">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <span class="pr-card-header-title">Process Status</span>
+            </div>
+            <div class="pr-card-body">
+                <div class="pr-info-grid">
+                    <div class="pr-info-row">
+                        <span class="pr-info-label">Case Worker</span>
+                        <span class="pr-info-value">{{ $patient->case_worker }}</span>
+                    </div>
+                    <div class="pr-info-row">
+                        <span class="pr-info-label">Current Status</span>
+                        <span id="current-status-badge" class="pt-status {{ $heroClass }}" style="width:fit-content;margin-top:2px;">
+                            <i class="fas {{ $heroIcon }}"></i>
+                            {{ $heroBase === 'Submitted[Emergency]' ? 'Emergency' : $heroBase }}
+                            @if($heroIsRb)<span class="pt-s-rollback-tag">ROLLED BACK</span>@endif
+                        </span>
+                    </div>
 
-<div class="stepper">
-    @foreach ($steps as $index => $step)
-        @php
-            $isCompleted = $index <= $currentIndex;
-            $isCurrent = $index === $currentIndex;
-            $isNext = $index === $currentIndex + 1;
-        @endphp
+                    @if($patient->budgetAllocation)
+                    <div class="pr-info-row" id="budget-allocation-row">
+                        <span class="pr-info-label">Budget Allocated</span>
+                        <span class="pr-info-value" id="budget-amount-display" style="color:var(--pr-forest);font-weight:700;">
+                            ₱{{ number_format($patient->budgetAllocation->amount, 2) }}
+                        </span>
+                    </div>
+                    @else
+                    <div class="pr-info-row" id="budget-allocation-row" style="display:none;">
+                        <span class="pr-info-label">Budget Allocated</span>
+                        <span class="pr-info-value" id="budget-amount-display"></span>
+                    </div>
+                    @endif
 
-        <div class="stepper-step
-                    {{ $isCompleted ? 'completed' : '' }}
-                    {{ $isCurrent ? 'current' : '' }}
-                    {{ $isNext ? 'next' : '' }}">
-            
-            <div class="stepper-circle">
-                @if ($isCompleted)
-                    <i class="fas fa-check"></i>
+                    @if($patient->disbursementVoucher)
+                    <div class="pr-info-row" id="dv-info-row">
+                        <span class="pr-info-label">DV Code</span>
+                        <span class="pr-info-value mono" id="dv-code-display">{{ $patient->disbursementVoucher->dv_code }}</span>
+                    </div>
+                    @else
+                    <div class="pr-info-row" id="dv-info-row" style="display:none;">
+                        <span class="pr-info-label">DV Code</span>
+                        <span class="pr-info-value" id="dv-code-display"></span>
+                    </div>
+                    @endif
+
+                    @if($patient->disbursementVoucher)
+                    <div class="pr-info-row" id="dv-date-row">
+                        <span class="pr-info-label">DV Date</span>
+                        <span class="pr-info-value" id="dv-date-display">
+                            {{ \Carbon\Carbon::parse($patient->disbursementVoucher->dv_date)->format('M j, Y g:i A') }}
+                        </span>
+                    </div>
+                    @else
+                    <div class="pr-info-row" id="dv-date-row" style="display:none;">
+                        <span class="pr-info-label">DV Date</span>
+                        <span class="pr-info-value" id="dv-date-display"></span>
+                    </div>
+                    @endif
+                </div>
+
+                @if(!empty($latestStatus->remarks))
+                <div class="pr-info-row" id="remarks-row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--pr-border);">
+                    <span class="pr-info-label">Remarks</span>
+                    <span class="pr-info-value" id="current-remarks" style="font-weight:500;color:var(--pr-sub);">{{ $latestStatus->remarks }}</span>
+                </div>
                 @else
-                    {{ $index + 1 }}
+                <div class="pr-info-row" id="remarks-row" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--pr-border);">
+                    <span class="pr-info-label">Remarks</span>
+                    <span class="pr-info-value" id="current-remarks" style="font-weight:500;color:var(--pr-sub);"></span>
+                </div>
+                @endif
+
+                <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--pr-border);">
+                    <span class="pr-info-label">Last Updated</span>
+                    <span style="font-size:.78rem;color:var(--pr-sub);" id="status-updated-at">
+                        {{ $latestStatus->updated_at->format('M j, Y g:i A') }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    {{-- ─── STEPPER ─── --}}
+    @php
+        $steps = ['Submitted', 'Approved', 'Budget Allocated', 'DV Submitted', 'Ready for Disbursement', 'Disbursed'];
+        $stepLabels = [
+            'Submitted'              => 'CSWD Office',
+            'Approved'               => "Mayor's Office",
+            'Budget Allocated'       => 'Budget Office',
+            'DV Submitted'           => 'Accounting Office',
+            'Ready for Disbursement' => 'Treasury Office',
+            'Disbursed'              => 'Treasury Office',
+        ];
+        $rawStatus   = $latestStatus->status ?? '';
+        $baseStatus  = trim(preg_replace('/\[.*?\]/', '', $rawStatus));
+        $currentIndex = array_search($baseStatus, $steps);
+        if ($currentIndex === false) $currentIndex = -1;
+
+        $latestStatusValue = optional($latestStatus)->status;
+        $isLocked = !in_array($latestStatusValue, [null, 'Rejected', 'Processing', 'Draft', 'Processing[ROLLED BACK]']);
+
+        $latestLog = $patient->statusLogs->last();
+        $userPermissions = auth()->user()->roles->flatMap->permissions->pluck('title')->unique();
+    @endphp
+    <div class="pr-card" style="margin-bottom:14px;">
+        <div class="pr-card-header">
+            <div class="pr-card-header-icon" style="background:var(--pr-lime-ghost);color:var(--pr-forest);border:1px solid var(--pr-lime-border);">
+                <i class="fas fa-route"></i>
+            </div>
+            <span class="pr-card-header-title">Process Flow</span>
+        </div>
+        <div class="pr-card-body">
+            <div class="pr-stepper" id="pr-stepper">
+                @foreach($steps as $idx => $step)
+                    @php
+                        $isCompleted = $idx <= $currentIndex;
+                        $isCurrent   = $idx === $currentIndex;
+                        $isNext      = $idx === $currentIndex + 1;
+                    @endphp
+                    <div class="pr-stepper-step {{ $isCompleted ? 'completed' : '' }} {{ $isCurrent ? 'current' : '' }} {{ $isNext ? 'next' : '' }}">
+                        <div class="pr-stepper-circle">
+                            @if($isCompleted)
+                                <i class="fas fa-check" style="font-size:.7rem;"></i>
+                            @else
+                                {{ $idx + 1 }}
+                            @endif
+                        </div>
+                        <div class="pr-stepper-label">
+                            <div class="pr-stepper-office">{{ $stepLabels[$step] ?? $step }}</div>
+                            <div class="pr-stepper-status">{{ $step }}</div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+
+    {{-- ─── PROCESS LOG ─── --}}
+    @if($patient->statusLogs->count())
+    <div class="pr-card" style="margin-bottom:14px;">
+        <div class="pr-card-header">
+            <div class="pr-card-header-icon" style="background:var(--pr-lime-ghost);color:var(--pr-forest);border:1px solid var(--pr-lime-border);">
+                <i class="fas fa-history"></i>
+            </div>
+            <span class="pr-card-header-title">Process Log</span>
+            <span class="pr-badge" style="background:var(--pr-lime-ghost);border:1px solid var(--pr-lime-border);color:var(--pr-forest);margin-left:auto;">
+                {{ $patient->statusLogs->where('status','!=','Draft')->count() }} entries
+            </span>
+        </div>
+        <div class="pr-card-body">
+            @php
+                $processSteps = [
+                    'Submitted'        => 'CSWD Office',
+                    'Approved'         => "Mayor's Office",
+                    'Budget Allocated' => 'Budget Office',
+                    'DV Submitted'     => 'Accounting Office',
+                    'Disbursed'        => 'Treasury Office',
+                ];
+                $stepKeys = array_keys($processSteps);
+            @endphp
+            <div class="pr-log-list" id="processSummaryList">
+                @foreach($patient->statusLogs->where('status','!=','Draft') as $log)
+                    @php
+                        $origStatus = $log->status;
+                        $cleanStatus = trim(preg_replace('/\[.*?\]/', '', $origStatus));
+                        $isRolledBack = str_contains($origStatus, '[ROLLED BACK]');
+                        $isEmergency  = str_contains($origStatus, '[Emergency]') || $origStatus === 'Submitted[Emergency]';
+                        $logClass = match(true) {
+                            $isRolledBack                 => 'pr-log-rollback',
+                            $cleanStatus === 'Processing' => 'pr-log-processing',
+                            $cleanStatus === 'Submitted' && $isEmergency => 'pr-log-emergency',
+                            $cleanStatus === 'Submitted[Emergency]' => 'pr-log-emergency',
+                            $cleanStatus === 'Submitted'  => 'pr-log-submitted',
+                            $cleanStatus === 'Approved'   => 'pr-log-approved',
+                            $cleanStatus === 'Rejected'   => 'pr-log-rejected',
+                            $cleanStatus === 'Budget Allocated' => 'pr-log-budget',
+                            $cleanStatus === 'DV Submitted'     => 'pr-log-dv',
+                            $cleanStatus === 'Ready for Disbursement' => 'pr-log-ready',
+                            $cleanStatus === 'Disbursed'  => 'pr-log-disbursed',
+                            default                       => 'pr-log-processing',
+                        };
+                        $fromOffice = $log->user ? $log->user->roles->pluck('title')->implode(', ') : 'System';
+                        $toOffice   = null;
+                        $currIdx    = array_search($cleanStatus, $stepKeys);
+                        if ($currIdx !== false && isset($stepKeys[$currIdx + 1])) {
+                            $toOffice = $processSteps[$stepKeys[$currIdx + 1]];
+                        }
+                        if (stripos($origStatus, 'Processing') !== false) $toOffice = null;
+                        elseif (stripos($origStatus, 'Rejected') !== false) $toOffice = 'CSWD Office';
+                        elseif ($origStatus === 'Submitted[Emergency]') $toOffice = "Mayor's Office";
+                        if ($isRolledBack) {
+                            $rbdStatus = str_replace('[ROLLED BACK]','', $origStatus);
+                            $rbIdx = array_search(trim($rbdStatus), $stepKeys);
+                            if ($rbIdx !== false) $toOffice = $processSteps[$stepKeys[$rbIdx]] ?? null;
+                        }
+                        $logIcon = match(true) {
+                            $isRolledBack => 'fa-undo',
+                            $cleanStatus === 'Rejected' => 'fa-times-circle',
+                            $cleanStatus === 'Approved' => 'fa-check-circle',
+                            $cleanStatus === 'Submitted[Emergency]' => 'fa-exclamation-triangle',
+                            $cleanStatus === 'Disbursed' => 'fa-coins',
+                            default => 'fa-circle',
+                        };
+                    @endphp
+                    <div class="pr-log-item {{ $logClass }}">
+                        <div class="pr-log-item-header">
+                            <div style="display:flex;align-items:center;gap:7px;">
+                                <i class="fas {{ $logIcon }}" style="font-size:.72rem;opacity:.7;"></i>
+                                <strong style="font-size:.82rem;">{{ $origStatus }}</strong>
+                                @if($isRolledBack)
+                                    <span class="pt-s-rollback-tag">ROLLED BACK</span>
+                                @endif
+                            </div>
+                            <span class="pr-log-date">
+                                {{ \Carbon\Carbon::parse($log->status_date)->format('M j, Y g:i A') }}
+                            </span>
+                        </div>
+
+                        <div class="pr-log-flow">
+                            {{ $log->user->name ?? 'System' }}
+                            @if(!stripos($origStatus, 'Processing') || stripos($origStatus, 'Processing') === false)
+                                &nbsp;·&nbsp; From: <strong>{{ $fromOffice }}</strong>
+                                @if($toOffice)
+                                    &nbsp;→&nbsp; <strong>{{ $toOffice }}</strong>
+                                @endif
+                            @endif
+                        </div>
+
+                        @if(stripos($origStatus, 'Rejected') !== false)
+                            @php
+                                $rejectionReasons = $log->rejectionReasons ?? collect();
+                                if ($rejectionReasons->isEmpty() && isset($patient->rejectionReasons)) {
+                                    $rejectionReasons = $patient->rejectionReasons->where('patient_status_log_id', $log->id);
+                                }
+                            @endphp
+                            @if($rejectionReasons->count())
+                            <div style="margin-top:5px;font-size:.76rem;color:var(--pr-sub);">
+                                <em style="font-style:normal;font-weight:600;">Rejection Reasons:</em>
+                                <ul style="margin:3px 0 0 16px;padding:0;">
+                                    @foreach($rejectionReasons as $reason)
+                                        <li>{{ $reason->reason }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                            @endif
+                        @endif
+
+                        @if($cleanStatus === 'Budget Allocated' && $patient->budgetAllocation)
+                        <div class="pr-log-remarks">
+                            <em>Budget:</em> ₱{{ number_format($patient->budgetAllocation->amount, 2) }}
+                        </div>
+                        @endif
+
+                        @if($log->remarks)
+                        <div class="pr-log-remarks">
+                            <em>Remarks:</em> {{ $log->remarks }}
+                        </div>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- ─── DYNAMIC ACTION SECTIONS ─── --}}
+    <div id="dynamic-action-sections">
+
+    {{-- CSWD – Submit Application --}}
+    <div class="pr-action-card action-section" id="submit-patient-application"
+         data-permission="submit_patient_application"
+         style="display:{{ in_array($baseStatus, ['Processing','Draft','Rejected','Processing[ROLLED BACK]']) && auth()->user()->can('submit_patient_application') ? 'block' : 'none' }};">
+        <div class="pr-action-card-header" style="background:linear-gradient(135deg,#1e3a5f 0%,#2563eb 100%);">
+            <div class="ach-icon" style="background:rgba(255,255,255,.15);color:#fff;">
+                <i class="fas fa-paper-plane"></i>
+            </div>
+            <div>
+                <div class="ach-title">CSWD Office – Submit Application</div>
+            </div>
+        </div>
+        <div class="pr-action-card-body">
+            <form method="POST">
+                @csrf
+                <input type="hidden" name="status" value="Submitted">
+                <input type="hidden" name="redirect_to_process_tracking" value="1">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div class="pr-field">
+                        <label>Submitted Date</label>
+                        <input type="datetime-local" name="submitted_date" id="submitted_date"
+                               value="{{ now()->toDateTimeLocalString() }}"
+                               @if($isLocked) disabled @endif>
+                    </div>
+                    <div class="pr-field" style="grid-column:1/-1;">
+                        <label>Remarks</label>
+                        <textarea name="remarks" rows="3" @if($isLocked) disabled @endif></textarea>
+                    </div>
+                </div>
+
+                @php
+                    $submissionLogs = $patient->statusLogs->whereIn('status',['Submitted','Submitted[Emergency]'])->sortByDesc('status_date');
+                    $previousSubmissionStatus = null; $hasEmergencySubmission = false; $hasNormalSubmission = false;
+                    if($submissionLogs->count() > 0) {
+                        $previousSubmissionStatus = $submissionLogs->first()->status;
+                        $hasEmergencySubmission = str_contains($previousSubmissionStatus,'Emergency');
+                        $hasNormalSubmission = !$hasEmergencySubmission && str_contains($previousSubmissionStatus,'Submitted');
+                    }
+                    $showSubmissionWarnings = in_array($baseStatus,['Rejected','Processing[ROLLED BACK]','Processing']);
+                @endphp
+
+                <div class="pr-action-btn-row" style="margin-top:4px;">
+                    <button type="button" class="pr-btn pr-btn-primary submit-btn"
+                        @if($isLocked || $hasEmergencySubmission || ($showSubmissionWarnings && $hasEmergencySubmission)) disabled @endif
+                        onclick="submitApplication('{{ route('admin.patient-records.submit', $patient->id) }}', this, 'normal')"
+                        id="normal-submit-btn">
+                        <i class="fas fa-paper-plane"></i> Submit
+                    </button>
+                    <button type="button" class="pr-btn pr-btn-danger submit-btn"
+                        @if($isLocked || ($showSubmissionWarnings && $hasNormalSubmission)) disabled @endif
+                        onclick="submitApplication('{{ route('admin.patient-records.submit-emergency', $patient->id) }}', this, 'emergency')"
+                        id="emergency-submit-btn">
+                        <i class="fas fa-exclamation-triangle"></i> Submit [Emergency]
+                    </button>
+                </div>
+
+                @if($hasEmergencySubmission && $showSubmissionWarnings)
+                    <div class="pr-alert pr-alert-warning" style="margin-top:10px;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Previously submitted as Emergency — only emergency submissions allowed.
+                    </div>
+                @elseif($hasNormalSubmission && $showSubmissionWarnings)
+                    <div class="pr-alert pr-alert-info" style="margin-top:10px;">
+                        <i class="fas fa-info-circle"></i>
+                        Previously submitted normally — only normal submissions allowed.
+                    </div>
+                @endif
+                @if($isLocked && !$showSubmissionWarnings)
+                    <div class="pr-alert pr-alert-info" style="margin-top:10px;">
+                        <i class="fas fa-lock"></i>
+                        This application has been submitted and is currently in process.
+                    </div>
+                @endif
+            </form>
+
+            @php $latestLog = $patient->statusLogs->last(); @endphp
+            @if($latestLog && str_contains(strtolower($latestLog->status), 'rolled back'))
+                <div class="return-to-rollbacker-container" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--pr-border);">
+                    <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form">
+                        @csrf
+                        <button type="submit" class="pr-btn pr-btn-warning" style="width:100%;justify-content:center;">
+                            <i class="fas fa-share"></i> Return to Rollbacker
+                        </button>
+                    </form>
+                </div>
+            @else
+                <div class="return-to-rollbacker-container" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--pr-border);">
+                    <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form" style="display:none;">
+                        @csrf
+                        <button type="submit" class="pr-btn pr-btn-warning" style="width:100%;justify-content:center;">
+                            <i class="fas fa-share"></i> Return to Rollbacker
+                        </button>
+                    </form>
+                </div>
+            @endif
+        </div>
+    </div>
+
+    {{-- MAYOR'S OFFICE – Approve/Reject --}}
+    <div class="pr-action-card action-section" id="approve-patient"
+         data-permission="approve_patient"
+         style="display:{{ in_array($baseStatus,['Submitted','Submitted[Emergency]','Submitted[ROLLED BACK]']) && auth()->user()->can('approve_patient') ? 'block' : 'none' }};">
+        <div class="pr-action-card-header" style="background:linear-gradient(135deg,#052e22 0%,#064e3b 100%);">
+            <div class="ach-icon" style="background:rgba(116,255,112,.15);color:var(--pr-lime);">
+                <i class="fas fa-university"></i>
+            </div>
+            <div>
+                <div class="ach-title">Mayor's Office – Approval</div>
+            </div>
+        </div>
+        <div class="pr-action-card-body">
+            <div class="pr-action-btn-row">
+                <button type="button" class="pr-btn pr-btn-success" data-bs-toggle="modal" data-bs-target="#approveModal">
+                    <i class="fas fa-check-circle"></i> Approve
+                </button>
+                <button type="button" class="pr-btn pr-btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                    <i class="fas fa-times-circle"></i> Reject
+                </button>
+                @php $latestLog = $patient->statusLogs->last(); @endphp
+                @if($latestLog && str_contains(strtolower($latestLog->status), 'rolled back'))
+                    <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form d-inline-block">
+                        @csrf
+                        <button type="submit" class="pr-btn pr-btn-warning"><i class="fas fa-share"></i> Return to Rollbacker</button>
+                    </form>
+                @else
+                    <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form" style="display:none;">
+                        @csrf
+                        <button type="submit" class="pr-btn pr-btn-warning"><i class="fas fa-share"></i> Return to Rollbacker</button>
+                    </form>
                 @endif
             </div>
+        </div>
+    </div>
 
-            <div class="stepper-label">
-                <div class="office-name">{{ $stepLabels[$step] ?? $step }}</div>
-                <div class="status-name">{{ $statusNames[$step] ?? '' }}</div>
+    {{-- BUDGET OFFICE – Allocate --}}
+    <div class="pr-action-card action-section" id="budget-allocate"
+         data-permission="budget_allocate"
+         style="display:{{ in_array($baseStatus,['Approved','Approved[ROLLED BACK]']) && auth()->user()->can('budget_allocate') ? 'block' : 'none' }};">
+        <div class="pr-action-card-header" style="background:linear-gradient(135deg,#78350f 0%,#d97706 100%);">
+            <div class="ach-icon" style="background:rgba(255,255,255,.15);color:#fff;">
+                <i class="fas fa-wallet"></i>
+            </div>
+            <div>
+                <div class="ach-title">Budget Office – Allocation</div>
             </div>
         </div>
-    @endforeach
-</div>
-{{-- END PROCESS TRACKER --}}
-
-
-            {{-- PROCESS SUMMARY --}}
-            @if ($patient->statusLogs->count())
-                <style>
-                    .status-processing,
-                    .status-submitted,
-                    .status-approved,
-                    .status-budget-allocated,
-                    .status-dv-submitted,
-                    .status-disbursed,
-                    .status-ready-for-disbursement {
-                        background-color: #b2dfb2;
-                        color: #0b3e0b;
-                    }
-
-                    .status-rejected,
-                    .status-rolled-back,
-                    .status-submitted-emergency {
-                        background-color: #f8d7da;
-                        color: #721c24;
-                    }
-
-                    .list-group-item {
-                        display: flex;
-                        justify-content: space-between;
-                        align-items: center;
-                    }
-
-                    .list-group-item i {
-                        cursor: pointer;
-                    }
-                </style>
-
-                <div class="mb-4">
-                    <h6 class="text-primary">📋 Process Summary</h6>
-                    @php
-                        // Define process flow sequence for "To" office
-                        $processSteps = [
-                            'Submitted' => 'CSWD Office',
-                            'Approved' => 'Mayor\'s Office',
-                            'Budget Allocated' => 'Budget Office',
-                            'DV Submitted' => 'Accounting Office',
-                            'Disbursed' => 'Treasury Office',
-                        ];
-
-                        $stepKeys = array_keys($processSteps);
-                    @endphp
-
-                    <ul class="list-group" id="processSummaryList">
-                        @foreach ($patient->statusLogs->where('status', '!=', 'Draft') as $log)
-                            @php
-                                $originalStatus = $log->status;
-                                $cleanStatus = trim(preg_replace('/\[.*?\]/', '', $originalStatus));
-                                $statusKey = strtolower(str_replace([' ', '[', ']'], ['-', '-', ''], $cleanStatus));
-
-                                // CSS class for coloring
-                                $statusClass =
-                                    strpos($originalStatus, '[ROLLED BACK]') !== false
-                                        ? 'status-rolled-back'
-                                        : 'status-' . $statusKey;
-
-                                // Get user's role as "From" office
-$fromOffice = $log->user ? $log->user->roles->pluck('title')->implode(', ') : 'System';
-
-// Determine "To" office based on process flow
-$toOffice = '-';
-$currentIndex = array_search($cleanStatus, $stepKeys);
-if ($currentIndex !== false && isset($stepKeys[$currentIndex + 1])) {
-    $toOffice = $processSteps[$stepKeys[$currentIndex + 1]];
-}
-
-// Special handling for certain statuses
-if (stripos($originalStatus, 'Processing') !== false) {
-    $toOffice = null; // No "To" for Processing
-} elseif (stripos($originalStatus, 'Rejected') !== false) {
-    $toOffice = 'CSWD Office'; // Rejected goes back to CSWD
-} elseif (stripos($originalStatus, 'Submitted[Emergency]') !== false) {
-    $toOffice = 'Mayor\'s Office'; // Emergency still goes to Mayor
-                                }
-
-                                // For rolled back statuses, show where it's being returned to
-if (strpos($originalStatus, '[ROLLED BACK]') !== false) {
-    $rolledBackStatus = str_replace('[ROLLED BACK]', '', $originalStatus);
-                                    $rolledBackIndex = array_search($rolledBackStatus, $stepKeys);
-                                    if ($rolledBackIndex !== false && isset($stepKeys[$rolledBackIndex])) {
-                                        $toOffice = $processSteps[$stepKeys[$rolledBackIndex]];
-                                    }
-                                }
-                            @endphp
-
-                            <li class="list-group-item {{ $statusClass }}">
-                                <div>
-                                    <strong>{{ ucfirst($originalStatus) }}:</strong>
-                                    {{ $log->user->name ?? 'System' }}
-                                    @if (!stripos($originalStatus, 'Processing'))
-                                        - From: {{ $fromOffice }}
-                                        @if ($toOffice)
-                                            To: {{ $toOffice }}
-                                        @endif
-                                    @endif
-                                    -- {{ \Carbon\Carbon::parse($log->status_date)->format('F j, Y g:i A') }}
-                                    <br>
-
-                                    {{-- Rejection details --}}
-                                    @if (stripos($originalStatus, 'Rejected') !== false)
-                                        @php
-                                            $rejectionReasons = $patient->rejectionReasons->where(
-                                                'patient_status_log_id',
-                                                $log->id,
-                                            );
-                                        @endphp
-                                        <em>Rejection Reason(s):</em>
-                                        @if ($rejectionReasons->count() > 0)
-                                            <ul class="mb-0">
-                                                @foreach ($rejectionReasons as $reason)
-                                                    <li>{{ $reason->reason }}</li>
-                                                @endforeach
-                                            </ul>
-                                        @else
-                                            -
-                                        @endif
-                                        <br>
-                                    @endif
-
-                                    {{-- Budget info --}}
-                                    @if ($cleanStatus == 'Budget Allocated' && $patient->budgetAllocation)
-                                        <em>Budget allocated:</em>
-                                        ₱{{ number_format($patient->budgetAllocation->amount, 2) }}<br>
-                                    @endif
-
-                                    <em>Remarks:</em> {{ $log->remarks ?? '-' }}
-                                </div>
-                            </li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
-
-            @php
-                $isFinalized = in_array(optional($latestStatus)->status, ['Approved', 'Rejected']);
-                $latestLog = $patient->statusLogs->last();
-                $latestStatusValue = optional($latestStatus)->status;
-                $isLocked = !in_array($latestStatusValue, [
-                    null,
-                    'Rejected',
-                    'Processing',
-                    'Draft',
-                    'Processing[ROLLED BACK]',
-                ]);
-
-                // Get user permissions for JavaScript
-                $userPermissions = auth()->user()->roles->flatMap->permissions->pluck('title')->unique();
-            @endphp
-
-            {{-- Dynamic Action Sections --}}
-            <div id="dynamic-action-sections">
-                {{-- Submit Patient Application Section --}}
-                <div class="card mb-4 action-section" id="submit-patient-application"
-                    data-permission="submit_patient_application"
-                    style="display: {{ in_array($baseStatus, ['Processing', 'Draft', 'Rejected', 'Processing[ROLLED BACK]']) && auth()->user()->can('submit_patient_application') ? 'block' : 'none' }};">
-                    <div class="card-header bg-primary text-white">
-                        <i class="fas fa-paper-plane mr-2"></i> CSWD Office - Submit Application
-                    </div>
-                    <div class="card-body">
-                        <form method="POST">
-                            @csrf
-                            <input type="hidden" name="status" value="Submitted">
-                            <input type="hidden" name="redirect_to_process_tracking" value="1">
-
-                            <div class="form-group">
-                                <label for="submitted_date">Submitted Date</label>
-                                <input type="datetime-local" name="submitted_date" id="submitted_date"
-                                    class="form-control mb-3" value="{{ now()->toDateTimeLocalString() }}"
-                                    @if ($isLocked) disabled @endif>
-
-                                <label for="remarks">Remarks</label>
-                                <textarea name="remarks" id="remarks" rows="4" class="form-control"
-                                    @if ($isLocked) disabled @endif></textarea>
-                            </div>
-
-                            {{-- Check if application was previously submitted as emergency --}}
-                            @php
-                                $previousSubmissionStatus = null;
-                                $hasEmergencySubmission = false;
-                                $hasNormalSubmission = false;
-
-                                // Find the most recent submission (before any rejection or rolled back)
-                                $submissionLogs = $patient->statusLogs
-                                    ->whereIn('status', ['Submitted', 'Submitted[Emergency]'])
-                                    ->whereNotIn('status', function ($query) {
-                                        $query
-                                            ->select('status')
-                                            ->from('patient_status_logs')
-                                            ->where('status', 'like', '%[ROLLED BACK]%');
-                                    })
-                                    ->sortByDesc('status_date');
-
-                                if ($submissionLogs->count() > 0) {
-                                    $previousSubmissionStatus = $submissionLogs->first()->status;
-                                    $hasEmergencySubmission = str_contains($previousSubmissionStatus, 'Emergency');
-                                    $hasNormalSubmission =
-                                        !$hasEmergencySubmission &&
-                                        str_contains($previousSubmissionStatus, 'Submitted');
-                                }
-
-                                // Check if current status should show submission warnings
-                                $showSubmissionWarnings = in_array($baseStatus, [
-                                    'Rejected',
-                                    'Processing[ROLLED BACK]',
-                                    'Processing',
-                                ]);
-                            @endphp
-
-                            <div class="d-flex justify-content-between">
-                                {{-- Normal Submit --}}
-                                <button type="button" class="btn btn-primary submit-btn"
-                                    @if ($isLocked || $hasEmergencySubmission || ($showSubmissionWarnings && $hasEmergencySubmission)) disabled @endif
-                                    onclick="submitApplication('{{ route('admin.patient-records.submit', $patient->id) }}', this, 'normal')"
-                                    id="normal-submit-btn">
-                                    Submit
-                                </button>
-
-                                {{-- Emergency Submit --}}
-                                <button type="button" class="btn btn-danger submit-btn"
-                                    @if ($isLocked || ($showSubmissionWarnings && $hasNormalSubmission)) disabled @endif
-                                    onclick="submitApplication('{{ route('admin.patient-records.submit-emergency', $patient->id) }}', this, 'emergency')"
-                                    id="emergency-submit-btn">
-                                    Submit [Emergency]
-                                </button>
-                            </div>
-
-                            @if ($hasEmergencySubmission && $showSubmissionWarnings)
-                                <div class="alert alert-warning mt-3">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                    This application was previously submitted as Emergency. Only emergency submissions are
-                                    allowed.
-                                </div>
-                            @elseif ($hasNormalSubmission && $showSubmissionWarnings)
-                                <div class="alert alert-info mt-3">
-                                    <i class="fas fa-info-circle"></i>
-                                    This application was previously submitted normally. Only normal submissions are allowed.
-                                </div>
-                            @endif
-
-                            @if ($isLocked && !$showSubmissionWarnings)
-                                <div class="alert alert-info mt-3">
-                                    This application has already been submitted and is currently in process.
-                                </div>
-                            @endif
-                        </form>
-
-                        {{-- ADD THIS SECTION FOR RETURN TO ROLLBACKER BUTTON --}}
-                        @php
-                            $latestLog = $patient->statusLogs->last();
-                        @endphp
-
-                        {{-- In Submit Patient Application Section --}}
-                        @if ($latestLog && str_contains(strtolower($latestLog->status), 'rolled back'))
-                            <div class="mt-3 pt-3 border-top return-to-rollbacker-container">
-                                <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}"
-                                    method="POST" class="return-to-rollbacker-form">
-                                    @csrf
-                                    <button type="submit" class="btn btn-warning btn-lg px-4 text-white w-100">
-                                        <i class="fas fa-share me-1"></i> Return to Rollbacker
-                                    </button>
-                                </form>
-                            </div>
-                        @else
-                            <div class="mt-3 pt-3 border-top return-to-rollbacker-container" style="display: none;">
-                                <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}"
-                                    method="POST" class="return-to-rollbacker-form" style="display: none;">
-                                    @csrf
-                                    <button type="submit" class="btn btn-warning btn-lg px-4 text-white w-100">
-                                        <i class="fas fa-share me-1"></i> Return to Rollbacker
-                                    </button>
-                                </form>
-                            </div>
-                        @endif
-                    </div>
-                </div>
-
-                {{-- Approve Patient Section --}}
-                <div class="card shadow-sm border-0 mb-4 action-section" id="approve-patient"
-                    data-permission="approve_patient"
-                    style="display: {{ in_array($baseStatus, ['Submitted', 'Submitted[Emergency]', 'Submitted[ROLLED BACK]']) && auth()->user()->can('approve_patient') ? 'block' : 'none' }}; background-color: #f8f9fa;">
-
-                    <div class="card-header bg-primary text-white d-flex align-items-center">
-                        <i class="fas fa-university me-2"></i>
-                        <h5 class="mb-0">Mayor's Office - Approval</h5>
-                    </div>
-
-                    <div class="card-body text-center">
-                        <!-- Buttons Container -->
-                        <div class="d-flex flex-wrap justify-content-center gap-3">
-
-                            <!-- Approve Button -->
-                            <button type="button" class="btn btn-success btn-lg px-4 text-white" data-bs-toggle="modal"
-                                data-bs-target="#approveModal">
-                                <i class="fas fa-check-circle me-2"></i> Approve
-                            </button>
-
-                            <!-- Reject Button -->
-                            <button type="button" class="btn btn-danger btn-lg px-4 text-white" data-bs-toggle="modal"
-                                data-bs-target="#rejectModal">
-                                <i class="fas fa-times-circle me-2"></i> Reject
-                            </button>
-
-                            <!-- Return to Rollbacker Button -->
-                            @php
-                                $latestLog = $patient->statusLogs->last();
-                            @endphp
-
-                            @if ($latestLog && str_contains(strtolower($latestLog->status), 'rolled back'))
-                                <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}"
-                                    method="POST" class="return-to-rollbacker-form d-inline-block">
-                                    @csrf
-                                    <button type="submit" class="btn btn-warning btn-lg px-4 text-white">
-                                        <i class="fas fa-share me-2"></i> Return to Rollbacker
-                                    </button>
-                                </form>
-                            @else
-                                <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}"
-                                    method="POST" class="return-to-rollbacker-form" style="display: none;">
-                                    @csrf
-                                    <button type="submit" class="btn btn-warning btn-lg px-4 text-white">
-                                        <i class="fas fa-share me-2"></i> Return to Rollbacker
-                                    </button>
-                                </form>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Approve Modal -->
-                <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="approveModalLabel"
-                    aria-hidden="true">
-                    <div class="modal-dialog">
-                        <form method="POST" action="{{ route('admin.process-tracking.decision', $patient->id) }}">
-                            @csrf
-                            <div class="modal-content">
-                                <div class="modal-header bg-success text-white">
-                                    <h5 class="modal-title" id="approveModalLabel">Approve Application</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                        aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <div class="mb-3">
-                                        <label for="statusDate" class="form-label">Status Date</label>
-                                        <input type="datetime-local" name="status_date" id="statusDate"
-                                            class="form-control" value="{{ now()->toDateTimeLocalString() }}" required>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label for="approveRemarks" class="form-label">Remarks</label>
-                                        <textarea name="remarks" id="approveRemarks" class="form-control" rows="3" placeholder="Enter remarks..."></textarea>
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <input type="hidden" name="action" id="decisionAction">
-
-                                    <button type="button" class="btn btn-success"
-                                        onclick="
-                                                            const form = this.closest('form');
-                                                            form.querySelector('#decisionAction').value = 'approve';
-                                                            this.disabled = true;
-                                                            this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Processing...';
-                                                            form.submit();
-                                                        ">
-                                        Confirm Approve
-                                    </button>
-
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- Reject Modal -->
-                <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel"
-                    aria-hidden="true">
-                    <div class="modal-dialog">
-                        <form method="POST" action="{{ route('admin.process-tracking.decision', $patient->id) }}">
-                            @csrf
-                            <div class="modal-content">
-                                <div class="modal-header bg-danger text-white">
-                                    <h5 class="modal-title" id="rejectModalLabel">Reject Application</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                        aria-label="Close"></button>
-                                </div>
-
-                                <div class="modal-body">
-
-                                    <!-- Multiple Reasons -->
-                                    <div class="mb-3">
-                                        <label class="form-label">Reason(s) for Rejection</label>
-
-                                        @php
-                                            $reasonsList = [
-                                                'Missing ID',
-                                                'No signature',
-                                                'Expired documents',
-                                                'Wrong name',
-                                                'Missing document',
-                                            ];
-                                        @endphp
-
-                                        @foreach ($reasonsList as $index => $reason)
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" name="reasons[]"
-                                                    value="{{ $reason }}" id="reason{{ $index }}"
-                                                    {{ collect(old('reasons'))->contains($reason) ? 'checked' : '' }}>
-                                                <label class="form-check-label"
-                                                    for="reason{{ $index }}">{{ $reason }}</label>
-                                            </div>
-                                        @endforeach
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label for="otherReason" class="form-label">Other Reason (Optional)</label>
-                                        <input type="text" name="other_reason" id="otherReason" class="form-control"
-                                            value="{{ old('other_reason') }}" placeholder="Specify other reason here">
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <div class="mb-3">
-                                            <label for="statusDate" class="form-label">Status Date</label>
-                                            <input type="datetime-local" name="status_date" id="statusDate"
-                                                class="form-control" value="{{ now()->toDateTimeLocalString() }}"
-                                                required>
-                                        </div>
-
-                                        <label for="rejectRemarks" class="form-label">Remarks</label>
-                                        <textarea name="remarks" id="rejectRemarks" class="form-control" rows="3" placeholder="Enter remarks..."
-                                            required>{{ old('remarks') }}</textarea>
-                                    </div>
-
-                                </div>
-
-                                <div class="modal-footer">
-                                    <input type="hidden" name="action" id="decisionAction">
-                                    <button type="button" class="btn btn-danger"
-                                        onclick="
-                                                            const form = this.closest('form');
-                                                            form.querySelector('#decisionAction').value = 'reject';
-                                                            this.disabled = true;
-                                                            this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Processing...';
-                                                            form.submit();
-                                                        ">
-                                        Confirm Reject
-                                    </button>
-
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Budget Allocation Section --}}
-            <div class="card shadow-sm border-0 mb-4 action-section" id="budget-allocate"
-                data-permission="budget_allocate"
-                style="display: {{ in_array($baseStatus, ['Approved', 'Approved[ROLLED BACK]']) && auth()->user()->can('budget_allocate') ? 'block' : 'none' }}; background-color: #f8f9fa;">
-
-                <div class="card-header bg-primary text-white d-flex align-items-center">
-                    <i class="fas fa-wallet me-2"></i>
-                    <h5 class="mb-0">Budget Office - Allocation</h5>
-                </div>
-
-                <div class="card-body text-center">
-                    <!-- Buttons Container -->
-                    <div class="d-flex flex-wrap justify-content-center gap-3">
-
-                        <!-- Allocate/Edit Budget Button -->
-                        <button type="button" class="btn btn-info btn-lg px-4 text-white" data-bs-toggle="modal"
-                            data-bs-target="#budgetModal">
-                            <i class="fas {{ $patient->budgetAllocation ? 'fa-edit' : 'fa-plus-circle' }} me-2"></i>
-                            {{ $patient->budgetAllocation ? 'Edit Budget' : 'Allocate Budget' }}
-                        </button>
-
-                        <!-- Rollback Process Button -->
-                        <button type="button" class="btn btn-danger btn-lg px-4 text-white" data-bs-toggle="modal"
-                            data-bs-target="#rollbackModal">
-                            <i class="fas fa-undo-alt me-2"></i> Rollback Process
-                        </button>
-
-                        <!-- Return to Rollbacker Button -->
-                        @php
-                            $latestLog = $patient->statusLogs->last();
-                        @endphp
-
-                        @if ($latestLog && str_contains(strtolower($latestLog->status), 'rolled back'))
-                            <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}"
-                                method="POST" class="return-to-rollbacker-form d-inline-block">
-                                @csrf
-                                <button type="submit" class="btn btn-warning btn-lg px-4 text-white">
-                                    <i class="fas fa-share me-2"></i> Return to Rollbacker
-                                </button>
-                            </form>
-                        @else
-                            <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}"
-                                method="POST" class="return-to-rollbacker-form" style="display: none;">
-                                @csrf
-                                <button type="submit" class="btn btn-warning btn-lg px-4 text-white">
-                                    <i class="fas fa-share me-2"></i> Return to Rollbacker
-                                </button>
-                            </form>
-                        @endif
-                    </div>
-                </div>
-
-
-                <!-- Budget Modal -->
-                <div class="modal fade" id="budgetModal" tabindex="-1" role="dialog"
-                    aria-labelledby="budgetModalLabel" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered" role="document">
-                        <form
-                            action="{{ $patient->budgetAllocation
-                                ? route('admin.process-tracking.updateBudget', $patient->id)
-                                : route('admin.process-tracking.storeBudget', $patient->id) }}"
-                            method="POST">
-                            @csrf
-                            @if ($patient->budgetAllocation)
-                                @method('PUT')
-                            @endif
-
-                            <div class="modal-content border-0 shadow-lg rounded-4" style="overflow: hidden;">
-                                <div class="modal-header bg-primary text-white">
-                                    <h5 class="modal-title" id="budgetModalLabel">
-                                        <i class="fas fa-wallet me-2"></i>
-                                        {{ $patient->budgetAllocation ? 'Edit Budget Allocation' : 'Allocate Budget' }}
-                                    </h5>
-                                    <button type="button" class="close text-white" data-bs-dismiss="modal"
-                                        aria-label="Close">
-                                        <span aria-hidden="true" style="font-size: 1.5rem;">&times;</span>
-                                    </button>
-                                </div>
-
-                                <div class="modal-body p-4">
-                                    <div class="form-group mb-4">
-                                        <label for="amount" class="form-label">Amount (₱)</label>
-                                        <input type="number" step="0.01" name="amount" id="amount"
-                                            class="form-control form-control-lg rounded-3 shadow-sm" required
-                                            value="{{ old('amount', $patient->budgetAllocation->amount ?? '') }}">
-
-                                        <div class="d-flex flex-wrap gap-2 mt-3">
-                                            @foreach ([1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000] as $suggested)
-                                                <button type="button"
-                                                    class="btn btn-outline-primary btn-sm suggested-amount rounded-pill px-3"
-                                                    data-value="{{ $suggested }}">₱{{ number_format($suggested) }}</button>
-                                            @endforeach
-                                        </div>
-                                    </div>
-                                    <div class="form-group mb-3">
-                                        <label for="budget_status_date" class="form-label">Status Date</label>
-                                        <input type="datetime-local" name="status_date" id="budget_status_date"
-                                            class="form-control rounded-3 shadow-sm"
-                                            value="{{ now()->toDateTimeLocalString() }}" required>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label for="remarks" class="form-label">Remarks</label>
-                                        <textarea name="remarks" id="remarks" class="form-control rounded-3 shadow-sm" rows="4"
-                                            placeholder="Enter any remarks here...">{{ old('remarks', $patient->budgetAllocation->remarks ?? '') }}</textarea>
-                                    </div>
-                                </div>
-
-                                <div class="modal-footer d-flex flex-column gap-2 p-4 pt-0">
-                                    <button type="button" class="btn btn-success w-100 rounded-pill py-2"
-                                        onclick="
-                                                            const form = this.closest('form');
-                                                            this.disabled = true;
-                                                            this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Processing...';
-                                                            form.submit();
-                                                        ">
-                                        <i class="fas fa-check-circle me-1"></i>
-                                        {{ $patient->budgetAllocation ? 'Update Allocation' : 'Confirm Allocation' }}
-                                    </button>
-
-                                    <button type="button" class="btn btn-secondary w-100 rounded-pill py-2"
-                                        data-bs-dismiss="modal">Cancel</button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Accounting DV Input Section --}}
-            <div class="card shadow-sm border-0 mb-4 action-section" id="accounting-dv-input"
-                data-permission="accounting_dv_input"
-                style="display: {{ in_array($baseStatus, ['Budget Allocated', 'Budget Allocated[ROLLED BACK]']) && auth()->user()->can('accounting_dv_input') ? 'block' : 'none' }}; background-color: #f8f9fa;">
-
-                <div class="card-header bg-primary text-white d-flex align-items-center">
-                    <i class="fas fa-file-invoice me-2"></i>
-                    <h5 class="mb-0">Accounting Office - Disbursement Voucher</h5>
-                </div>
-
-                <div class="card-body text-center">
-                    <!-- Buttons Container -->
-                    <div class="d-flex flex-wrap justify-content-center gap-3">
-
-                        <!-- Enter/Edit DV Button -->
-                        <button type="button" class="btn btn-info btn-lg px-4 text-white" data-bs-toggle="modal"
-                            data-bs-target="#dvModal">
-                            <i class="fas fa-file-alt me-2"></i>
-                            {{ $patient->disbursementVoucher ? 'Edit' : 'Enter' }} DV Details
-                        </button>
-
-                        <!-- Rollback Process Button -->
-                        <button type="button" class="btn btn-danger btn-lg px-4 text-white" data-bs-toggle="modal"
-                            data-bs-target="#rollbackModal">
-                            <i class="fas fa-undo-alt me-2"></i> Rollback Process
-                        </button>
-
-                        <!-- Return to Rollbacker Button -->
-                        @php
-                            $latestLog = $patient->statusLogs->last();
-                        @endphp
-
-                        @if ($latestLog && str_contains(strtolower($latestLog->status), 'rolled back'))
-                            <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}"
-                                method="POST" class="return-to-rollbacker-form d-inline-block">
-                                @csrf
-                                <button type="submit" class="btn btn-warning btn-lg px-4 text-white">
-                                    <i class="fas fa-share me-2"></i> Return to Rollbacker
-                                </button>
-                            </form>
-                        @else
-                            <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}"
-                                method="POST" class="return-to-rollbacker-form" style="display: none;">
-                                @csrf
-                                <button type="submit" class="btn btn-warning btn-lg px-4 text-white">
-                                    <i class="fas fa-share me-2"></i> Return to Rollbacker
-                                </button>
-                            </form>
-                        @endif
-                    </div>
-                </div>
-            </div>
-
-            {{-- Treasury Disburse Section --}}
-            <div class="card shadow-sm border-0 mb-4 action-section" id="treasury-disburse"
-                data-permission="treasury_disburse"
-                style="display: {{ in_array($baseStatus, ['DV Submitted', 'DV Submitted[ROLLED BACK]', 'Ready for Disbursement']) && auth()->user()->can('treasury_disburse') ? 'block' : 'none' }}; background-color: #f8f9fa;">
-
-                {{-- DV Submitted Status (STEP 1: Mark as Ready for Disbursement) --}}
-                <div class="dv-submitted-content"
-                    style="{{ in_array($baseStatus, ['DV Submitted', 'DV Submitted[ROLLED BACK]']) ? '' : 'display: none;' }}">
-
-                    <div class="card-header bg-primary text-white d-flex align-items-center">
-                        <i class="fas fa-money-bill-wave me-2"></i>
-                        <h5 class="mb-0">Treasury Office - Disbursement</h5>
-                    </div>
-
-                    <div class="card-body text-center">
-                        <!-- Buttons Container -->
-                        <div class="d-flex flex-wrap justify-content-center gap-3">
-
-                            {{-- READY FOR DISBURSEMENT BUTTON --}}
-                            <button type="button" class="btn btn-warning btn-lg px-4 text-white" data-bs-toggle="modal"
-                                data-bs-target="#readyForDisbursementModal">
-                                <i class="fas fa-exclamation-circle me-2"></i> Mark as Ready for Disbursement
-                            </button>
-
-                            <button type="button" class="btn btn-danger btn-lg px-4 text-white" data-bs-toggle="modal"
-                                data-bs-target="#rollbackModal">
-                                <i class="fas fa-undo-alt me-2"></i> Rollback Process
-                            </button>
-
-                            {{-- Return to Rollbacker Button for Treasury Disburse Section --}}
-                            @php
-                                $latestLog = $patient->statusLogs->last();
-                            @endphp
-
-                            @if ($latestLog && str_contains(strtolower($latestLog->status), 'rolled back'))
-                                <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}"
-                                    method="POST" class="return-to-rollbacker-form d-inline-block">
-                                    @csrf
-                                    <button type="submit" class="btn btn-warning btn-lg px-4 text-white">
-                                        <i class="fas fa-share me-2"></i> Return to Rollbacker
-                                    </button>
-                                </form>
-                            @else
-                                <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}"
-                                    method="POST" class="return-to-rollbacker-form" style="display: none;">
-                                    @csrf
-                                    <button type="submit" class="btn btn-warning btn-lg px-4 text-white">
-                                        <i class="fas fa-share me-2"></i> Return to Rollbacker
-                                    </button>
-                                </form>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Ready for Disbursement Status (STEP 2: Mark as Disbursed) --}}
-                <div class="ready-for-disbursement-content"
-                    style="{{ $baseStatus === 'Ready for Disbursement' ? '' : 'display: none;' }}">
-
-                    <div class="card-header bg-primary text-white d-flex align-items-center">
-                        <i class="fas fa-money-bill-wave me-2"></i>
-                        <h5 class="mb-0">Treasury Office - Disbursement</h5>
-                    </div>
-
-                    <div class="card-body text-center">
-                        <!-- Buttons Container -->
-                        <div class="d-flex flex-wrap justify-content-center gap-3">
-
-                            <button type="button" class="btn btn-success btn-lg px-4 text-white" data-bs-toggle="modal"
-                                data-bs-target="#quickDisburseModal">
-                                <i class="fas fa-check-circle me-2"></i> Mark as Disbursed
-                            </button>
-
-                            <button type="button" class="btn btn-danger btn-lg px-4 text-white" data-bs-toggle="modal"
-                                data-bs-target="#rollbackModal">
-                                <i class="fas fa-undo-alt me-2"></i> Rollback Process
-                            </button>
-
-                            {{-- Return to Rollbacker Button for Ready for Disbursement --}}
-                            @if ($latestLog && str_contains(strtolower($latestLog->status), 'rolled back'))
-                                <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}"
-                                    method="POST" class="return-to-rollbacker-form d-inline-block">
-                                    @csrf
-                                    <button type="submit" class="btn btn-warning btn-lg px-4 text-white">
-                                        <i class="fas fa-share me-2"></i> Return to Rollbacker
-                                    </button>
-                                </form>
-                            @else
-                                <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}"
-                                    method="POST" class="return-to-rollbacker-form" style="display: none;">
-                                    @csrf
-                                    <button type="submit" class="btn btn-warning btn-lg px-4 text-white">
-                                        <i class="fas fa-share me-2"></i> Return to Rollbacker
-                                    </button>
-                                </form>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- Ready for Disbursement Modal -->
-            <div class="modal fade" id="readyForDisbursementModal" tabindex="-1"
-                aria-labelledby="readyForDisbursementModalLabel" aria-hidden="true">
-                <div class="modal-dialog">
-                    <form action="{{ route('admin.process-tracking.markAsReadyForDisbursement', $patient->id) }}"
-                        method="POST">
+        <div class="pr-action-card-body">
+            <div class="pr-action-btn-row">
+                <button type="button" class="pr-btn pr-btn-info" data-bs-toggle="modal" data-bs-target="#budgetModal">
+                    <i class="fas {{ $patient->budgetAllocation ? 'fa-edit' : 'fa-plus-circle' }}"></i>
+                    {{ $patient->budgetAllocation ? 'Edit Budget' : 'Allocate Budget' }}
+                </button>
+                <button type="button" class="pr-btn pr-btn-danger" data-bs-toggle="modal" data-bs-target="#rollbackModal">
+                    <i class="fas fa-undo-alt"></i> Rollback
+                </button>
+                @php $latestLog = $patient->statusLogs->last(); @endphp
+                @if($latestLog && str_contains(strtolower($latestLog->status), 'rolled back'))
+                    <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form d-inline-block">
                         @csrf
-                        <div class="modal-content border-0 shadow-lg rounded-4">
-                            <div class="modal-header bg-warning text-white">
-                                <h5 class="modal-title" id="readyForDisbursementModalLabel">
-                                    <i class="fas fa-exclamation-circle me-2"></i> Mark as Ready for Disbursement
-                                </h5>
-                                <button type="button" class="btn-close text-white" data-bs-dismiss="modal"
-                                    aria-label="Close"></button>
-                            </div>
-
-                            <div class="modal-body">
-                                <div class="alert alert-info">
-                                    <i class="fas fa-info-circle me-2"></i>
-                                    This will mark the patient as ready for disbursement. The budget allocation and DV
-                                    must be completed first.
-                                </div>
-
-                                <div class="form-group mb-3">
-                                    <label for="readyForDisbursementStatusDate">Status Date</label>
-                                    <input type="datetime-local" name="status_date" id="readyForDisbursementStatusDate"
-                                        class="form-control form-control-lg" value="{{ now()->toDateTimeLocalString() }}"
-                                        required>
-                                </div>
-
-                                <div class="form-group mb-3">
-                                    <label>Budget Allocated:</label>
-                                    <p class="form-control bg-light">
-                                        @if ($patient->budgetAllocation)
-                                            ₱{{ number_format($patient->budgetAllocation->amount, 2) }}
-                                        @else
-                                            <span class="text-danger">No budget allocated</span>
-                                        @endif
-                                    </p>
-                                </div>
-
-                                <div class="form-group mb-3">
-                                    <label>DV Code:</label>
-                                    <p class="form-control bg-light">
-                                        @if ($patient->disbursementVoucher && $patient->disbursementVoucher->dv_code)
-                                            {{ $patient->disbursementVoucher->dv_code }}
-                                        @else
-                                            <span class="text-danger">No DV submitted</span>
-                                        @endif
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="modal-footer d-flex flex-column gap-2">
-                                <button type="button" class="btn btn-warning w-100"
-                                    onclick="
-                                        const btn = this;
-                                        const form = btn.closest('form');
-                                        btn.disabled = true;
-                                        btn.innerHTML = '<i class=\'fas fa-spinner fa-spin me-1\'></i> Processing...';
-                                        form.submit();
-                                    ">
-                                    <i class="fas fa-exclamation-circle me-1"></i> Confirm Ready for Disbursement
-                                </button>
-
-                                <button type="button" class="btn btn-secondary w-100 mt-2" data-bs-dismiss="modal">
-                                    Cancel
-                                </button>
-                            </div>
-                        </div>
+                        <button type="submit" class="pr-btn pr-btn-warning"><i class="fas fa-share"></i> Return to Rollbacker</button>
                     </form>
-                </div>
-            </div>
-            <!-- Rollback Modal -->
-            <div class="modal fade" id="rollbackModal" tabindex="-1" aria-labelledby="rollbackModalLabel"
-                aria-hidden="true">
-                <div class="modal-dialog">
-                    <form action="{{ route('admin.process-tracking.rollback', $patient->id) }}" method="POST">
+                @else
+                    <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form" style="display:none;">
                         @csrf
-                        <div class="modal-content">
-                            <div class="modal-header bg-warning text-white">
-                                <h5 class="modal-title" id="rollbackModalLabel">Rollback Process</h5>
-                                <button type="button" class="close text-white" data-bs-dismiss="modal"
-                                    aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
-                            </div>
-
-                            <div class="modal-body">
-                                <div class="form-group">
-                                    <label for="rollback_to">Rollback to</label>
-                                    <select class="form-control" name="rollback_to" id="rollback_to" required>
-                                        <option value="">Select department to rollback to</option>
-                                        @php
-                                            // Define the process flow sequence
-                                            $processFlow = [
-                                                'Processing' => 'CSWD Office',
-                                                'Submitted' => 'Mayor\'s Office', // Combine normal and emergency submissions
-                                                'Approved' => 'Budget Office',
-                                                'Budget Allocated' => 'Accounting Office',
-                                                'DV Submitted' => 'Treasury Office',
-                                            ];
-
-                                            // Get all unique statuses from logs (clean them first)
-                                            $allStatuses = $patient->statusLogs
-                                                ->pluck('status')
-                                                ->map(function ($status) {
-                                                    // Remove [ROLLED BACK] and [EMERGENCY] tags for comparison
-                                                    return trim(
-                                                        str_replace(['[ROLLED BACK]', '[EMERGENCY]'], '', $status),
-                                                    );
-                                                })
-                                                ->unique()
-                                                ->filter()
-                                                ->values();
-
-                                            // Get current base status (without any tags)
-                                            $currentBaseStatus = trim(
-                                                str_replace(
-                                                    ['[ROLLED BACK]', '[EMERGENCY]'],
-                                                    '',
-                                                    $latestStatus->status,
-                                                ),
-                                            );
-
-                                            // Find current position in process flow
-                                            $currentPosition = array_search(
-                                                $currentBaseStatus,
-                                                array_keys($processFlow),
-                                            );
-
-                                            $availableRollbacks = [];
-
-                                            if ($currentPosition !== false && $currentPosition > 0) {
-                                                // Only allow rollback to previous steps in the process flow
-                                                for ($i = $currentPosition - 1; $i >= 0; $i--) {
-                                                    $targetStatus = array_keys($processFlow)[$i];
-                                                    $targetOffice = $processFlow[$targetStatus];
-
-                                                    // Check if this status exists in patient's history
-        if ($allStatuses->contains($targetStatus)) {
-            $availableRollbacks[$targetStatus] = $targetOffice;
-        }
-    }
-}
-
-// Special case: if current status is Submitted[Emergency], allow rollback to Processing
-if (
-    $currentBaseStatus === 'Submitted' &&
-    strpos($latestStatus->status, '[EMERGENCY]') !== false
-) {
-    if ($allStatuses->contains('Processing')) {
-        $availableRollbacks['Processing'] = 'CSWD Office';
-                                                }
-                                            }
-                                        @endphp
-
-                                        @foreach ($availableRollbacks as $status => $office)
-                                            <option value="{{ $status }}">{{ $office }}</option>
-                                        @endforeach
-                                    </select>
-
-                                    @if (empty($availableRollbacks))
-                                        <div class="alert alert-info mt-2">
-                                            No valid rollback targets available. You can only rollback to previous
-                                            departments in the process flow.
-                                        </div>
-                                    @endif
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="rollback_remarks">Remarks</label>
-                                    <textarea name="rollback_remarks" class="form-control" id="rollback_remarks" rows="3"></textarea>
-                                </div>
-                            </div>
-
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-warning"
-                                    onclick="
-                                        const form = this.closest('form');
-                                        this.disabled = true;
-                                        this.innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Rolling back...';
-                                        form.submit();
-                                    "
-                                    {{ empty($availableRollbacks) ? 'disabled' : '' }}>
-                                    <i class="fas fa-undo-alt me-1"></i> Rollback
-                                </button>
-
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            </div>
-                        </div>
+                        <button type="submit" class="pr-btn pr-btn-warning"><i class="fas fa-share"></i> Return to Rollbacker</button>
                     </form>
-                </div>
+                @endif
             </div>
+        </div>
+    </div>
 
-            <div class="modal fade" id="dvModal" tabindex="-1" aria-labelledby="dvModalLabel" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered modal-md" role="document">
-                    <form
-                        action="{{ $patient->disbursementVoucher
-                            ? route('admin.process-tracking.updateDV', $patient->id)
-                            : route('admin.process-tracking.storeDV', $patient->id) }}"
-                        method="POST">
+    {{-- ACCOUNTING – DV Input --}}
+    <div class="pr-action-card action-section" id="accounting-dv-input"
+         data-permission="accounting_dv_input"
+         style="display:{{ in_array($baseStatus,['Budget Allocated','Budget Allocated[ROLLED BACK]']) && auth()->user()->can('accounting_dv_input') ? 'block' : 'none' }};">
+        <div class="pr-action-card-header" style="background:linear-gradient(135deg,#0c4a6e 0%,#0ea5e9 100%);">
+            <div class="ach-icon" style="background:rgba(255,255,255,.15);color:#fff;">
+                <i class="fas fa-file-invoice"></i>
+            </div>
+            <div>
+                <div class="ach-title">Accounting Office – Disbursement Voucher</div>
+            </div>
+        </div>
+        <div class="pr-action-card-body">
+            <div class="pr-action-btn-row">
+                <button type="button" class="pr-btn pr-btn-info" data-bs-toggle="modal" data-bs-target="#dvModal">
+                    <i class="fas fa-file-alt"></i> {{ $patient->disbursementVoucher ? 'Edit' : 'Enter' }} DV Details
+                </button>
+                <button type="button" class="pr-btn pr-btn-danger" data-bs-toggle="modal" data-bs-target="#rollbackModal">
+                    <i class="fas fa-undo-alt"></i> Rollback
+                </button>
+                @php $latestLog = $patient->statusLogs->last(); @endphp
+                @if($latestLog && str_contains(strtolower($latestLog->status), 'rolled back'))
+                    <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form d-inline-block">
                         @csrf
-                        @if ($patient->disbursementVoucher)
-                            @method('PUT')
-                        @endif
-
-                        <div class="modal-content border-0 shadow-lg">
-                            <div class="modal-header bg-primary text-white">
-                                <h5 class="modal-title" id="dvModalLabel">
-                                    <i class="fas fa-file-invoice me-2"></i>
-                                    {{ $patient->disbursementVoucher ? 'Edit' : 'Enter' }} Disbursement Voucher
-                                </h5>
-                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                                    aria-label="Close"></button>
-                            </div>
-
-                            <div class="modal-body">
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="dv_code" class="form-label fw-bold">DV Code</label>
-                                        <input type="text" name="dv_code" id="dv_code"
-                                            class="form-control form-control-lg"
-                                            value="{{ old('dv_code', $patient->disbursementVoucher->dv_code ?? '') }}"
-                                            placeholder="Enter DV Code">
-                                    </div>
-
-                                    <div class="col-md-6 mb-3">
-                                        <label for="dv_date" class="form-label fw-bold">DV Date</label>
-                                        <input type="datetime-local" name="dv_date" id="dv_date"
-                                            class="form-control form-control-lg"
-                                            value="{{ old('dv_date', optional($patient->disbursementVoucher)->dv_date ? \Carbon\Carbon::parse($patient->disbursementVoucher->dv_date)->format('Y-m-d\TH:i') : '') }}">
-                                    </div>
-                                </div>
-
-                                <div class="form-group mb-3">
-                                    <label for="status_date" class="form-label fw-bold">Status Date</label>
-                                    <input type="datetime-local" name="status_date" id="status_date"
-                                        class="form-control form-control-lg"
-                                        value="{{ old('status_date', now()->toDateTimeLocalString()) }}" required>
-                                </div>
-                            </div>
-
-                            <div class="modal-footer d-flex flex-column gap-2">
-                                <button type="button" class="btn btn-success w-100"
-                                    onclick="
-                                                    const btn = this;
-                                                    const form = btn.closest('form');
-                                                    btn.disabled = true;
-                                                    btn.innerHTML = '<i class=\'fas fa-spinner fa-spin me-1\'></i> Processing...';
-                                                    form.submit();
-                                                ">
-                                    <i class="fas fa-check-circle me-1"></i>
-                                    {{ $patient->disbursementVoucher ? 'Update' : 'Submit' }} DV
-                                </button>
-
-                                <button type="button" class="btn btn-secondary w-100" data-bs-dismiss="modal">
-                                    Cancel
-                                </button>
-                            </div>
-                        </div>
+                        <button type="submit" class="pr-btn pr-btn-warning"><i class="fas fa-share"></i> Return to Rollbacker</button>
                     </form>
-                </div>
-            </div>
-
-            <div class="modal fade" id="quickDisburseModal" tabindex="-1" aria-labelledby="quickDisburseModalLabel"
-                aria-hidden="true">
-                <div class="modal-dialog">
-                    <form action="{{ route('admin.process-tracking.quickDisburse', $patient->id) }}" method="POST">
+                @else
+                    <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form" style="display:none;">
                         @csrf
-                        <div class="modal-content border-0 shadow-lg rounded-4">
-                            <div class="modal-header bg-success text-white">
-                                <h5 class="modal-title" id="quickDisburseModalLabel">
-                                    <i class="fas fa-money-bill-wave me-2"></i> Disburse
-                                </h5>
-                                <button type="button" class="btn-close text-white" data-bs-dismiss="modal"
-                                    aria-label="Close"></button>
-                            </div>
-
-                            <div class="modal-body">
-                                <div class="form-group mb-3">
-                                    <label for="quickDisburseStatusDate">Status Date</label>
-                                    <input type="datetime-local" name="status_date" id="quickDisburseStatusDate"
-                                        class="form-control form-control-lg" value="{{ now()->toDateTimeLocalString() }}"
-                                        required>
-                                </div>
-
-                                <div class="form-group mb-3">
-                                    <label for="quickDisburseRemarks">Remarks (Optional)</label>
-                                    <textarea name="remarks" id="quickDisburseRemarks" class="form-control form-control-lg" rows="3"
-                                        placeholder="Enter any remarks..."></textarea>
-                                </div>
-                            </div>
-
-                            <div class="modal-footer d-flex flex-column gap-2">
-                                <button type="button" class="btn btn-success w-100"
-                                    onclick="
-                                                    const btn = this;
-                                                    const form = btn.closest('form');
-                                                    btn.disabled = true;
-                                                    btn.innerHTML = '<i class=\'fas fa-spinner fa-spin me-1\'></i> Processing...';
-                                                    form.submit();
-                                                ">
-                                    <i class="fas fa-check-circle me-1"></i> Confirm Disbursement
-                                </button>
-
-                                <button type="button" class="btn btn-secondary w-100 mt-2" data-bs-dismiss="modal">
-                                    Cancel
-                                </button>
-                            </div>
-
-                        </div>
+                        <button type="submit" class="pr-btn pr-btn-warning"><i class="fas fa-share"></i> Return to Rollbacker</button>
                     </form>
+                @endif
+            </div>
+        </div>
+    </div>
+
+    {{-- TREASURY – Disburse --}}
+    <div class="pr-action-card action-section" id="treasury-disburse"
+         data-permission="treasury_disburse"
+         style="display:{{ in_array($baseStatus,['DV Submitted','DV Submitted[ROLLED BACK]','Ready for Disbursement']) && auth()->user()->can('treasury_disburse') ? 'block' : 'none' }};">
+
+        <div class="dv-submitted-content" style="{{ in_array($baseStatus,['DV Submitted','DV Submitted[ROLLED BACK]']) ? '' : 'display:none;' }}">
+            <div class="pr-action-card-header" style="background:linear-gradient(135deg,#312e81 0%,#7c3aed 100%);">
+                <div class="ach-icon" style="background:rgba(255,255,255,.15);color:#fff;"><i class="fas fa-money-bill-wave"></i></div>
+                <div><div class="ach-title">Treasury Office – Disbursement</div></div>
+            </div>
+            <div class="pr-action-card-body">
+                <div class="pr-action-btn-row">
+                    <button type="button" class="pr-btn pr-btn-warning" data-bs-toggle="modal" data-bs-target="#readyForDisbursementModal">
+                        <i class="fas fa-exclamation-circle"></i> Mark as Ready for Disbursement
+                    </button>
+                    <button type="button" class="pr-btn pr-btn-danger" data-bs-toggle="modal" data-bs-target="#rollbackModal">
+                        <i class="fas fa-undo-alt"></i> Rollback
+                    </button>
+                    @php $latestLog = $patient->statusLogs->last(); @endphp
+                    @if($latestLog && str_contains(strtolower($latestLog->status), 'rolled back'))
+                        <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form d-inline-block">
+                            @csrf
+                            <button type="submit" class="pr-btn pr-btn-warning"><i class="fas fa-share"></i> Return to Rollbacker</button>
+                        </form>
+                    @else
+                        <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form" style="display:none;">
+                            @csrf
+                            <button type="submit" class="pr-btn pr-btn-warning"><i class="fas fa-share"></i> Return to Rollbacker</button>
+                        </form>
+                    @endif
                 </div>
             </div>
+        </div>
 
-            @if ($patient->budgetAllocation && $patient->budgetAllocation->budget_status === 'Disbursed')
-                <div class="alert alert-success mt-4">
-                    <strong>Status:</strong> Disbursed
-                </div>
-            @endif
-
-            <div class="form-group mt-4">
-                <div class="left-buttons">
-                    <a class="btn btn-secondary" href="{{ route('admin.process-tracking.index') }}">
-                        <i class="fas fa-arrow-left me-1"></i> Back to List
-                    </a>
-                </div>
-
-                <div class="right-buttons">
-                    <a class="btn btn-primary" href="{{ route('admin.document-management.show', $patient->id) }}">
-                        <i class="fas fa-file-alt me-1"></i> View Document
-                    </a>
-                    <a class="btn btn-success" href="{{ route('admin.patient-records.show', $patient->id) }}">
-                        <i class="fas fa-file-medical me-1"></i> View Record
-                    </a>
+        <div class="ready-for-disbursement-content" style="{{ $baseStatus === 'Ready for Disbursement' ? '' : 'display:none;' }}">
+            <div class="pr-action-card-header" style="background:linear-gradient(135deg,#312e81 0%,#7c3aed 100%);">
+                <div class="ach-icon" style="background:rgba(255,255,255,.15);color:#fff;"><i class="fas fa-money-bill-wave"></i></div>
+                <div><div class="ach-title">Treasury Office – Disbursement</div></div>
+            </div>
+            <div class="pr-action-card-body">
+                <div class="pr-action-btn-row">
+                    <button type="button" class="pr-btn pr-btn-success" data-bs-toggle="modal" data-bs-target="#quickDisburseModal">
+                        <i class="fas fa-check-circle"></i> Mark as Disbursed
+                    </button>
+                    <button type="button" class="pr-btn pr-btn-danger" data-bs-toggle="modal" data-bs-target="#rollbackModal">
+                        <i class="fas fa-undo-alt"></i> Rollback
+                    </button>
+                    @if(isset($latestLog) && $latestLog && str_contains(strtolower($latestLog->status), 'rolled back'))
+                        <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form d-inline-block">
+                            @csrf
+                            <button type="submit" class="pr-btn pr-btn-warning"><i class="fas fa-share"></i> Return to Rollbacker</button>
+                        </form>
+                    @else
+                        <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form" style="display:none;">
+                            @csrf
+                            <button type="submit" class="pr-btn pr-btn-warning"><i class="fas fa-share"></i> Return to Rollbacker</button>
+                        </form>
+                    @endif
                 </div>
             </div>
         </div>
     </div>
+
+    </div>{{-- /dynamic-action-sections --}}
+
+    @if($patient->budgetAllocation && $patient->budgetAllocation->budget_status === 'Disbursed')
+        <div class="pr-alert pr-alert-success" style="margin-bottom:14px;">
+            <i class="fas fa-check-circle"></i> <strong>Disbursed</strong> — This application has been fully disbursed.
+        </div>
+    @endif
+
+    {{-- ─── BOTTOM NAV BAR ─── --}}
+    <div class="pr-nav-bar">
+        <div class="pr-nav-bar-left">
+            <a href="{{ route('admin.process-tracking.index') }}" class="pr-nav-btn pr-nav-btn-back">
+                <i class="fas fa-arrow-left" style="font-size:.72rem;"></i> Back to List
+            </a>
+        </div>
+        <div class="pr-nav-bar-right">
+            <a href="{{ route('admin.document-management.show', $patient->id) }}" class="pr-nav-btn pr-nav-btn-info">
+                <i class="fas fa-file-alt" style="font-size:.72rem;"></i> Documents
+            </a>
+            <a href="{{ route('admin.patient-records.show', $patient->id) }}" class="pr-nav-btn pr-nav-btn-info">
+                <i class="fas fa-file-medical" style="font-size:.72rem;"></i> Patient Record
+            </a>
+        </div>
+    </div>
+
+    {{-- ─── MODALS ─── --}}
+
+    <!-- Approve Modal -->
+    <div class="modal fade pr-modal" id="approveModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <form method="POST" action="{{ route('admin.process-tracking.decision', $patient->id) }}">
+                @csrf
+                <div class="modal-content">
+                    <div class="modal-header" style="background:linear-gradient(135deg,#052e22 0%,#064e3b 100%);">
+                        <h5 class="modal-title" style="color:#fff;"><i class="fas fa-check-circle me-2" style="color:var(--pr-lime);"></i>Approve Application</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter:invert(1);"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="pr-field">
+                            <label>Status Date</label>
+                            <input type="datetime-local" name="status_date" value="{{ now()->toDateTimeLocalString() }}" required>
+                        </div>
+                        <div class="pr-field">
+                            <label>Remarks</label>
+                            <textarea name="remarks" rows="3" placeholder="Enter remarks..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <input type="hidden" name="action" value="approve">
+                        <button type="button" class="pr-btn pr-btn-ghost" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="pr-btn pr-btn-primary"
+                            onclick="const f=this.closest('form');this.disabled=true;this.innerHTML='<i class=\'fas fa-spinner fa-spin\'></i> Processing...';f.submit();">
+                            <i class="fas fa-check-circle"></i> Confirm Approve
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Reject Modal -->
+    <div class="modal fade pr-modal" id="rejectModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <form method="POST" action="{{ route('admin.process-tracking.decision', $patient->id) }}" id="rejectForm" novalidate>
+                @csrf
+                <input type="hidden" name="action" value="reject">
+                <div class="modal-content">
+                    <div class="modal-header" style="background:linear-gradient(135deg,#991b1b 0%,#ef4444 100%);">
+                        <h5 class="modal-title" style="color:#fff;"><i class="fas fa-times-circle me-2"></i>Reject Application</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter:invert(1);"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="pr-field">
+                            <label>Reason(s) for Rejection</label>
+                            <div style="background:var(--pr-surface2);border:1.5px solid var(--pr-border-dark);border-radius:8px;padding:10px 14px;display:flex;flex-direction:column;gap:6px;">
+                                @foreach(['Missing ID','No signature','Expired documents','Wrong name','Missing document'] as $i => $reason)
+                                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;font-size:.82rem;font-weight:500;color:var(--pr-text);">
+                                        <input type="checkbox" name="reasons[]" value="{{ $reason }}"
+                                               id="reason{{ $i }}" class="reject-reason-cb"
+                                               style="width:15px;height:15px;accent-color:var(--pr-forest);cursor:pointer;flex-shrink:0;">
+                                        {{ $reason }}
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+                        <div class="pr-field">
+                            <label>Other Reason <span style="font-weight:400;color:var(--pr-sub);">(optional)</span></label>
+                            <input type="text" id="other_reason_input" placeholder="Specify other reason…"
+                                   style="border:1.5px solid var(--pr-border-dark);border-radius:8px;padding:8px 12px;font-size:.82rem;font-family:'DM Sans',sans-serif;color:var(--pr-text);width:100%;transition:border-color .2s;">
+                            {{-- hidden input gets populated by JS before submit --}}
+                            <input type="hidden" name="other_reason" id="other_reason_hidden">
+                        </div>
+                        <div class="pr-field">
+                            <label>Status Date</label>
+                            <input type="datetime-local" name="status_date" value="{{ now()->toDateTimeLocalString() }}" required
+                                   style="border:1.5px solid var(--pr-border-dark);border-radius:8px;padding:8px 12px;font-size:.82rem;font-family:'DM Sans',sans-serif;color:var(--pr-text);width:100%;">
+                        </div>
+                        <div class="pr-field">
+                            <label>Remarks</label>
+                            <textarea name="remarks" rows="3" placeholder="Enter remarks…"
+                                      style="border:1.5px solid var(--pr-border-dark);border-radius:8px;padding:8px 12px;font-size:.82rem;font-family:'DM Sans',sans-serif;color:var(--pr-text);width:100%;resize:vertical;"></textarea>
+                        </div>
+
+                        {{-- live preview of selected reasons --}}
+                        <div id="reject-reasons-preview" style="display:none;margin-top:2px;padding:8px 12px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;font-size:.76rem;color:#991b1b;">
+                            <strong style="font-weight:700;">Will be recorded:</strong>
+                            <span id="reject-reasons-list"></span>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="pr-btn pr-btn-ghost" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="pr-btn pr-btn-danger" id="confirmRejectBtn">
+                            <i class="fas fa-times-circle"></i> Confirm Reject
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Budget Modal -->
+    <div class="modal fade pr-modal" id="budgetModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form action="{{ $patient->budgetAllocation ? route('admin.process-tracking.updateBudget',$patient->id) : route('admin.process-tracking.storeBudget',$patient->id) }}" method="POST">
+                @csrf
+                @if($patient->budgetAllocation) @method('PUT') @endif
+                <div class="modal-content">
+                    <div class="modal-header" style="background:linear-gradient(135deg,#78350f 0%,#d97706 100%);">
+                        <h5 class="modal-title" style="color:#fff;"><i class="fas fa-wallet me-2"></i>{{ $patient->budgetAllocation ? 'Edit Budget Allocation' : 'Allocate Budget' }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter:invert(1);"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="pr-field">
+                            <label>Amount (₱)</label>
+                            <input type="number" step="0.01" name="amount" id="amount" required
+                                   value="{{ old('amount', $patient->budgetAllocation->amount ?? '') }}">
+                            <div class="pr-amount-chips">
+                                @foreach([1000,2000,3000,4000,5000,6000,7000,8000,9000,10000] as $s)
+                                    <button type="button" class="pr-amount-chip suggested-amount" data-value="{{ $s }}">₱{{ number_format($s) }}</button>
+                                @endforeach
+                            </div>
+                        </div>
+                        <div class="pr-field">
+                            <label>Status Date</label>
+                            <input type="datetime-local" name="status_date" id="budget_status_date"
+                                   value="{{ now()->toDateTimeLocalString() }}" required>
+                        </div>
+                        <div class="pr-field">
+                            <label>Remarks</label>
+                            <textarea name="remarks" rows="3" placeholder="Enter remarks...">{{ old('remarks', $patient->budgetAllocation->remarks ?? '') }}</textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="pr-btn pr-btn-ghost" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="pr-btn pr-btn-warning"
+                            onclick="const f=this.closest('form');this.disabled=true;this.innerHTML='<i class=\'fas fa-spinner fa-spin\'></i> Processing...';f.submit();">
+                            <i class="fas fa-check-circle"></i> {{ $patient->budgetAllocation ? 'Update' : 'Confirm' }} Allocation
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- DV Modal -->
+    <div class="modal fade pr-modal" id="dvModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form action="{{ $patient->disbursementVoucher ? route('admin.process-tracking.updateDV',$patient->id) : route('admin.process-tracking.storeDV',$patient->id) }}" method="POST">
+                @csrf
+                @if($patient->disbursementVoucher) @method('PUT') @endif
+                <div class="modal-content">
+                    <div class="modal-header" style="background:linear-gradient(135deg,#0c4a6e 0%,#0ea5e9 100%);">
+                        <h5 class="modal-title" style="color:#fff;"><i class="fas fa-file-invoice me-2"></i>{{ $patient->disbursementVoucher ? 'Edit' : 'Enter' }} Disbursement Voucher</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                            <div class="pr-field">
+                                <label>DV Code</label>
+                                <input type="text" name="dv_code" value="{{ old('dv_code', $patient->disbursementVoucher->dv_code ?? '') }}" placeholder="Enter DV Code">
+                            </div>
+                            <div class="pr-field">
+                                <label>DV Date</label>
+                                <input type="datetime-local" name="dv_date"
+                                       value="{{ old('dv_date', optional($patient->disbursementVoucher)->dv_date ? \Carbon\Carbon::parse($patient->disbursementVoucher->dv_date)->format('Y-m-d\TH:i') : '') }}">
+                            </div>
+                        </div>
+                        <div class="pr-field">
+                            <label>Status Date</label>
+                            <input type="datetime-local" name="status_date" value="{{ old('status_date', now()->toDateTimeLocalString()) }}" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="pr-btn pr-btn-ghost" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="pr-btn pr-btn-info"
+                            onclick="const f=this.closest('form');this.disabled=true;this.innerHTML='<i class=\'fas fa-spinner fa-spin\'></i> Processing...';f.submit();">
+                            <i class="fas fa-check-circle"></i> {{ $patient->disbursementVoucher ? 'Update' : 'Submit' }} DV
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Ready for Disbursement Modal -->
+    <div class="modal fade pr-modal" id="readyForDisbursementModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <form action="{{ route('admin.process-tracking.markAsReadyForDisbursement', $patient->id) }}" method="POST">
+                @csrf
+                <div class="modal-content">
+                    <div class="modal-header" style="background:linear-gradient(135deg,#b45309 0%,#f59e0b 100%);">
+                        <h5 class="modal-title" style="color:#fff;"><i class="fas fa-exclamation-circle me-2"></i>Mark as Ready for Disbursement</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter:invert(1);"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="pr-alert pr-alert-info"><i class="fas fa-info-circle"></i> Budget allocation and DV must be completed first.</div>
+                        <div class="pr-field">
+                            <label>Status Date</label>
+                            <input type="datetime-local" name="status_date" value="{{ now()->toDateTimeLocalString() }}" required>
+                        </div>
+                        <div class="pr-field">
+                            <label>Budget Allocated</label>
+                            <div style="padding:8px 12px;border-radius:8px;background:var(--pr-surface2);border:1.5px solid var(--pr-border-dark);font-size:.82rem;font-weight:600;color:{{ $patient->budgetAllocation ? 'var(--pr-forest)' : 'var(--pr-danger)' }};">
+                                @if($patient->budgetAllocation)
+                                    ₱{{ number_format($patient->budgetAllocation->amount, 2) }}
+                                @else
+                                    <i class="fas fa-exclamation-triangle me-1"></i> No budget allocated
+                                @endif
+                            </div>
+                        </div>
+                        <div class="pr-field">
+                            <label>DV Code</label>
+                            <div style="padding:8px 12px;border-radius:8px;background:var(--pr-surface2);border:1.5px solid var(--pr-border-dark);font-size:.82rem;font-weight:600;color:{{ $patient->disbursementVoucher && $patient->disbursementVoucher->dv_code ? 'var(--pr-forest)' : 'var(--pr-danger)' }};">
+                                @if($patient->disbursementVoucher && $patient->disbursementVoucher->dv_code)
+                                    {{ $patient->disbursementVoucher->dv_code }}
+                                @else
+                                    <i class="fas fa-exclamation-triangle me-1"></i> No DV submitted
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="pr-btn pr-btn-ghost" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="pr-btn pr-btn-warning"
+                            onclick="const b=this,f=b.closest('form');b.disabled=true;b.innerHTML='<i class=\'fas fa-spinner fa-spin\'></i> Processing...';f.submit();">
+                            <i class="fas fa-exclamation-circle"></i> Confirm Ready
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Quick Disburse Modal -->
+    <div class="modal fade pr-modal" id="quickDisburseModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <form action="{{ route('admin.process-tracking.quickDisburse', $patient->id) }}" method="POST">
+                @csrf
+                <div class="modal-content">
+                    <div class="modal-header" style="background:linear-gradient(135deg,#065f46 0%,#10b981 100%);">
+                        <h5 class="modal-title" style="color:#fff;"><i class="fas fa-coins me-2"></i>Disburse</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter:invert(1);"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="pr-field">
+                            <label>Disbursement Date</label>
+                            <input type="datetime-local" name="status_date" value="{{ now()->toDateTimeLocalString() }}" required>
+                        </div>
+                        <div class="pr-field">
+                            <label>Remarks (Optional)</label>
+                            <textarea name="remarks" rows="3" placeholder="Enter remarks..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="pr-btn pr-btn-ghost" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="pr-btn pr-btn-success"
+                            onclick="const b=this,f=b.closest('form');b.disabled=true;b.innerHTML='<i class=\'fas fa-spinner fa-spin\'></i> Processing...';f.submit();">
+                            <i class="fas fa-check-circle"></i> Confirm Disbursement
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Rollback Modal -->
+    <div class="modal fade pr-modal" id="rollbackModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <form action="{{ route('admin.process-tracking.rollback', $patient->id) }}" method="POST">
+                @csrf
+                <div class="modal-content">
+                    <div class="modal-header" style="background:linear-gradient(135deg,#78350f 0%,#f59e0b 100%);">
+                        <h5 class="modal-title" style="color:#fff;"><i class="fas fa-undo-alt me-2"></i>Rollback Process</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter:invert(1);"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="pr-field">
+                            <label>Rollback To</label>
+                            <select name="rollback_to" id="rollback_to" required style="border:1.5px solid var(--pr-border-dark);border-radius:8px;padding:8px 12px;font-size:.82rem;font-family:'DM Sans',sans-serif;width:100%;">
+                                <option value="">Select department to rollback to</option>
+                                @php
+                                    $processFlow = ['Processing'=>'CSWD Office','Submitted'=>"Mayor's Office",'Approved'=>'Budget Office','Budget Allocated'=>'Accounting Office','DV Submitted'=>'Treasury Office'];
+                                    $allStatuses = $patient->statusLogs->pluck('status')->map(fn($s)=>trim(str_replace(['[ROLLED BACK]','[EMERGENCY]'],'',$s)))->unique()->filter()->values();
+                                    $currentBaseStatus = trim(str_replace(['[ROLLED BACK]','[EMERGENCY]'],'',$latestStatus->status));
+                                    $currentPosition = array_search($currentBaseStatus, array_keys($processFlow));
+                                    $availableRollbacks = [];
+                                    if ($currentPosition !== false && $currentPosition > 0) {
+                                        for ($i = $currentPosition - 1; $i >= 0; $i--) {
+                                            $targetStatus = array_keys($processFlow)[$i];
+                                            if ($allStatuses->contains($targetStatus)) $availableRollbacks[$targetStatus] = array_values($processFlow)[$i];
+                                        }
+                                    }
+                                    if ($currentBaseStatus === 'Submitted' && str_contains($latestStatus->status,'[EMERGENCY]') && $allStatuses->contains('Processing')) {
+                                        $availableRollbacks['Processing'] = 'CSWD Office';
+                                    }
+                                @endphp
+                                @foreach($availableRollbacks as $status => $office)
+                                    <option value="{{ $status }}">{{ $office }}</option>
+                                @endforeach
+                            </select>
+                            @if(empty($availableRollbacks))
+                                <div class="pr-alert pr-alert-info" style="margin-top:8px;">No valid rollback targets available.</div>
+                            @endif
+                        </div>
+                        <div class="pr-field">
+                            <label>Remarks</label>
+                            <textarea name="rollback_remarks" rows="3" placeholder="Enter rollback reason..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="pr-btn pr-btn-ghost" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="pr-btn pr-btn-warning"
+                            onclick="const f=this.closest('form');this.disabled=true;this.innerHTML='<i class=\'fas fa-spinner fa-spin\'></i> Rolling back...';f.submit();"
+                            {{ empty($availableRollbacks) ? 'disabled' : '' }}>
+                            <i class="fas fa-undo-alt"></i> Rollback
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    </div>{{-- /pr-page --}}
+
 @endsection
 
 @section('styles')
-    <style>
-        .action-section {
-            transition: all 0.3s ease-in-out;
-        }
-
-        /* Ensure proper spacing when sections are hidden/shown */
-        .card.mb-4 {
-            margin-bottom: 1rem !important;
-        }
-
-        /* Status Colors for Process Summary */
-        .status-processing {
-            background-color: #dbeafe !important;
-            /* Light blue */
-            color: #1e40af !important;
-            border-left: 4px solid #3b82f6 !important;
-        }
-
-        .status-submitted {
-            background-color: #dbeafe !important;
-            /* Light blue */
-            color: #1e40af !important;
-            border-left: 4px solid #3b82f6 !important;
-        }
-
-        .status-submitted-emergency {
-            background-color: #fef3c7 !important;
-            /* Light yellow/orange */
-            color: #92400e !important;
-            border-left: 4px solid #f59e0b !important;
-            position: relative;
-        }
-
-        /* Add emergency indicator for better visibility */
-        .status-submitted-emergency::before {
-            content: "🚨";
-            position: absolute;
-            left: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 16px;
-        }
-
-        .status-approved {
-            background-color: #d1fae5 !important;
-            /* Light green */
-            color: #065f46 !important;
-            border-left: 4px solid #10b981 !important;
-        }
-
-        .status-rejected {
-            background-color: #fecaca !important;
-            /* Light red */
-            color: #991b1b !important;
-            border-left: 4px solid #ef4444 !important;
-        }
-
-        .status-budget-allocated {
-            background-color: #fef3c7 !important;
-            /* Light yellow */
-            color: #92400e !important;
-            border-left: 4px solid #f59e0b !important;
-        }
-
-        .status-dv-submitted {
-            background-color: #dbeafe !important;
-            /* Light blue */
-            color: #1e40af !important;
-            border-left: 4px solid #3b82f6 !important;
-        }
-
-        .status-disbursed {
-            background-color: #d1fae5 !important;
-            /* Light green */
-            color: #065f46 !important;
-            border-left: 4px solid #10b981 !important;
-        }
-
-        .status-ready-for-disbursement {
-            background-color: #fef3c7 !important;
-            /* Light yellow */
-            color: #92400e !important;
-            border-left: 4px solid #f59e0b !important;
-        }
-
-        .status-rolled-back {
-            background-color: #fef3c7 !important;
-            /* Light yellow */
-            color: #92400e !important;
-            border-left: 4px solid #f59e0b !important;
-            position: relative;
-        }
-
-        /* Add rollback indicator */
-        .status-rolled-back::before {
-            content: "↶";
-            position: absolute;
-            left: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-weight: bold;
-            color: #f59e0b;
-            font-size: 16px;
-        }
-
-        .status-default {
-            background-color: #f8f9fa !important;
-            color: #212529 !important;
-            border-left: 4px solid #6c757d !important;
-        }
-
-        /* Ensure list group items have proper spacing and borders */
-        .list-group-item {
-            border: 1px solid rgba(0, 0, 0, .125) !important;
-            margin-bottom: 5px !important;
-            border-radius: 5px !important;
-            padding-left: 50px !important;
-            /* Make space for icons */
-            position: relative;
-            transition: all 0.2s ease-in-out;
-        }
-
-        .list-group-item:hover {
-            transform: translateX(2px);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-    </style>
 @endsection
 
 @section('scripts')
     <script>
-        const userPermissions = @json($userPermissions);
+    const userPermissions = @json($userPermissions);
 
-        function initializeRealTimeUpdates() {
-            console.log('📡 Initializing real-time updates...');
+    function initializeRealTimeUpdates() {
+        if (window.Echo && window.Echo.connector && window.Echo.connector.pusher) {
+            window.Echo.connector.pusher.connection.bind('connected', ()=>console.log('✅ Pusher connected'));
+            window.Echo.connector.pusher.connection.bind('disconnected', ()=>console.log('❌ Pusher disconnected'));
+            window.Echo.connector.pusher.connection.bind('error', err=>console.error('Pusher error:', err));
+        }
+        if (window.Echo) {
+            window.Echo.channel('process-tracking').listen('.patient.status.changed', e => {
+                updateProcessStatus(e);
+                updateProcessSummary(e);
+                updateActionButtons(e);
+                updateProcessTracker(e);
+                updateFormLockState(e);
+                updateReturnToRollbackerButton(e);
+            });
+        }
+    }
 
-            // Connection status handling
-            if (window.Echo && window.Echo.connector && window.Echo.connector.pusher) {
-                window.Echo.connector.pusher.connection.bind('connected', function() {
-                    console.log('✅ Connected to Pusher');
-                });
+    function getStatusCssClass(status) {
+        const clean = status.replace('[ROLLED BACK]','').trim();
+        const map = {
+            'Processing':'pt-s-processing','Submitted':'pt-s-submitted',
+            'Submitted[Emergency]':'pt-s-emergency','Approved':'pt-s-approved',
+            'Rejected':'pt-s-rejected','Budget Allocated':'pt-s-budget',
+            'DV Submitted':'pt-s-dv','Ready for Disbursement':'pt-s-ready',
+            'Disbursed':'pt-s-disbursed'
+        };
+        return map[clean] || 'pt-s-processing';
+    }
 
-                window.Echo.connector.pusher.connection.bind('disconnected', function() {
-                    console.log('❌ Disconnected from Pusher');
-                });
+    function getStatusIcon(status) {
+        const clean = status.replace('[ROLLED BACK]','').trim();
+        const map = {
+            'Processing':'fa-spinner','Submitted':'fa-paper-plane',
+            'Submitted[Emergency]':'fa-exclamation-triangle','Approved':'fa-thumbs-up',
+            'Rejected':'fa-ban','Budget Allocated':'fa-money-bill-wave',
+            'DV Submitted':'fa-file','Ready for Disbursement':'fa-check-circle',
+            'Disbursed':'fa-coins'
+        };
+        return map[clean] || 'fa-question-circle';
+    }
 
-                window.Echo.connector.pusher.connection.bind('error', function(error) {
-                    console.error('Pusher error:', error);
-                });
-            }
+    function buildStatusBadgeHtml(status) {
+        const isRb   = status.includes('[ROLLED BACK]');
+        const base   = status.replace('[ROLLED BACK]','').trim();
+        const label  = base === 'Submitted[Emergency]' ? 'Emergency' : base;
+        const cls    = getStatusCssClass(status);
+        const icon   = getStatusIcon(status);
+        const rb     = isRb ? `<span class="pt-s-rollback-tag">ROLLED BACK</span>` : '';
+        return `<i class="fas ${icon}"></i> ${label}${rb}`;
+    }
 
-            // Listen for patient status changes
-            if (window.Echo) {
-                window.Echo.channel('process-tracking')
-                    .listen('.patient.status.changed', function(e) {
+    function updateProcessStatus(e) {
+        const heroBadge = document.getElementById('hero-status-badge');
+        if (heroBadge) {
+            heroBadge.className = `pt-status ${getStatusCssClass(e.status)}`;
+            heroBadge.innerHTML = buildStatusBadgeHtml(e.status);
+        }
+        const cardBadge = document.getElementById('current-status-badge');
+        if (cardBadge) {
+            cardBadge.className = `pt-status ${getStatusCssClass(e.status)}`;
+            cardBadge.innerHTML = buildStatusBadgeHtml(e.status);
+        }
+        const remarksRow = document.getElementById('remarks-row');
+        const currentRemarks = document.getElementById('current-remarks');
+        if (remarksRow && currentRemarks) {
+            if (e.remarks && e.remarks.trim()) { currentRemarks.textContent = e.remarks; remarksRow.style.display = ''; }
+            else { remarksRow.style.display = 'none'; }
+        }
+        const budgetRow = document.getElementById('budget-allocation-row');
+        const budgetAmt = document.getElementById('budget-amount-display');
+        if (budgetRow && budgetAmt) {
+            if (e.budget_amount != null) {
+                budgetAmt.textContent = '₱' + parseFloat(e.budget_amount).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+                budgetRow.style.display = '';
+            } else { budgetRow.style.display = 'none'; }
+        }
+        const dvInfoRow = document.getElementById('dv-info-row');
+        const dvDateRow = document.getElementById('dv-date-row');
+        const dvCode    = document.getElementById('dv-code-display');
+        const dvDate    = document.getElementById('dv-date-display');
+        if (dvInfoRow && dvCode) {
+            if (e.dv_code) { dvCode.textContent = e.dv_code; dvInfoRow.style.display = ''; }
+            else { dvInfoRow.style.display = 'none'; }
+        }
+        if (dvDateRow && dvDate) {
+            if (e.dv_date) { dvDate.textContent = new Date(e.dv_date).toLocaleString('en-US',{year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true}); dvDateRow.style.display = ''; }
+            else { dvDateRow.style.display = 'none'; }
+        }
+        const updatedAt = document.getElementById('status-updated-at');
+        if (updatedAt) updatedAt.textContent = new Date().toLocaleString('en-US',{year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true});
+    }
 
+    function updateProcessSummary(e) {
+        const list = document.getElementById('processSummaryList');
+        if (!list) return;
+        const li = document.createElement('div');
+        li.className = `pr-log-item ${getLogClass(e.status)}`;
+        const isRb = e.status.includes('[ROLLED BACK]');
+        const icon = isRb ? 'fa-undo' : (e.action==='rejected'?'fa-times-circle':e.status==='Approved'?'fa-check-circle':e.status==='Disbursed'?'fa-coins':'fa-circle');
+        const rb   = isRb ? `<span class="pt-s-rollback-tag">ROLLED BACK</span>` : '';
+        const fromTo = formatProcessSummaryText(e);
+        let content = `
+            <div class="pr-log-item-header">
+                <div style="display:flex;align-items:center;gap:7px;">
+                    <i class="fas ${icon}" style="font-size:.72rem;opacity:.7;"></i>
+                    <strong style="font-size:.82rem;">${e.status}</strong>${rb}
+                </div>
+                <span class="pr-log-date">${formatDateTime(e.status_date)}</span>
+            </div>
+            <div class="pr-log-flow">${e.user_name || 'System'}${fromTo ? ' &nbsp;·&nbsp; ' + fromTo : ''}</div>`;
+        if (e.action === 'rejected' && e.rejection_reasons?.length) {
+            content += `<div style="margin-top:5px;font-size:.76rem;color:var(--pr-sub);"><em style="font-style:normal;font-weight:600;">Rejection Reasons:</em><ul style="margin:3px 0 0 16px;">`;
+            e.rejection_reasons.forEach(r => content += `<li>${r}</li>`);
+            content += `</ul></div>`;
+        }
+        if (e.status === 'Budget Allocated' && e.budget_amount) {
+            content += `<div class="pr-log-remarks"><em>Budget:</em> ₱${parseFloat(e.budget_amount).toLocaleString(undefined,{minimumFractionDigits:2})}</div>`;
+        }
+        if (e.remarks) content += `<div class="pr-log-remarks"><em>Remarks:</em> ${e.remarks}</div>`;
+        li.innerHTML = content;
+        list.insertBefore(li, list.firstChild);
+    }
 
-                        // Update process status section
-                        updateProcessStatus(e);
+    function getLogClass(status) {
+        if (status.includes('[ROLLED BACK]')) return 'pr-log-rollback';
+        const clean = status.replace(/\[.*?\]/g,'').trim();
+        const map = {
+            'Processing':'pr-log-processing','Submitted':'pr-log-submitted',
+            'Submitted[Emergency]':'pr-log-emergency','Approved':'pr-log-approved',
+            'Rejected':'pr-log-rejected','Budget Allocated':'pr-log-budget',
+            'DV Submitted':'pr-log-dv','Ready for Disbursement':'pr-log-ready',
+            'Disbursed':'pr-log-disbursed'
+        };
+        return map[clean] || 'pr-log-processing';
+    }
 
-                        // Update process summary in real-time
-                        updateProcessSummary(e);
+    function formatDateTime(dateString) {
+        return new Date(dateString).toLocaleString('en-US',{year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true});
+    }
 
-                        // Update action buttons based on status and permissions
-                        updateActionButtons(e);
+    function formatProcessSummaryText(e) {
+        const processSteps = {
+            'Processing':null,'Draft':null,'Rejected':'CSWD Office',
+            'Submitted':"Mayor's Office",'Submitted[Emergency]':"Mayor's Office",
+            'Approved':'Budget Office','Budget Allocated':'Accounting Office',
+            'DV Submitted':'Treasury Office','Disbursed':null,'Ready for Disbursement':null
+        };
+        if (e.status === 'Processing' || e.status === 'Draft') return '';
+        let text = `From: <strong>${e.user_role || e.user_name || 'System'}</strong>`;
+        const toOffice = processSteps[e.status];
+        if (toOffice) text += ` &nbsp;→&nbsp; <strong>${toOffice}</strong>`;
+        return text;
+    }
 
-                        // Update process tracker visualization
-                        updateProcessTracker(e);
+    function updateActionButtons(e) {
+        const base = e.status.replace('[ROLLED BACK]','').trim();
+        hideAllActionSections();
+        let section = null;
+        switch(base) {
+            case 'Processing[ROLLED BACK]': case 'Rejected': case 'Processing': case 'Draft':
+                if (userPermissions.includes('submit_patient_application')) section = 'submit-patient-application'; break;
+            case 'Submitted': case 'Submitted[Emergency]': case 'Submitted[ROLLED BACK]':
+                if (userPermissions.includes('approve_patient')) section = 'approve-patient'; break;
+            case 'Approved': case 'Approved[ROLLED BACK]':
+                if (userPermissions.includes('budget_allocate')) section = 'budget-allocate'; break;
+            case 'Budget Allocated': case 'Budget Allocated[ROLLED BACK]':
+                if (userPermissions.includes('accounting_dv_input')) section = 'accounting-dv-input'; break;
+            case 'DV Submitted': case 'DV Submitted[ROLLED BACK]': case 'Ready for Disbursement':
+                if (userPermissions.includes('treasury_disburse')) {
+                    section = 'treasury-disburse';
+                    document.getElementById('treasury-disburse').style.display = 'block';
+                    updateTreasurySectionContent(e);
+                } break;
+        }
+        if (section && section !== 'treasury-disburse') showActionSection(section);
+        updateRollbackDropdown(e);
+        updateReturnToRollbackerButton(e);
+    }
 
-                        updateFormLockState(e);
+    function updateTreasurySectionContent(e) {
+        const base = e.status.replace('[ROLLED BACK]','').trim();
+        const ts = document.getElementById('treasury-disburse');
+        if (!ts) return;
+        const dvContent    = ts.querySelector('.dv-submitted-content');
+        const readyContent = ts.querySelector('.ready-for-disbursement-content');
+        if (dvContent)    dvContent.style.display    = (base === 'DV Submitted') ? 'block' : 'none';
+        if (readyContent) readyContent.style.display = (base === 'Ready for Disbursement') ? 'block' : 'none';
+    }
 
-                        updateReturnToRollbackerButton(e);
-                    });
-            } else {
-                console.error('Echo is not defined');
+    function hideAllActionSections() {
+        ['submit-patient-application','approve-patient','budget-allocate','accounting-dv-input','treasury-disburse']
+            .forEach(id => { const el = document.getElementById(id); if(el) el.style.display='none'; });
+    }
+
+    function showActionSection(id) {
+        const el = document.getElementById(id);
+        if(el) el.style.display='block';
+    }
+
+    function updateProcessTracker(e) {
+        const steps = ['Submitted','Approved','Budget Allocated','DV Submitted','Ready for Disbursement','Disbursed'];
+        const base  = e.status.replace('[ROLLED BACK]','').trim();
+        const idx   = steps.indexOf(base);
+        document.querySelectorAll('.pr-stepper-step').forEach((step, i) => {
+            step.classList.remove('completed','current','next');
+            if (i <= idx) step.classList.add('completed');
+            if (i === idx) step.classList.add('current');
+            if (i === idx + 1) step.classList.add('next');
+            const circle = step.querySelector('.pr-stepper-circle');
+            if (circle) circle.innerHTML = (i <= idx) ? '<i class="fas fa-check" style="font-size:.7rem;"></i>' : (i+1).toString();
+        });
+    }
+
+    function updateFormLockState(e) {
+        const lockedStatuses = ['Submitted','Submitted[Emergency]','Approved','Budget Allocated','DV Submitted','Disbursed','Ready for Disbursement'];
+        const shouldLock = lockedStatuses.includes(e.status.replace('[ROLLED BACK]','').trim());
+        const el = document.getElementById('submitted_date');
+        if (el) el.disabled = shouldLock;
+        document.querySelectorAll('#submit-patient-application button[type="button"]').forEach(b => b.disabled = shouldLock);
+    }
+
+    function updateReturnToRollbackerButton(e) {
+        const isRolledBack = e.status && e.status.includes('[ROLLED BACK]');
+        document.querySelectorAll('.return-to-rollbacker-form').forEach(f => f.style.display = isRolledBack ? 'inline-block' : 'none');
+        document.querySelectorAll('.return-to-rollbacker-container').forEach(c => c.style.display = isRolledBack ? 'block' : 'none');
+    }
+
+    function submitApplication(url, btn, type) {
+        const form = btn.closest('form');
+        form.action = url;
+        document.querySelectorAll('.submit-btn').forEach(b => {
+            b.disabled = true;
+            b.innerHTML = b === btn ? '<i class="fas fa-spinner fa-spin"></i> Processing...' : '<i class="fas fa-clock"></i> Please wait...';
+        });
+        form.submit();
+    }
+
+    function updateRollbackDropdown(e) {
+        const base = e.status.replace('[ROLLED BACK]','').trim();
+        const rollbackSelect = document.getElementById('rollback_to');
+        if (!rollbackSelect) return;
+        const processFlow = {'Processing':'CSWD Office','Submitted':"Mayor's Office",'Approved':'Budget Office','Budget Allocated':'Accounting Office','DV Submitted':'Treasury Office'};
+        const steps = Object.keys(processFlow);
+        const pos = steps.indexOf(base);
+        let rollbacks = [];
+        if (pos > 0) for (let i=pos-1;i>=0;i--) rollbacks.push({status:steps[i],office:processFlow[steps[i]]});
+        while (rollbackSelect.options.length > 1) rollbackSelect.remove(1);
+        rollbacks.forEach(r => { const o = document.createElement('option'); o.value=r.status; o.textContent=r.office; rollbackSelect.appendChild(o); });
+        const btn = document.querySelector('#rollbackModal button.pr-btn-warning');
+        if (btn) btn.disabled = rollbacks.length === 0;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const statusBadge = document.getElementById('current-status-badge');
+        if (statusBadge) updateReturnToRollbackerButton({ status: statusBadge.textContent.replace('ROLLED BACK','[ROLLED BACK]').trim() });
+        initializeRealTimeUpdates();
+
+        const toastEl = document.getElementById('liveToast');
+        const timerEl = document.getElementById('toast-timer');
+        if (toastEl) {
+            new bootstrap.Toast(toastEl, { autohide:true, delay:5000 }).show();
+            let rem = 5;
+            const iv = setInterval(()=>{ rem--; if(timerEl) timerEl.textContent=`Closing in ${rem}s`; if(rem<=0)clearInterval(iv); }, 1000);
+        }
+
+        // ── Reject modal ──
+        const rejectCbs     = document.querySelectorAll('.reject-reason-cb');
+        const otherInput    = document.getElementById('other_reason_input');
+        const otherHidden   = document.getElementById('other_reason_hidden');
+        const preview       = document.getElementById('reject-reasons-preview');
+        const previewList   = document.getElementById('reject-reasons-list');
+        const confirmReject = document.getElementById('confirmRejectBtn');
+
+        function updateRejectPreview() {
+            const checked = [...rejectCbs].filter(cb => cb.checked).map(cb => cb.value);
+            const other   = otherInput ? otherInput.value.trim() : '';
+            if (otherHidden) otherHidden.value = other;
+            const all = other ? [...checked, other] : checked;
+            if (preview && previewList) {
+                if (all.length) {
+                    previewList.textContent = ' ' + all.join(', ');
+                    preview.style.display = 'block';
+                } else {
+                    preview.style.display = 'none';
+                }
             }
         }
 
-        function updateProcessStatus(eventData) {
-            // Update current status badge
-            const statusBadge = document.getElementById('current-status-badge');
-            if (statusBadge) {
-                statusBadge.textContent = eventData.status;
+        rejectCbs.forEach(cb => cb.addEventListener('change', updateRejectPreview));
+        if (otherInput) otherInput.addEventListener('input', updateRejectPreview);
 
-                // Update badge color based on status
-                statusBadge.className = 'badge badge-' + getStatusBadgeClass(eventData.status);
+        document.getElementById('rejectModal')?.addEventListener('hidden.bs.modal', function () {
+            rejectCbs.forEach(cb => cb.checked = false);
+            if (otherInput)  otherInput.value  = '';
+            if (otherHidden) otherHidden.value = '';
+            if (preview)     preview.style.display = 'none';
+            if (confirmReject) {
+                confirmReject.disabled = false;
+                confirmReject.innerHTML = '<i class="fas fa-times-circle"></i> Confirm Reject';
             }
+        });
 
-            // Update remarks
-            const remarksRow = document.getElementById('remarks-row');
-            const currentRemarks = document.getElementById('current-remarks');
-            if (remarksRow && currentRemarks) {
-                if (eventData.remarks && eventData.remarks.trim() !== '') {
-                    currentRemarks.textContent = eventData.remarks;
-                    remarksRow.style.display = '';
-                } else {
-                    remarksRow.style.display = 'none';
-                }
-            }
-
-            // Update budget allocation info
-            const budgetRow = document.getElementById('budget-allocation-row');
-            const budgetAmount = document.getElementById('budget-amount-display');
-            if (budgetRow && budgetAmount) {
-                if (eventData.budget_amount !== undefined && eventData.budget_amount !== null) {
-                    budgetAmount.textContent = '₱' + parseFloat(eventData.budget_amount).toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                    });
-                    budgetRow.style.display = '';
-                } else {
-                    budgetRow.style.display = 'none';
-                }
-            }
-
-            // Update DV info
-            const dvInfoRow = document.getElementById('dv-info-row');
-            const dvDateRow = document.getElementById('dv-date-row');
-            const dvCodeDisplay = document.getElementById('dv-code-display');
-            const dvDateDisplay = document.getElementById('dv-date-display');
-
-            if (dvInfoRow && dvCodeDisplay) {
-                if (eventData.dv_code !== undefined && eventData.dv_code !== null && eventData.dv_code !== '') {
-                    dvCodeDisplay.textContent = eventData.dv_code;
-                    dvInfoRow.style.display = '';
-                } else {
-                    dvInfoRow.style.display = 'none';
-                }
-            }
-
-            if (dvDateRow && dvDateDisplay) {
-                if (eventData.dv_date !== undefined && eventData.dv_date !== null) {
-                    const dvDate = new Date(eventData.dv_date);
-                    dvDateDisplay.textContent = dvDate.toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        hour12: true
-                    });
-                    dvDateRow.style.display = '';
-                } else {
-                    dvDateRow.style.display = 'none';
-                }
-            }
-
-            // Update timestamp
-            const updatedAt = document.getElementById('status-updated-at');
-            if (updatedAt) {
-                const now = new Date();
-                updatedAt.textContent = now.toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true
-                });
-            }
-        }
-
-        function getStatusBadgeClass(status) {
-            const statusClassMap = {
-                'Processing': 'secondary',
-                'Submitted': 'primary',
-                'Submitted[Emergency]': 'danger',
-                'Approved': 'success',
-                'Rejected': 'danger',
-                'Budget Allocated': 'warning',
-                'DV Submitted': 'info',
-                'Disbursed': 'success',
-                'Ready for Disbursement': 'warning'
-            };
-
-            // Remove [ROLLED BACK] suffix if present for class mapping
-            const cleanStatus = status.replace('[ROLLED BACK]', '').trim();
-            return statusClassMap[cleanStatus] || 'info';
-        }
-
-        function updateProcessSummary(eventData) {
-            const processSummaryList = document.getElementById('processSummaryList');
-            if (!processSummaryList) return;
-
-            // Create new list item for the latest status
-            const newLogItem = createProcessSummaryItem(eventData);
-
-            // Prepend the new item (most recent first)
-            processSummaryList.insertBefore(newLogItem, processSummaryList.lastChild);
-        }
-
-        function createProcessSummaryItem(eventData) {
-            const li = document.createElement('li');
-
-            // Get the correct status class
-            const statusClass = getStatusClass(eventData.status);
-            li.className = `list-group-item status-${statusClass}`;
-
-            // Format date to match your desired format: "November 22, 2025 6:03 PM"
-            const formattedDate = formatDateTime(eventData.status_date);
-
-            // Get the formatted From/To text
-            const fromToText = formatProcessSummaryText(eventData);
-
-            let content = `
-                    <div>
-                        <strong>${eventData.status}:</strong>
-                        ${eventData.user_name} - ${fromToText} -- ${formattedDate}
-                        <br>
-                `;
-
-            // Add rejection reasons if present
-            if (eventData.action === 'rejected' && eventData.rejection_reasons) {
-                content += `<em>Rejection Reason(s):</em>`;
-                if (eventData.rejection_reasons.length > 0) {
-                    content += `<ul class="mb-0">`;
-                    eventData.rejection_reasons.forEach(reason => {
-                        content += `<li>${reason}</li>`;
-                    });
-                    content += `</ul>`;
-                } else {
-                    content += `-`;
-                }
-                content += `<br>`;
-            }
-
-            // Add budget info if present
-            if (eventData.status === 'Budget Allocated' && eventData.budget_amount !== undefined) {
-                content +=
-                    `<em>Budget allocated:</em> ₱${eventData.budget_amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<br>`;
-            }
-
-            // Add DV info if present
-            if (eventData.status === 'DV Submitted' && eventData.dv_code !== undefined) {
-                content += `<em>DV Code:</em> ${eventData.dv_code || 'N/A'}<br>`;
-                if (eventData.dv_date) {
-                    content += `<em>DV Date:</em> ${formatDateTime(eventData.dv_date)}<br>`;
-                }
-            }
-
-            content += `<em>Remarks:</em> ${eventData.remarks || '-'}`;
-            content += `</div>`;
-
-            li.innerHTML = content;
-            return li;
-        }
-
-        // Helper function to format date as "November 22, 2025 6:03 PM"
-        function formatDateTime(dateString) {
-            const date = new Date(dateString);
-
-            // Format: "Month Day, Year Hour:Minute AM/PM"
-            return date.toLocaleString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
+        if (confirmReject) {
+            confirmReject.addEventListener('click', function () {
+                if (otherHidden && otherInput) otherHidden.value = otherInput.value.trim();
+                const form = document.getElementById('rejectForm');
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                form.submit();
             });
         }
 
-        function getStatusClass(status) {
-
-
-            // First check for rolled back status - this should take priority
-            if (status.includes('[ROLLED BACK]')) {
-
-                return 'rolled-back';
-            }
-
-            // Then check for other status types
-            const statusMap = {
-                'Processing': 'processing',
-                'Draft': 'processing',
-                'Submitted': 'submitted',
-                'Submitted[Emergency]': 'submitted-emergency',
-                'Approved': 'approved',
-                'Rejected': 'rejected',
-                'Budget Allocated': 'budget-allocated',
-                'DV Submitted': 'dv-submitted',
-                'Disbursed': 'disbursed',
-                'Ready for Disbursement': 'ready-for-disbursement'
-            };
-
-            // Clean the status by removing any brackets and trim
-            const cleanStatus = status.replace(/\[.*?\]/g, '').trim();
-            const result = statusMap[cleanStatus] || 'default';
-
-
-            return result;
-        }
-
-        function formatProcessSummaryText(eventData) {
-            const processSteps = {
-                'Processing': null,
-                'Draft': null,
-                'Rejected': 'CSWD Office',
-                'Submitted': 'Mayor\'s Office',
-                'Submitted[Emergency]': 'Mayor\'s Office',
-                'Approved': 'Budget Office',
-                'Budget Allocated': 'Accounting Office',
-                'DV Submitted': 'Treasury Office',
-                'Disbursed': null,
-                'Ready for Disbursement': null
-            };
-
-            // For Processing and Draft status, don't show From/To
-            if (eventData.status === 'Processing' || eventData.status === 'Draft') {
-                return '';
-            }
-
-            let text = '';
-
-            // Show "From" as the actual user's role/office - use user_role if available, otherwise fallback
-            if (eventData.user_role) {
-                text += `From: ${eventData.user_role}`;
-            } else {
-                // Fallback: Use the user's name or a default if role is not available in real-time data
-                text += `From: ${eventData.user_name || 'System'}`;
-            }
-
-            // Show "To" based on process flow
-            const toOffice = processSteps[eventData.status];
-            if (toOffice) {
-                text += ` To: ${toOffice}`;
-            }
-
-            return text;
-        }
-
-        function updateActionButtons(eventData) {
-
-
-            const baseStatus = eventData.status.replace('[ROLLED BACK]', '').trim();
-
-            // Hide all action sections first
-            hideAllActionSections();
-
-            // Show appropriate action section based on status AND user permissions
-            let sectionToShow = null;
-
-            switch (baseStatus) {
-                case 'Processing[ROLLED BACK]':
-                case 'Rejected':
-                case 'Processing':
-                case 'Draft':
-                    if (userPermissions.includes('submit_patient_application')) {
-                        sectionToShow = 'submit-patient-application';
-                    }
-                    break;
-                case 'Submitted':
-                case 'Submitted[Emergency]':
-                case 'Submitted[ROLLED BACK]':
-                    if (userPermissions.includes('approve_patient')) {
-                        sectionToShow = 'approve-patient';
-                    }
-                    break;
-                case 'Approved':
-                case 'Approved[ROLLED BACK]':
-                    if (userPermissions.includes('budget_allocate')) {
-                        sectionToShow = 'budget-allocate';
-                    }
-                    break;
-                case 'Budget Allocated':
-                case 'Budget Allocated[ROLLED BACK]':
-                    if (userPermissions.includes('accounting_dv_input')) {
-                        sectionToShow = 'accounting-dv-input';
-                    }
-                    break;
-                case 'DV Submitted':
-                case 'DV Submitted[ROLLED BACK]':
-                case 'Ready for Disbursement':
-                    if (userPermissions.includes('treasury_disburse')) {
-                        sectionToShow = 'treasury-disburse';
-
-
-                        // FORCE show the Treasury section regardless of server-side conditions
-                        const treasurySection = document.getElementById('treasury-disburse');
-                        if (treasurySection) {
-                            treasurySection.style.display = 'block';
-
-
-                            // Also update the internal content visibility based on status
-                            updateTreasurySectionContent(eventData);
-                        }
-                    }
-                    break;
-                case 'Disbursed':
-                    // No actions needed for disbursed status
-                    break;
-            }
-
-            if (sectionToShow && sectionToShow !== 'treasury-disburse') {
-                showActionSection(sectionToShow);
-
-            }
-            updateRollbackDropdown(eventData);
-
-            // Update rollbacker button AFTER action sections are shown
-            updateReturnToRollbackerButton(eventData);
-        }
-
-        // New function to handle Treasury section content updates
-        function updateTreasurySectionContent(eventData) {
-            const baseStatus = eventData.status.replace('[ROLLED BACK]', '').trim();
-            const treasurySection = document.getElementById('treasury-disburse');
-
-            if (!treasurySection) return;
-
-
-
-            // Hide all content divs first
-            const dvSubmittedContent = treasurySection.querySelector('.dv-submitted-content');
-            const readyForDisbursementContent = treasurySection.querySelector('.ready-for-disbursement-content');
-
-            if (dvSubmittedContent) dvSubmittedContent.style.display = 'none';
-            if (readyForDisbursementContent) readyForDisbursementContent.style.display = 'none';
-
-            // Show appropriate content based on status
-            if (baseStatus === 'DV Submitted' || baseStatus === 'DV Submitted[ROLLED BACK]') {
-                if (dvSubmittedContent) {
-                    dvSubmittedContent.style.display = 'block';
-
-                }
-            } else if (baseStatus === 'Ready for Disbursement') {
-                if (readyForDisbursementContent) {
-                    readyForDisbursementContent.style.display = 'block';
-
-                }
-            }
-        }
-
-        function hideAllActionSections() {
-            const sections = [
-                'submit-patient-application',
-                'approve-patient',
-                'budget-allocate',
-                'accounting-dv-input',
-                'treasury-disburse'
-            ];
-
-            sections.forEach(sectionId => {
-                const section = document.getElementById(sectionId);
-                if (section) {
-                    section.style.display = 'none';
-                }
-            });
-        }
-
-        function showActionSection(sectionId) {
-            const section = document.getElementById(sectionId);
-            if (section) {
-                section.style.display = 'block';
-            }
-        }
-
-        function updateProcessTracker(eventData) {
-            const steps = ['Submitted', 'Approved', 'Budget Allocated', 'DV Submitted', 'Disbursed'];
-            const baseStatus = eventData.status.replace('[ROLLED BACK]', '').trim();
-
-            const currentIndex = steps.indexOf(baseStatus);
-            if (currentIndex === -1) return;
-
-            // Update stepper visualization
-            const stepperSteps = document.querySelectorAll('.stepper-step');
-            stepperSteps.forEach((step, index) => {
-                step.classList.remove('completed', 'next', 'has-blue-line');
-
-                if (index <= currentIndex) {
-                    step.classList.add('completed');
-                }
-                if (index === currentIndex + 1) {
-                    step.classList.add('next');
-                }
-                if (index === currentIndex) {
-                    step.classList.add('has-blue-line');
-                }
-            });
-        }
-
-        // Helper function for form submission
-        function submitForm(url, button) {
-            const form = button.closest('form');
-            form.action = url;
-            button.disabled = true;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-            form.submit();
-        }
-
-        function updateFormLockState(eventData) {
-            const baseStatus = eventData.status.replace('[ROLLED BACK]', '').trim();
-
-            // Define which statuses should be locked
-            const lockedStatuses = ['Submitted', 'Submitted[Emergency]', 'Approved', 'Budget Allocated', 'DV Submitted',
-                'Disbursed', 'Ready for Disbursement'
-            ];
-            const shouldBeLocked = lockedStatuses.includes(baseStatus);
-
-            // Update the submit form elements
-            const submittedDate = document.getElementById('submitted_date');
-            const remarksTextarea = document.getElementById('remarks');
-            const submitButtons = document.querySelectorAll('#submit-patient-application button[type="button"]');
-            const lockedAlert = document.querySelector('#submit-patient-application .alert');
-
-            if (submittedDate) {
-                submittedDate.disabled = shouldBeLocked;
-            }
-
-            if (remarksTextarea) {
-                remarksTextarea.disabled = shouldBeLocked;
-            }
-
-            if (submitButtons) {
-                submitButtons.forEach(button => {
-                    button.disabled = shouldBeLocked;
-                });
-            }
-
-            // Show/hide the locked alert
-            if (lockedAlert) {
-                lockedAlert.style.display = shouldBeLocked ? 'block' : 'none';
-            }
-
-        }
-
-        function updateReturnToRollbackerButton(eventData) {
-
-
-            // Use the specific class to find all Return to Rollbacker buttons
-            const rolledBackForms = document.querySelectorAll('.return-to-rollbacker-form');
-            const rolledBackContainers = document.querySelectorAll('.return-to-rollbacker-container');
-
-
-
-            // FIXED LOGIC: Show button ONLY if the current status has [ROLLED BACK] tag
-            const isRolledBack = eventData.status && eventData.status.includes('[ROLLED BACK]');
-            const shouldShowButton = isRolledBack;
-
-
-            // Update all forms
-            rolledBackForms.forEach((form, index) => {
-                if (shouldShowButton) {
-                    form.style.display = 'inline-block';
-
-                } else {
-                    form.style.display = 'none';
-
-                }
-            });
-
-            // Update all containers
-            rolledBackContainers.forEach((container, index) => {
-                if (shouldShowButton) {
-                    container.style.display = 'block';
-
-                } else {
-                    container.style.display = 'none';
-
-                }
-            });
-
-
-        }
-
-        function submitApplication(url, clickedButton, type) {
-            const form = clickedButton.closest('form');
-            form.action = url;
-
-            // Disable both submit buttons
-            const submitButtons = document.querySelectorAll('.submit-btn');
-            submitButtons.forEach(button => {
-                button.disabled = true;
-                if (button === clickedButton) {
-                    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-                } else {
-                    button.innerHTML = '<i class="fas fa-clock"></i> Please wait...';
-                }
-            });
-
-            form.submit();
-        }
-
-        function updateRollbackDropdown(eventData) {
-            console.log('🔄 Updating rollback dropdown for status:', eventData.status);
-
-            const baseStatus = eventData.status.replace('[ROLLED BACK]', '').trim();
-            const rollbackSelect = document.getElementById('rollback_to');
-
-            if (!rollbackSelect) return;
-
-            // Define the process flow sequence
-            const processFlow = {
-                'Processing': 'CSWD Office',
-                'Submitted': 'Mayor\'s Office',
-                'Approved': 'Budget Office',
-                'Budget Allocated': 'Accounting Office',
-                'DV Submitted': 'Treasury Office'
-            };
-
-            // Get current position in process flow
-            const processSteps = Object.keys(processFlow);
-            const currentPosition = processSteps.indexOf(baseStatus);
-
-            let availableRollbacks = [];
-
-            if (currentPosition !== -1 && currentPosition > 0) {
-                // Only allow rollback to previous steps
-                for (let i = currentPosition - 1; i >= 0; i--) {
-                    const targetStatus = processSteps[i];
-                    const targetOffice = processFlow[targetStatus];
-                    availableRollbacks.push({
-                        status: targetStatus,
-                        office: targetOffice
-                    });
-                }
-            }
-
-            // Special case for emergency submissions
-            if (baseStatus === 'Submitted' && eventData.status.includes('[EMERGENCY]')) {
-                if (!availableRollbacks.some(item => item.status === 'Processing')) {
-                    availableRollbacks.push({
-                        status: 'Processing',
-                        office: 'CSWD Office'
-                    });
-                }
-            }
-
-            // Clear existing options except the first one
-            while (rollbackSelect.options.length > 1) {
-                rollbackSelect.remove(1);
-            }
-
-            // Add new options
-            availableRollbacks.forEach(rollback => {
-                const option = document.createElement('option');
-                option.value = rollback.status;
-                option.textContent = rollback.office;
-                rollbackSelect.appendChild(option);
-            });
-
-            // Update the rollback button state
-            const rollbackButton = document.querySelector('#rollbackModal button[type="button"].btn-warning');
-            if (rollbackButton) {
-                rollbackButton.disabled = availableRollbacks.length === 0;
-
-                if (availableRollbacks.length === 0) {
-                    // Add info message if not already present
-                    if (!document.querySelector('#rollbackModal .alert-info')) {
-                        const infoAlert = document.createElement('div');
-                        infoAlert.className = 'alert alert-info mt-2';
-                        infoAlert.innerHTML =
-                            'No valid rollback targets available. You can only rollback to previous departments in the process flow.';
-                        rollbackSelect.parentNode.appendChild(infoAlert);
-                    }
-                } else {
-                    // Remove info message if present
-                    const existingAlert = document.querySelector('#rollbackModal .alert-info');
-                    if (existingAlert) {
-                        existingAlert.remove();
-                    }
-                }
-            }
-
-            console.log('✅ Updated rollback dropdown with options:', availableRollbacks);
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const statusBadge = document.getElementById('current-status-badge');
-            if (statusBadge) {
-                const initialStatus = statusBadge.textContent;
-                updateReturnToRollbackerButton({
-                    status: initialStatus
-                });
-            }
-            initializeRealTimeUpdates();
-
-            // Existing toast and amount button code
-            var toastEl = document.getElementById('liveToast');
-            var timerEl = document.getElementById('toast-timer');
-
-            if (toastEl) {
-                var toast = new bootstrap.Toast(toastEl, {
-                    autohide: true,
-                    delay: 5000
-                });
-                toast.show();
-
-                let remaining = 5;
-                const interval = setInterval(() => {
-                    remaining--;
-                    if (timerEl) {
-                        timerEl.textContent = `Closing in ${remaining}s`;
-                    }
-                    if (remaining <= 0) {
-                        clearInterval(interval);
-                    }
-                }, 1000);
-            }
-
-            const amountInput = document.getElementById('amount');
-            const buttons = document.querySelectorAll('.suggested-amount');
-
-            buttons.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const value = this.dataset.value;
-                    amountInput.value = value;
-                    amountInput.focus();
-                    amountInput.classList.add('bg-success', 'text-white');
-                    setTimeout(() => {
-                        amountInput.classList.remove('bg-success', 'text-white');
-                    }, 500);
-                });
+        // ── Amount chips ──
+        const amountInput = document.getElementById('amount');
+        document.querySelectorAll('.pr-amount-chip').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (amountInput) amountInput.value = this.dataset.value;
+                document.querySelectorAll('.pr-amount-chip').forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
             });
         });
+    });
     </script>
 @endsection

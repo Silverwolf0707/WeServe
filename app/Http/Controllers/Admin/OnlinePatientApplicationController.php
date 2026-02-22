@@ -14,11 +14,68 @@ use Illuminate\Support\Facades\DB;
 
 class OnlinePatientApplicationController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $applications = OnlinePatientApplication::latest()->get();
+        $query = OnlinePatientApplication::query();
 
-        return view('admin.onlineapplication.index', compact('applications'));
+        // Search filter
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('applicant_name', 'like', "%{$search}%")
+                  ->orWhere('claimant_name', 'like', "%{$search}%")
+                  ->orWhere('tracking_number', 'like', "%{$search}%")
+                  ->orWhere('diagnosis', 'like', "%{$search}%")
+                  ->orWhere('address', 'like', "%{$search}%")
+                  ->orWhere('contact_number', 'like', "%{$search}%");
+            });
+        }
+
+        // Case category filter
+        if ($request->filled('case_category')) {
+            $query->where('case_category', $request->case_category);
+        }
+
+        // Case type filter
+        if ($request->filled('case_type')) {
+            $query->where('case_type', $request->case_type);
+        }
+
+        // Single date filter
+        if ($request->filled('application_date')) {
+            $query->whereDate('created_at', $request->application_date);
+        }
+
+        // Order by latest first
+        $query->latest();
+
+        $applications = $query->paginate(100)->withQueryString();
+
+       $caseCategoryOptions = PatientRecord::distinct()
+    ->whereNotNull('case_category')
+    ->where('case_category', '!=', '')
+    ->orderBy('case_category')
+    ->pluck('case_category')
+    ->mapWithKeys(function ($category) {
+        return [$category => $category];
+    })
+    ->toArray();
+
+$caseTypeOptions = PatientRecord::distinct()
+    ->whereNotNull('case_type')
+    ->where('case_type', '!=', '')
+    ->orderBy('case_type')
+    ->pluck('case_type')
+    ->mapWithKeys(function ($type) {
+        return [$type => $type];
+    })
+    ->toArray();
+
+        return view('admin.onlineapplication.index', compact(
+            'applications',
+            'caseCategoryOptions',
+            'caseTypeOptions'
+        ));
     }
 
     public function show($id)
@@ -27,6 +84,7 @@ class OnlinePatientApplicationController extends Controller
 
         return view('admin.onlineapplication.show', compact('application'));
     }
+    
     public function confirmTransfer($applicationId)
     {
         DB::transaction(function () use ($applicationId) {

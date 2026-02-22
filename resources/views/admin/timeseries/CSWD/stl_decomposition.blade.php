@@ -1,295 +1,207 @@
-<!DOCTYPE html>
-<html lang="en">
+@once
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+@endonce
 
-<head>
-    <meta charset="UTF-8">
-    <title>Statistical Dashboard</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
 
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f9fbfc;
-        }
+<style>
+    /* ═══════════════════════════════════════════
+       STL Decomposition — Forest-green design system
+       ═══════════════════════════════════════════ */
+    .stl-wrap { font-family: 'DM Sans', sans-serif; color: #052e22; }
 
-        .card {
-            border: none;
-            border-radius: 1rem;
-            transition: box-shadow 0.3s ease-in-out;
-        }
+    /* ── Summary stat cards ── */
+    .stl-stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 20px; }
+    .stl-stat { border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(6,78,59,.08), 0 8px 24px rgba(6,78,59,.06); transition: transform .2s, box-shadow .2s; }
+    .stl-stat:hover { transform: translateY(-3px); box-shadow: 0 4px 24px rgba(6,78,59,.16); }
+    .stl-stat-inner { padding: 14px 16px 10px; display: flex; align-items: flex-start; justify-content: space-between; }
+    .stl-stat-label { font-size: .67rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: rgba(255,255,255,.72); margin-bottom: 6px; }
+    .stl-stat-value { font-size: 1.25rem; font-weight: 800; color: #fff; line-height: 1.1; letter-spacing: -.01em; }
+    .stl-stat-icon { width: 38px; height: 38px; border-radius: 9px; background: rgba(255,255,255,.15); display: flex; align-items: center; justify-content: center; font-size: .95rem; color: #fff; flex-shrink: 0; }
+    .stl-stat-foot { padding: 7px 16px; font-size: .7rem; font-weight: 600; color: rgba(255,255,255,.6); border-top: 1px solid rgba(255,255,255,.12); }
+    .stl-c-blue   { background: linear-gradient(135deg,#1d4ed8,#3b82f6); }
+    .stl-c-green  { background: linear-gradient(135deg,#064e3b,#10b981); }
+    .stl-c-amber  { background: linear-gradient(135deg,#92400e,#f59e0b); }
+    .stl-c-red    { background: linear-gradient(135deg,#991b1b,#ef4444); }
 
-        .card:hover {
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-        }
+    /* ── Card base ── */
+    .stl-card { background: #fff; border-radius: 12px; border: 1px solid #d1fae5; box-shadow: 0 2px 8px rgba(6,78,59,.08), 0 8px 24px rgba(6,78,59,.06); margin-bottom: 18px; overflow: hidden; }
+    .stl-card-hdr { display: flex; align-items: center; gap: 10px; padding: 12px 18px; background: linear-gradient(135deg,#052e22 0%,#064e3b 100%); flex-wrap: wrap; }
+    .stl-card-hdr-icon { width: 28px; height: 28px; border-radius: 7px; background: rgba(116,255,112,.12); border: 1px solid rgba(116,255,112,.28); display: flex; align-items: center; justify-content: center; font-size: .72rem; color: #74ff70; flex-shrink: 0; }
+    .stl-card-hdr-title { font-size: .88rem; font-weight: 700; color: #fff; }
+    .stl-card-hdr-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+    .stl-card-body { padding: 18px; }
 
-        .stat-card .card-body {
-            min-height: 100px;
-        }
+    /* ── Filter selects ── */
+    .stl-label { font-size: .7rem; font-weight: 600; color: rgba(255,255,255,.6); white-space: nowrap; }
+    .stl-select { height: 28px; border: 1px solid rgba(116,255,112,.28); border-radius: 7px; background: rgba(116,255,112,.08); color: #fff; font-size: .75rem; font-family: 'DM Sans', sans-serif; padding: 0 26px 0 9px; cursor: pointer; outline: none; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='rgba(116,255,112,.7)' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; transition: border-color .15s, background .15s; }
+    .stl-select:focus { border-color: rgba(116,255,112,.65); background-color: rgba(116,255,112,.14); }
+    .stl-select option { background: #052e22; color: #fff; }
 
-        .fs-5 {
-            font-size: 1.15rem;
-        }
+    /* ── Insight panel ── */
+    .stl-insight { background: linear-gradient(135deg,#f0fdf4,#ecfdf5); border: 1px solid #d1fae5; border-radius: 12px; padding: 18px 20px; }
+    .stl-insight-hdr { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #d1fae5; }
+    .stl-insight-hdr-icon { width: 26px; height: 26px; border-radius: 7px; background: rgba(116,255,112,.15); border: 1px solid rgba(116,255,112,.3); display: flex; align-items: center; justify-content: center; font-size: .65rem; color: #064e3b; flex-shrink: 0; }
+    .stl-insight-hdr-title { font-size: .84rem; font-weight: 700; color: #052e22; }
+    #summary-content h6 { font-size: .82rem; font-weight: 700; color: #052e22; margin-bottom: 8px; }
+    #summary-content p  { font-size: .8rem; color: #374151; line-height: 1.6; margin-bottom: 8px; }
+    #summary-content strong { color: #064e3b; }
+    #summary-content ul  { font-size: .8rem; color: #374151; padding-left: 16px; margin-bottom: 8px; }
+    #summary-content li  { margin-bottom: 4px; line-height: 1.5; }
 
-        .icon-circle {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+    /* ── Weekly insight ── */
+    .stl-weekly-insight { background: #f0fdf4; border: 1px solid #d1fae5; border-radius: 10px; padding: 14px 16px; height: 100%; }
+    .stl-weekly-insight h6 { font-size: .82rem; font-weight: 700; color: #052e22; margin-bottom: 8px; }
+    #weekly-stl-insight p  { font-size: .79rem; color: #374151; line-height: 1.6; margin-bottom: 6px; }
+    #weekly-stl-insight ul  { font-size: .79rem; color: #374151; padding-left: 14px; }
+    #weekly-stl-insight li  { margin-bottom: 3px; }
+    #weekly-stl-insight strong { color: #064e3b; }
 
-        /* Card Color Variants */
-        .bg-light-blue {
-            background-color: #e8f1ff;
-        }
+    /* ── Component pills (chart selector) ── */
+    .stl-component-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+    .stl-cpill { padding: 3px 12px; border-radius: 20px; font-size: .72rem; font-weight: 600; border: 1px solid rgba(116,255,112,.28); background: rgba(116,255,112,.08); color: rgba(255,255,255,.75); cursor: pointer; transition: all .15s; font-family: 'DM Sans', sans-serif; }
+    .stl-cpill:hover { background: rgba(116,255,112,.18); }
+    .stl-cpill.active { background: #74ff70; color: #052e22; border-color: #74ff70; }
 
-        .bg-light-green {
-            background-color: #e9f9ef;
-        }
+    @media (max-width:1100px) { .stl-stat-grid { grid-template-columns: repeat(2,1fr); } }
+    @media (max-width:640px)  { .stl-stat-grid { grid-template-columns: 1fr 1fr; } .stl-card-hdr-controls { margin-left: 0; width: 100%; } }
+</style>
 
-        .bg-light-yellow {
-            background-color: #fffbe7;
-        }
+<div class="stl-wrap">
 
-        .bg-light-red {
-            background-color: #ffeaea;
-        }
-
-        .bg-blue {
-            background-color: #3b82f6;
-        }
-
-        .bg-green {
-            background-color: #10b981;
-        }
-
-        .bg-yellow {
-            background-color: #facc15;
-        }
-
-        .bg-red {
-            background-color: #ef4444;
-        }
-
-        .border-blue-500 {
-            border-left: 6px solid #3b82f6 !important;
-        }
-
-        .border-green-500 {
-            border-left: 6px solid #10b981 !important;
-        }
-
-        .border-yellow-500 {
-            border-left: 6px solid #facc15 !important;
-        }
-
-        .border-red-500 {
-            border-left: 6px solid #ef4444 !important;
-        }
-
-        .summary-equal-height {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-
-        .summary-equal-height .card-body {
-            flex-grow: 1;
-            justify-content: start;
-        }
-
-        .summary-equal-height .list-group {
-            margin-top: -0.25rem;
-        }
-
-        #combinedChart {
-            max-height: 320px;
-        }
-
-        select.form-select {
-            border-radius: 0.5rem;
-        }
-
-        .card-header {
-            border-bottom: 1px solid #eee;
-            background-color: #f0f4f8;
-        }
-
-        .list-group-item {
-            background: transparent;
-            border: none;
-            padding-left: 0;
-            font-size: 0.95rem;
-        }
-
-        .list-group-item::before {
-            content: "•";
-            color: #10b981;
-            font-weight: bold;
-            display: inline-block;
-            width: 1em;
-            margin-left: -1em;
-        }
-    </style>
-</head>
-
-<body>
-    <div class="container-fluid py-4">
-        <div class="row g-3 mb-4">
-            <div class="col-md-3">
-                <div class="card shadow-sm bg-light-blue border-blue-500">
-                    <div class="card-body d-flex justify-content-between align-items-center">
-                        <div class="flex-grow-1 me-3"> <!-- Added flex-grow-1 and margin -->
-                            <div class="text-muted small">Top Assistance</div>
-                            <div class="fw-semibold fs-5" id="topAssistance">Loading...</div>
-                        </div>
-                        <div class="icon-circle bg-blue text-white flex-shrink-0"> <!-- Added flex-shrink-0 -->
-                            <i class="fas fa-hand-holding-medical fa-lg"></i>
-                        </div>
-                    </div>
-                </div>
+    {{-- ── SUMMARY STAT CARDS ── --}}
+    <div class="stl-stat-grid">
+        <div class="stl-stat stl-c-blue">
+            <div class="stl-stat-inner">
+                <div><div class="stl-stat-label">Top Assistance</div><div class="stl-stat-value" id="topAssistance">—</div></div>
+                <div class="stl-stat-icon"><i class="fas fa-hand-holding-medical"></i></div>
             </div>
-            <div class="col-md-3">
-                <div class="card shadow-sm bg-light-green border-green-500">
-                    <div class="card-body d-flex justify-content-between align-items-center">
-                        <div class="flex-grow-1 me-3">
-                            <div class="text-muted small">Most Common</div>
-                            <div class="fw-semibold fs-5" id="mostCommonCategory">Loading...</div>
-                        </div>
-                        <div class="icon-circle bg-green text-white flex-shrink-0">
-                            <i class="fas fa-users fa-lg"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card shadow-sm bg-light-yellow border-yellow-500">
-                    <div class="card-body d-flex justify-content-between align-items-center">
-                        <div class="flex-grow-1 me-3">
-                            <div class="text-muted small">Total Applicants</div>
-                            <div class="fw-semibold fs-5" id="totalApplicants">Loading...</div>
-                        </div>
-                        <div class="icon-circle bg-yellow text-white flex-shrink-0">
-                            <i class="fas fa-user-check fa-lg"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card shadow-sm bg-light-red border-red-500">
-                    <div class="card-body d-flex justify-content-between align-items-center">
-                        <div class="flex-grow-1 me-3">
-                            <div class="text-muted small">Avg. Processing Time</div>
-                            <div class="fw-semibold fs-5" id="averageProcessingTime">Loading...</div>
-                        </div>
-                        <div class="icon-circle bg-red text-white flex-shrink-0">
-                            <i class="fas fa-clock fa-lg"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <div class="stl-stat-foot">Highest volume type</div>
         </div>
-
-       <!-- Main Content -->
-<div class="row">
-    <!-- Chart Section -->
-    <div class="col-12">
-        <div class="card shadow-sm mb-4">
-            <div class="card-header d-flex flex-wrap justify-content-between align-items-center">
-                <div class="d-flex flex-wrap align-items-center gap-2">
-                    <i class="fas fa-chart-line    "></i>
-                    <h6 class="mb-0 fw-bold me-3">Monthly Application Pattern</h6>
-                    <span class="label">Component:</span>
-
-                    <select id="chartSelector" class="form-select form-select-sm me-2" style="width: auto;">
-                        <option value="observed">Observed</option>
-                        <option value="seasonal">Seasonal</option>
-                        <option value="trend">Trend</option>
-                        <option value="residual">Residual</option>
-                    </select>
-
-                    <span class="label">Year:</span>
-
-                    <select id="yearSelector" class="form-select form-select-sm me-2" style="width: auto;">
-                    </select>
-                    
-                    <span class="label">Case Category:</span>
-                    <select id="caseCategorySelector" class="form-select form-select-sm me-2" style="width: auto;">
-                    </select>
-                </div>
+        <div class="stl-stat stl-c-green">
+            <div class="stl-stat-inner">
+                <div><div class="stl-stat-label">Most Common</div><div class="stl-stat-value" id="mostCommonCategory">—</div></div>
+                <div class="stl-stat-icon"><i class="fas fa-users"></i></div>
             </div>
-
-            <div class="card-body">
-                <canvas id="combinedChart" height="300" class="w-100"></canvas>
+            <div class="stl-stat-foot">Leading case category</div>
+        </div>
+        <div class="stl-stat stl-c-amber">
+            <div class="stl-stat-inner">
+                <div><div class="stl-stat-label">Total Applicants</div><div class="stl-stat-value" id="totalApplicants">—</div></div>
+                <div class="stl-stat-icon"><i class="fas fa-user-check"></i></div>
             </div>
+            <div class="stl-stat-foot">All-time records</div>
+        </div>
+        <div class="stl-stat stl-c-red">
+            <div class="stl-stat-inner">
+                <div><div class="stl-stat-label">Avg. Processing Time</div><div class="stl-stat-value" id="averageProcessingTime">—</div></div>
+                <div class="stl-stat-icon"><i class="fas fa-clock"></i></div>
+            </div>
+            <div class="stl-stat-foot">From intake to disburse</div>
         </div>
     </div>
-</div>
 
-<!-- Insights Summary Panel at Bottom -->
-<div class="row">
-    <div class="col-12">
-        <div class="card shadow-sm border border-primary"
-            style="background: #e0eafc; border-radius: 1rem;">
-            
-            <!-- Header -->
-            <div class="card-header d-flex align-items-center text-white border-0"
-                style="background-color: #004080; border-radius: 1rem 1rem 0 0; padding: 1rem;">
-                <h6 class="mb-0 fw-semibold">Interpretation</h6>
+    {{-- ── MONTHLY STL CHART ── --}}
+    <div class="stl-card">
+        <div class="stl-card-hdr">
+            <div class="stl-card-hdr-icon"><i class="fas fa-chart-line"></i></div>
+            <span class="stl-card-hdr-title">Monthly Application Pattern</span>
+            <div class="stl-card-hdr-controls">
+                {{-- Component pills replace the dropdown for better UX --}}
+                <div class="stl-component-pills">
+                    <button class="stl-cpill active" data-component="observed">Observed</button>
+                    <button class="stl-cpill" data-component="seasonal">Seasonal</button>
+                    <button class="stl-cpill" data-component="trend">Trend</button>
+                    <button class="stl-cpill" data-component="residual">Residual</button>
+                </div>
+                <span class="stl-label">Year:</span>
+                <select id="yearSelector" class="stl-select" style="min-width:80px;"></select>
+                <span class="stl-label">Category:</span>
+                <select id="caseCategorySelector" class="stl-select" style="min-width:120px;"></select>
             </div>
+        </div>
+        <div class="stl-card-body">
+            <canvas id="combinedChart" height="300" style="width:100%;max-height:320px;"></canvas>
+        </div>
+    </div>
 
-            <!-- Body -->
-            <div class="card-body" style="padding: 1.2rem;">
-                <div id="summary-content" class="text-dark fs-6">
-                    <!-- Dynamic content will be injected here -->
+    {{-- ── INTERPRETATION ── --}}
+    <div class="stl-card">
+        <div class="stl-card-hdr">
+            <div class="stl-card-hdr-icon"><i class="fas fa-lightbulb"></i></div>
+            <span class="stl-card-hdr-title">Interpretation</span>
+        </div>
+        <div class="stl-card-body" style="padding:16px 18px;">
+            <div class="stl-insight">
+                <div class="stl-insight-hdr">
+                    <div class="stl-insight-hdr-icon"><i class="fas fa-brain"></i></div>
+                    <span class="stl-insight-hdr-title" id="insight-label">Observed Data Analysis</span>
+                </div>
+                <div id="summary-content">
+                    <p style="color:#9ca3af;font-size:.8rem;">Select a component and category above to generate insights.</p>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Weekly STL Section -->
-<div class="row">
-    <div class="col-12">
-        <div class="card shadow-sm mb-4">
-            <div class="card-header d-flex align-items-center">
-                <i class="fas fa-calendar-week me-2 text-primary"></i>
-                <h6 class="mb-0 fw-bold">Weekly Application Pattern</h6>
-            </div>
-
-            <div class="card-body">
-                <div class="row">
-                    <!-- Chart -->
-                    <div class="col-md-8">
-                        <canvas id="weeklyStlChart" height="220"></canvas>
-                    </div>
-
-                    <!-- Insight -->
-                    <div class="col-md-4">
-                        <div class="p-3 rounded bg-light h-100">
-                            <h6 class="fw-semibold mb-2">Interpretation</h6>
-                            <div id="weekly-stl-insight" class="small text-muted">
-                                Loading weekly insights…
-                            </div>
-                        </div>
+    {{-- ── WEEKLY PATTERN ── --}}
+    <div class="stl-card">
+        <div class="stl-card-hdr">
+            <div class="stl-card-hdr-icon"><i class="fas fa-calendar-week"></i></div>
+            <span class="stl-card-hdr-title">Weekly Application Pattern</span>
+        </div>
+        <div class="stl-card-body">
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <canvas id="weeklyStlChart" height="220"></canvas>
+                </div>
+                <div class="col-md-4">
+                    <div class="stl-weekly-insight">
+                        <h6><i class="fas fa-lightbulb me-2" style="color:#f59e0b;font-size:.75rem;"></i>Weekly Interpretation</h6>
+                        <div id="weekly-stl-insight" style="color:#9ca3af;font-size:.79rem;">Loading weekly insights…</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+
+</div>{{-- /stl-wrap --}}
+
+{{-- ── Hidden chartSelector keeps old JS event logic working ── --}}
+<select id="chartSelector" style="display:none;"><option value="observed">Observed</option><option value="seasonal">Seasonal</option><option value="trend">Trend</option><option value="residual">Residual</option></select>
+
+<script>
+/* ── Sync pill buttons → hidden select → existing loadStlData ── */
+document.querySelectorAll('.stl-cpill').forEach(btn => {
+    btn.addEventListener('click', function () {
+        document.querySelectorAll('.stl-cpill').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        const comp = this.dataset.component;
+        document.getElementById('chartSelector').value = comp;
+
+        const insightLabels = {
+            observed: 'Observed Data Analysis',
+            seasonal: 'Seasonal Pattern Analysis',
+            trend:    'Trend Direction Analysis',
+            residual: 'Residual / Anomaly Analysis'
+        };
+        document.getElementById('insight-label').textContent = insightLabels[comp] || 'Analysis';
+
+        loadStlData(
+            document.getElementById('caseCategorySelector').value,
+            comp,
+            document.getElementById('yearSelector').value
+        );
+    });
+});
+</script>
 
 <script>
 async function loadWeeklyStl() {
     try {
         const res = await fetch('/admin/timeseries/get-weekly-stl');
-
         const json = await res.json();
-
         const data = json.weekly_stl.weekday_seasonality;
-
         const labels = Object.keys(data);
         const values = Object.values(data);
 
@@ -303,404 +215,361 @@ async function loadWeeklyStl() {
                 datasets: [{
                     label: 'Seasonal Effect',
                     data: values,
-                    backgroundColor: values.map(v =>
-                        v > 0 ? 'rgba(16,185,129,0.6)' : 'rgba(239,68,68,0.6)'
-                    ),
-                    borderRadius: 6
+                    backgroundColor: values.map(v => v > 0 ? 'rgba(16,185,129,0.65)' : 'rgba(239,68,68,0.65)'),
+                    borderRadius: 7,
+                    borderSkipped: false,
                 }]
             },
             options: {
+                responsive: true,
                 plugins: {
                     legend: { display: false },
                     tooltip: {
-                        callbacks: {
-                            label: ctx => `Seasonal effect: ${ctx.raw.toFixed(2)}`
-                        }
+                        backgroundColor: '#052e22',
+                        titleColor: '#74ff70',
+                        bodyColor: '#fff',
+                        callbacks: { label: ctx => `Seasonal effect: ${ctx.raw.toFixed(2)}` }
                     }
                 },
                 scales: {
                     y: {
-                        title: { display: true, text: 'Deviation from Average' },
-                        grid: { color: '#eee' }
+                        title: { display: true, text: 'Deviation from Average', font: { family: 'DM Sans', size: 11 }, color: '#6b7280' },
+                        grid: { color: 'rgba(6,78,59,.06)' },
+                        ticks: { font: { family: 'DM Sans', size: 11 }, color: '#6b7280' }
                     },
                     x: {
-                        grid: { display: false }
+                        grid: { display: false },
+                        ticks: { font: { family: 'DM Sans', size: 11 }, color: '#374151' }
                     }
                 }
             }
         });
 
         generateWeeklyInsight(values, labels);
-
     } catch (err) {
         console.error('Failed to load weekly STL', err);
+        document.getElementById('weekly-stl-insight').innerHTML = '<span style="color:#ef4444;">Failed to load weekly data.</span>';
     }
 }
 </script>
 
 <script>
 function generateWeeklyInsight(values, labels) {
-    const absAvg =
-        values.map(v => Math.abs(v)).reduce((a, b) => a + b, 0) / values.length;
-
+    const absAvg = values.map(v => Math.abs(v)).reduce((a, b) => a + b, 0) / values.length;
+    const max = Math.max(...values);
+    const min = Math.min(...values);
+    const peakDay = labels[values.indexOf(max)];
+    const lowDay  = labels[values.indexOf(min)];
     let insight = '';
 
     if (absAvg < 0.5) {
-        // Minimal variation
         insight = `
-        <p>
-            Analysis of weekly application patterns shows that activity is <strong>relatively uniform across the week</strong>. 
-            There are no significant spikes or drops on any particular day, indicating that applicants are processed evenly from Monday to Sunday.
-        </p>
-        <p>
-            <strong>What this means for operations:</strong> You likely do not need to adjust staffing levels for specific weekdays. 
-            Current scheduling appears sufficient to handle the weekly workload without bottlenecks.
-        </p>
-        <p>
-            <strong>Recommendation:</strong> Continue monitoring weekly patterns periodically to ensure this stability persists, especially after holidays or policy changes that might affect applicant volume.
-        </p>`;
+        <p>Application activity is <strong>uniformly distributed</strong> across the week — no significant spikes or drops on any particular day.</p>
+        <p><strong>Implication:</strong> Current staffing levels appear well-matched to demand. No weekday-specific adjustments are needed.</p>
+        <p><strong>Tip:</strong> Re-check this analysis after holidays or policy changes that may shift applicant volume.</p>`;
     } else {
-        // Noticeable weekday seasonality
-        const max = Math.max(...values);
-        const min = Math.min(...values);
-        const peakDay = labels[values.indexOf(max)];
-        const lowDay = labels[values.indexOf(min)];
-
         insight = `
-        <p>
-            Weekly STL analysis reveals a clear <strong>weekday pattern in applications</strong>. 
-            The busiest day is <strong>${peakDay}</strong>, with higher-than-average application volume, 
-            while <strong>${lowDay}</strong> has noticeably lower activity.
-        </p>
-        <p>
-            <strong>Operational implications:</strong> Consider scheduling more staff on <strong>${peakDay}</strong> 
-            to handle the increased workload efficiently and avoid delays. Conversely, you may adjust staffing on <strong>${lowDay}</strong> to optimize resources without affecting service quality.
-        </p>
-        <p>
-            <strong>Actionable recommendations:</strong>
-            <ul>
-                <li>Align staff shifts and breaks according to peak and low-volume days.</li>
-                <li>Monitor weekly trends to catch any emerging spikes or dips in workload.</li>
-                <li>Plan for seasonal or special events that may temporarily alter the usual weekday pattern.</li>
-            </ul>
-        </p>
-        <p>
-            This analysis helps ensure that applicants are served efficiently while making the best use of staff resources.
-        </p>`;
+        <p>A clear <strong>weekday pattern</strong> exists. Peak day is <strong>${peakDay}</strong>; quietest day is <strong>${lowDay}</strong>.</p>
+        <p><strong>Operations:</strong> Schedule additional staff on <strong>${peakDay}</strong> to prevent processing delays. Consider lighter staffing on <strong>${lowDay}</strong>.</p>
+        <ul>
+            <li>Align shift schedules to peak and off-peak days.</li>
+            <li>Monitor for seasonal shifts in the weekly rhythm.</li>
+            <li>Pre-stage resources (forms, interview slots) before <strong>${peakDay}</strong>.</li>
+        </ul>`;
     }
 
     document.getElementById('weekly-stl-insight').innerHTML = insight;
 }
 </script>
 
+<script>
+async function loadStlData(category = 'ALL', component = 'observed', year = 'ALL') {
+    const chartContainer = document.getElementById('combinedChart').parentElement;
 
+    try {
+        const res = await fetch('/admin/timeseries/get-stl-json?type=cswd');
+        const json = await res.json();
 
-    <script>
-        async function loadStlData(category = 'ALL', component = 'observed', year = 'ALL') {
-            const chartContainer = document.getElementById('combinedChart').parentElement;
-
-            try {
-                const res = await fetch('/admin/timeseries/get-stl-json?type=cswd');
-                const json = await res.json();
-
-                if (!json || Object.keys(json).length === 0) {
-                    chartContainer.innerHTML = `<div class="text-center text-muted py-5">
-                    <strong>⚠ STL Chart can't load because of lack of data.</strong><br>
-                    Please upload at least 1–2 years of records to generate decomposition.
-                </div>`;
-                    return;
-                }
-
-                const caseSelector = document.getElementById('caseCategorySelector');
-                if (caseSelector.options.length === 0) {
-                    caseSelector.innerHTML = '';
-                    const allOpt = document.createElement('option');
-                    allOpt.value = 'ALL';
-                    allOpt.textContent = 'ALL';
-                    caseSelector.appendChild(allOpt);
-
-                    Object.keys(json).forEach(cat => {
-                        const opt = document.createElement('option');
-                        opt.value = cat;
-                        opt.textContent = cat;
-                        caseSelector.appendChild(opt);
-                    });
-                }
-
-                if (!category) category = caseSelector.value || 'ALL';
-                caseSelector.value = category;
-
-                const yearSelector = document.getElementById('yearSelector');
-                if (yearSelector.options.length === 0) {
-                    yearSelector.innerHTML = '';
-                    const allYearOpt = document.createElement('option');
-                    allYearOpt.value = 'ALL';
-                    allYearOpt.textContent = 'ALL';
-                    yearSelector.appendChild(allYearOpt);
-
-                    let allDates = [];
-                    if (category === 'ALL') {
-                        const cats = Object.keys(json);
-                        allDates = json[cats[0]].dates;
-                    } else {
-                        allDates = json[category].dates;
-                    }
-                    const years = [...new Set(allDates.map(d => d.split('-')[0]))].sort((a, b) => b - a);
-                    years.forEach(y => {
-                        const opt = document.createElement('option');
-                        opt.value = y;
-                        opt.textContent = y;
-                        yearSelector.appendChild(opt);
-                    });
-                }
-
-                if (!year) year = yearSelector.value || 'ALL';
-                yearSelector.value = year;
-
-                let labels = [];
-                let dataForYear = [];
-
-                if (category === 'ALL') {
-                    const cats = Object.keys(json);
-                    const dates = json[cats[0]].dates;
-                    const idxs = dates.map((d, i) => (year === 'ALL' || d.startsWith(year + '-')) ? i : -1).filter(i => i >= 0);
-                    dataForYear = idxs.map(i => cats.reduce((sum, c) => sum + (json[c][component][i] || 0), 0));
-                    labels = idxs.map(i => dates[i]);
-                } else {
-                    const ds = json[category];
-                    const idxs = ds.dates.map((d, i) => (year === 'ALL' || d.startsWith(year + '-')) ? i : -1).filter(i => i >= 0);
-                    dataForYear = idxs.map(i => ds[component][i]);
-                    labels = idxs.map(i => ds.dates[i]);
-                }
-
-                if (labels.length < 12) {
-                    chartContainer.innerHTML = `<div class="text-center text-muted py-5">
-                    <strong>⚠ STL Chart can't load because of lack of data.</strong><br>
-                    At least 12+ months of records are required.
-                </div>`;
-                    return;
-                }
-
-                if (!document.getElementById('combinedChart')) {
-                    chartContainer.innerHTML = `<canvas id="combinedChart" height="300" class="w-100"></canvas>`;
-                }
-
-                // --- render as before ---
-                renderChart(labels, dataForYear, component);
-                updateSummaryText(component, category, year, dataForYear, labels);
-
-            } catch (err) {
-                console.error("Error loading STL data:", err);
-                chartContainer.innerHTML = `<div class="text-center text-danger py-5">
-                Failed to load STL data.
+        if (!json || Object.keys(json).length === 0) {
+            chartContainer.innerHTML = `<div class="text-center text-muted py-5" style="font-family:'DM Sans',sans-serif;">
+                <i class="fas fa-exclamation-triangle" style="font-size:1.5rem;color:#f59e0b;margin-bottom:8px;display:block;"></i>
+                <strong>STL Chart unavailable — insufficient data.</strong><br>
+                <small>Please upload at least 1–2 years of records to generate decomposition.</small>
             </div>`;
-            }
+            return;
         }
 
-        function renderChart(labels, data, component) {
-            const map = {
-                observed: { color: '#3b82f6', fill: 'rgba(59,130,246,0.2)' },
-                trend: { color: '#10b981', fill: 'rgba(16,185,129,0.2)' },
-                seasonal: { color: '#facc15', fill: 'rgba(250,204,21,0.3)' },
-                residual: { color: '#ef4444', fill: 'rgba(239,68,68,0.2)' }
-            };
-            const ctx = document.getElementById('combinedChart').getContext('2d');
-            if (window.chartInstance) window.chartInstance.destroy();
-
-            const displayLabels = labels.map(d => {
-                const [y, m] = d.split('-');
-                const monthName = new Date(y, parseInt(m) - 1).toLocaleString('default', { month: 'short' });
-                return `${monthName} ${y}`;
+        const caseSelector = document.getElementById('caseCategorySelector');
+        if (caseSelector.options.length === 0) {
+            caseSelector.innerHTML = '';
+            const allOpt = document.createElement('option');
+            allOpt.value = 'ALL'; allOpt.textContent = 'ALL';
+            caseSelector.appendChild(allOpt);
+            Object.keys(json).forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat; opt.textContent = cat;
+                caseSelector.appendChild(opt);
             });
+        }
 
-            let yMin = Math.min(...data) * 0.95;
-            let yMax = Math.max(...data) * 1.05;
-            if (component === 'residual') {
-                const absMax = Math.max(...data.map(v => Math.abs(v)));
-                yMin = -absMax * 1.05;
-                yMax = absMax * 1.05;
-            }
+        if (!category) category = caseSelector.value || 'ALL';
+        caseSelector.value = category;
 
-            window.chartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: displayLabels,
-                    datasets: [{
-                        label: component,
-                        data,
-                        borderColor: map[component].color,
-                        backgroundColor: map[component].fill,
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { title: { display: true, text: 'Month' } },
-                        y: { beginAtZero: false, min: yMin, max: yMax }
-                    }
+        const yearSelector = document.getElementById('yearSelector');
+        if (yearSelector.options.length === 0) {
+            yearSelector.innerHTML = '';
+            const allYearOpt = document.createElement('option');
+            allYearOpt.value = 'ALL'; allYearOpt.textContent = 'ALL';
+            yearSelector.appendChild(allYearOpt);
+            let allDates = [];
+            if (category === 'ALL') { allDates = json[Object.keys(json)[0]].dates; }
+            else { allDates = json[category].dates; }
+            const years = [...new Set(allDates.map(d => d.split('-')[0]))].sort((a, b) => b - a);
+            years.forEach(y => {
+                const opt = document.createElement('option');
+                opt.value = y; opt.textContent = y;
+                yearSelector.appendChild(opt);
+            });
+        }
+
+        if (!year) year = yearSelector.value || 'ALL';
+        yearSelector.value = year;
+
+        let labels = [], dataForYear = [];
+
+        if (category === 'ALL') {
+            const cats = Object.keys(json);
+            const dates = json[cats[0]].dates;
+            const idxs = dates.map((d, i) => (year === 'ALL' || d.startsWith(year + '-')) ? i : -1).filter(i => i >= 0);
+            dataForYear = idxs.map(i => cats.reduce((sum, c) => sum + (json[c][component][i] || 0), 0));
+            labels = idxs.map(i => dates[i]);
+        } else {
+            const ds = json[category];
+            const idxs = ds.dates.map((d, i) => (year === 'ALL' || d.startsWith(year + '-')) ? i : -1).filter(i => i >= 0);
+            dataForYear = idxs.map(i => ds[component][i]);
+            labels = idxs.map(i => ds.dates[i]);
+        }
+
+        if (labels.length < 12) {
+            chartContainer.innerHTML = `<div class="text-center text-muted py-5" style="font-family:'DM Sans',sans-serif;">
+                <i class="fas fa-exclamation-triangle" style="font-size:1.5rem;color:#f59e0b;margin-bottom:8px;display:block;"></i>
+                <strong>STL Chart requires 12+ months of data.</strong><br>
+                <small>Currently showing ${labels.length} months. Please add more records.</small>
+            </div>`;
+            return;
+        }
+
+        if (!document.getElementById('combinedChart')) {
+            chartContainer.innerHTML = `<canvas id="combinedChart" height="300" style="width:100%;max-height:320px;"></canvas>`;
+        }
+
+        renderChart(labels, dataForYear, component);
+        updateSummaryText(component, category, year, dataForYear, labels);
+
+    } catch (err) {
+        console.error("Error loading STL data:", err);
+        chartContainer.innerHTML = `<div class="text-center text-danger py-5" style="font-family:'DM Sans',sans-serif;">
+            <i class="fas fa-times-circle" style="font-size:1.5rem;margin-bottom:8px;display:block;"></i>
+            Failed to load STL data. Please try again.
+        </div>`;
+    }
+}
+
+function renderChart(labels, data, component) {
+    const palettes = {
+        observed: { border: '#064e3b', fill: 'rgba(6,78,59,.12)', point: '#74ff70' },
+        trend:    { border: '#10b981', fill: 'rgba(16,185,129,.12)', point: '#34d399' },
+        seasonal: { border: '#f59e0b', fill: 'rgba(245,158,11,.12)', point: '#fcd34d' },
+        residual: { border: '#ef4444', fill: 'rgba(239,68,68,.12)', point: '#fca5a5' }
+    };
+    const pal = palettes[component] || palettes.observed;
+    const ctx = document.getElementById('combinedChart').getContext('2d');
+    if (window.chartInstance) window.chartInstance.destroy();
+
+    const displayLabels = labels.map(d => {
+        const [y, m] = d.split('-');
+        return `${new Date(y, parseInt(m)-1).toLocaleString('default',{month:'short'})} ${y}`;
+    });
+
+    let yMin = Math.min(...data) * 0.95;
+    let yMax = Math.max(...data) * 1.05;
+    if (component === 'residual') { const am = Math.max(...data.map(v=>Math.abs(v))); yMin = -am*1.1; yMax = am*1.1; }
+
+    window.chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: displayLabels,
+            datasets: [{
+                label: component.charAt(0).toUpperCase() + component.slice(1),
+                data,
+                borderColor: pal.border,
+                backgroundColor: pal.fill,
+                pointBackgroundColor: pal.point,
+                pointBorderColor: pal.border,
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                fill: true,
+                tension: 0.4,
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#052e22',
+                    titleColor: '#74ff70',
+                    bodyColor: '#fff',
+                    borderColor: 'rgba(116,255,112,.3)',
+                    borderWidth: 1,
+                    padding: 10,
+                    titleFont: { family: 'DM Sans', size: 12 },
+                    bodyFont: { family: 'DM Sans', size: 12 }
                 }
-            });
-        }
-
-        function updateSummaryText(component, category, year, data, labels) {
-            const total = data.reduce((a, b) => a + b, 0);
-            const categoryText = category === 'ALL' ? 'all assistance types combined' : `"${category}"`;
-            const startVal = data[0] || 0;
-            const endVal = data[data.length - 1] || 0;
-            const diff = endVal - startVal;
-            const diffPercent = startVal ? (diff / startVal) * 100 : 0;
-
-            let summaryHTML = '';
-
-            switch (component) {
-                case 'observed':
-                    const monthlyAvg = total / data.length;
-                    const highestVal = Math.max(...data);
-                    const lowestVal = Math.min(...data);
-                    const highMonth = labels[data.indexOf(highestVal)];
-                    const lowMonth = labels[data.indexOf(lowestVal)];
-
-                    summaryHTML = `
-                    <h6 class="fw-bold mb-2">🔍 Observed Data Summary (${year})</h6>
-                    <p>For <strong>${categoryText}</strong>, the observed applications in <strong>${year}</strong> 
-                    totaled <strong>${total.toLocaleString()}</strong>.</p>
-                    <p>On average, about <strong>${monthlyAvg.toFixed(0)}</strong> applications were processed per month.</p>
-                    <p>The busiest period was <strong>${highMonth}</strong> with around <strong>${highestVal.toFixed(0)}</strong> applications, 
-                    while the quietest was <strong>${lowMonth}</strong> with about <strong>${lowestVal.toFixed(0)}</strong>.</p>
-                    <p><strong>Conclusion:</strong> This summary shows the actual workload and demand pattern without adjustments. 
-                    It's the most direct reflection of how many people applied during the year.</p>
-                `;
-                    break;
-
-                case 'trend':
-                    const trendStart = data[0] || 0;
-                    const trendEnd = data[data.length - 1] || 0;
-                    const trendDiff = trendEnd - trendStart;
-                    const trendDiffPercent = trendStart ? (trendDiff / trendStart) * 100 : 0;
-
-                    const trendMax = Math.max(...data);
-                    const trendMin = Math.min(...data);
-                    const trendMaxMonth = labels[data.indexOf(trendMax)];
-                    const trendMinMonth = labels[data.indexOf(trendMin)];
-
-                    let trendConclusion = 'The demand appears stable throughout the year.';
-                    if (trendDiffPercent >= 10) trendConclusion = 'There is a strong upward trend, showing increasing demand over time.';
-                    else if (trendDiffPercent > 3) trendConclusion = 'The trend shows a steady increase in demand.';
-                    else if (trendDiffPercent <= -10) trendConclusion = 'There is a clear downward trend, indicating declining demand.';
-                    else if (trendDiffPercent < -3) trendConclusion = 'The trend suggests a gradual decline in applications.';
-
-                    summaryHTML = `
-                    <h6 class="fw-bold mb-2">📈 Trend Data Summary (${year})</h6>
-                    <p>The trend component smooths short-term fluctuations to reveal the overall direction of <strong>${categoryText}</strong> applications.</p>
-                    <p>It started at about <strong>${trendStart.toFixed(2)}</strong> and ended at <strong>${trendEnd.toFixed(2)}</strong>, 
-                    a change of <strong>${trendDiff.toFixed(2)}</strong> (${trendDiffPercent.toFixed(1)}%).</p>
-                    <p>The highest trend level was observed in <strong>${trendMaxMonth}</strong> (~${trendMax.toFixed(2)}), 
-                    while the lowest was in <strong>${trendMinMonth}</strong> (~${trendMin.toFixed(2)}).</p>
-                    <p><strong>Conclusion:</strong> ${trendConclusion}</p>
-                    <p>This helps identify long-term workload changes and supports better resource allocation for the future.</p>
-                `;
-                    break;
-
-                case 'seasonal':
-                    const maxVal = Math.max(...data);
-                    const minVal = Math.min(...data);
-                    const peakDiff = maxVal - minVal;
-
-                    const peakIndices = data.map((v, i) => v === maxVal ? i : -1).filter(i => i !== -1);
-                    const troughIndices = data.map((v, i) => v === minVal ? i : -1).filter(i => i !== -1);
-
-                    const peakMonths = peakIndices.map(i => labels[i]).join(', ');
-                    const troughMonths = troughIndices.map(i => labels[i]).join(', ');
-
-                    const avgMonthly = total / data.length;
-                    const strongSeasonality = peakDiff > (0.25 * avgMonthly);
-
-                    const seasonalConclusion = strongSeasonality ?
-                        `There is a strong seasonal pattern with peak demand in ${peakMonths} and lower demand around ${troughMonths}.` :
-                        `Seasonal fluctuations are mild, with no very strong peaks or troughs. Peak months are ${peakMonths}.`;
-
-                    summaryHTML = `
-                    <h6 class="fw-bold mb-2">📅 Seasonal Data Summary (${year})</h6>
-                    <p>Seasonal patterns show regular ups and downs throughout the year for <strong>${categoryText}</strong>.</p>
-                    <p>The highest monthly application count is around <strong>${peakMonths}</strong> (${maxVal.toFixed(2)}), 
-                       while the lowest is about <strong>${troughMonths}</strong> (${minVal.toFixed(2)}).</p>
-                    <p>This gives a difference of approximately <strong>${peakDiff.toFixed(0)}</strong> applications between peak and low months.</p>
-                    <p><strong>Conclusion:</strong> ${seasonalConclusion}</p>
-                    <p>Plan for extra support during these busy periods to meet demand effectively.</p>
-                `;
-                    break;
-
-                case 'residual':
-                    const residualAbs = data.map(v => Math.abs(v));
-                    const residualAvg = residualAbs.reduce((a, b) => a + b, 0) / residualAbs.length;
-                    const residualMax = Math.max(...residualAbs);
-                    const residualMin = Math.min(...residualAbs);
-
-                    const residualMaxMonth = labels[residualAbs.indexOf(residualMax)];
-                    const residualMinMonth = labels[residualAbs.indexOf(residualMin)];
-
-                    let residualConclusion = 'Residuals are low and evenly distributed, indicating the model explains most variations.';
-                    if (residualMax > residualAvg * 2) {
-                        residualConclusion = `A significant irregularity occurred around <strong>${residualMaxMonth}</strong>, suggesting an unusual spike or drop in applications.`;
-                    } else if (residualAvg > 2) {
-                        residualConclusion = 'Residuals are moderately high, meaning there are some unpredictable variations not captured by trend or seasonality.';
-                    }
-
-                    summaryHTML = `
-                    <h6 class="fw-bold mb-2">🔎 Residual Data Summary (${year})</h6>
-                    <p>The residual component represents random noise and irregularities in <strong>${categoryText}</strong> applications after removing trend and seasonality.</p>
-                    <p>On average, the size of these irregulars was about <strong>${residualAvg.toFixed(2)}</strong>.</p>
-                    <p>The largest irregularity was in <strong>${residualMaxMonth}</strong> (~${residualMax.toFixed(2)}), 
-                    while the smallest was in <strong>${residualMinMonth}</strong> (~${residualMin.toFixed(2)}).</p>
-                    <p><strong>Conclusion:</strong> ${residualConclusion}</p>
-                    <p>Monitoring residuals is useful to detect shocks, anomalies, or events outside normal patterns.</p>
-                `;
-                    break;
-
-                default:
-                    summaryHTML = '<p>No summary available for this component.</p>';
-            }
-
-            document.getElementById('summary-content').innerHTML = summaryHTML;
-        }
-
-        // Event listeners
-        ['chartSelector', 'yearSelector', 'caseCategorySelector'].forEach(id => {
-            document.getElementById(id).addEventListener('change', () => {
-                loadStlData(
-                    document.getElementById('caseCategorySelector').value,
-                    document.getElementById('chartSelector').value,
-                    document.getElementById('yearSelector').value
-                );
-            });
-        });
-
-        // Dashboard summary
-        async function loadDashboardSummary() {
-            try {
-                const res = await fetch('/admin/statistics/get-statistics?type=cswd');
-                const json = await res.json();
-                const summary = json.overall?.dashboard_summary;
-                if (!summary) return;
-
-                document.getElementById('topAssistance').textContent = summary.top_assistance || 'N/A';
-                document.getElementById('mostCommonCategory').textContent = summary.most_common_category || 'N/A';
-                document.getElementById('totalApplicants').textContent = summary.total_applicants?.toLocaleString() || 0;
-                document.getElementById('averageProcessingTime').textContent = summary.average_processing_time || '0 days';
-            } catch (err) {
-                console.error('Error loading dashboard summary:', err);
+            },
+            scales: {
+                x: {
+                    title: { display: true, text: 'Month', font: { family: 'DM Sans', size: 11 }, color: '#6b7280' },
+                    grid: { color: 'rgba(6,78,59,.05)' },
+                    ticks: { font: { family: 'DM Sans', size: 11 }, color: '#6b7280', maxRotation: 45 }
+                },
+                y: {
+                    beginAtZero: false, min: yMin, max: yMax,
+                    grid: { color: 'rgba(6,78,59,.05)' },
+                    ticks: { font: { family: 'DM Sans', size: 11 }, color: '#6b7280' }
+                }
             }
         }
+    });
+}
 
-        loadDashboardSummary();
-        loadStlData();
-        loadWeeklyStl();
-    </script>
-</body>
+function updateSummaryText(component, category, year, data, labels) {
+    const total     = data.reduce((a,b) => a+b, 0);
+    const catText   = category === 'ALL' ? 'all assistance types combined' : `"${category}"`;
+    const yearText  = year === 'ALL' ? 'all years' : year;
+    const startVal  = data[0] || 0;
+    const endVal    = data[data.length-1] || 0;
+    const diff      = endVal - startVal;
+    const diffPct   = startVal ? (diff/startVal)*100 : 0;
+    let html = '';
 
-</html>
+    const badge = (text, color='#064e3b') =>
+        `<span style="display:inline-flex;align-items:center;background:rgba(6,78,59,.08);border:1px solid rgba(6,78,59,.2);border-radius:6px;padding:1px 8px;font-size:.75rem;font-weight:700;color:${color};">${text}</span>`;
+
+    switch (component) {
+        case 'observed':
+            const avg     = total / data.length;
+            const hiVal   = Math.max(...data);
+            const loVal   = Math.min(...data);
+            const hiMonth = labels[data.indexOf(hiVal)];
+            const loMonth = labels[data.indexOf(loVal)];
+            const trend_dir = diffPct >= 5 ? '📈 increasing' : diffPct <= -5 ? '📉 declining' : '➡️ stable';
+            html = `
+                <h6>🔍 Observed Data — ${yearText}</h6>
+                <p>For <strong>${catText}</strong>, a total of ${badge(total.toLocaleString() + ' applications')} were recorded across <strong>${yearText}</strong>, averaging <strong>${avg.toFixed(0)}</strong> per month.</p>
+                <p>The <strong>peak month</strong> was <strong>${hiMonth}</strong> with <strong>${hiVal.toFixed(0)}</strong> applications — the <strong>slowest month</strong> was <strong>${loMonth}</strong> with <strong>${loVal.toFixed(0)}</strong>. The range of <strong>${(hiVal-loVal).toFixed(0)}</strong> applications between peak and trough reflects the degree of monthly variability.</p>
+                <p>Overall demand is <strong>${trend_dir}</strong> (${diffPct >= 0 ? '+' : ''}${diffPct.toFixed(1)}% from start to end of period).</p>
+                <p><strong>What to do with this:</strong> Use peak months to plan staff coverage and resource allocation. If the peak-to-trough gap is large, consider staggered intake scheduling to smooth demand.</p>`;
+            break;
+
+        case 'trend':
+            const tStart = data[0]||0, tEnd = data[data.length-1]||0;
+            const tDiff  = tEnd - tStart;
+            const tPct   = tStart ? (tDiff/tStart)*100 : 0;
+            const tMax   = Math.max(...data), tMin = Math.min(...data);
+            const tMaxMo = labels[data.indexOf(tMax)], tMinMo = labels[data.indexOf(tMin)];
+            let tConclusion = tPct >= 10
+                ? 'The trend shows <strong>strong growth</strong> in demand — budget and headcount plans should account for continued increases.'
+                : tPct > 3
+                ? 'There is a <strong>steady upward trend</strong>. Plan for gradually increasing workload over coming months.'
+                : tPct <= -10
+                ? 'The trend shows a <strong>significant decline</strong> — investigate whether this reflects a structural reduction in demand or a data gap.'
+                : tPct < -3
+                ? 'Demand is <strong>gradually declining</strong>. This may represent seasonal recovery or a longer-term drop — monitor closely.'
+                : 'Demand is <strong>broadly stable</strong>. Short-term fluctuations are noise; the underlying pipeline is consistent.';
+            html = `
+                <h6>📈 Trend Analysis — ${yearText}</h6>
+                <p>The trend component removes seasonal fluctuations to reveal the <strong>underlying direction</strong> of ${catText} applications.</p>
+                <p>The trend moved from ${badge(tStart.toFixed(1))} to ${badge(tEnd.toFixed(1))} — a change of <strong>${tDiff >= 0 ? '+' : ''}${tDiff.toFixed(1)}</strong> (${tPct >= 0 ? '+' : ''}${tPct.toFixed(1)}%) over the selected period.</p>
+                <p>Peak trend level: <strong>${tMaxMo}</strong> (~${tMax.toFixed(1)}) · Lowest trend level: <strong>${tMinMo}</strong> (~${tMin.toFixed(1)}).</p>
+                <p><strong>Conclusion:</strong> ${tConclusion}</p>`;
+            break;
+
+        case 'seasonal':
+            const sMax    = Math.max(...data), sMin = Math.min(...data);
+            const sPeaks  = data.map((v,i)=>v===sMax?labels[i]:null).filter(Boolean).join(', ');
+            const sTroughs = data.map((v,i)=>v===sMin?labels[i]:null).filter(Boolean).join(', ');
+            const sDiff   = sMax - sMin;
+            const sStrong = sDiff > (0.25 * (total/data.length));
+            html = `
+                <h6>📅 Seasonal Pattern — ${yearText}</h6>
+                <p>Seasonality isolates the <strong>recurring calendar-driven pattern</strong> in ${catText} applications — the same rhythm that repeats year after year regardless of the underlying trend.</p>
+                <p>${sStrong
+                    ? `There is a <strong>strong seasonal signal</strong> (peak-to-trough gap of <strong>${sDiff.toFixed(0)}</strong>). Peak months — <strong>${sPeaks}</strong> — consistently see elevated demand, while <strong>${sTroughs}</strong> tend to be quieter.`
+                    : `Seasonal fluctuations are <strong>mild</strong> (gap of ${sDiff.toFixed(0)}). Demand is relatively even across the year, with slight highs around <strong>${sPeaks}</strong>.`
+                }</p>
+                <p><strong>Operational implication:</strong> ${sStrong
+                    ? `Ensure extra staffing, faster document processing, and higher intake capacity during <strong>${sPeaks}</strong>. Consider proactive outreach to applicants in <strong>${sTroughs}</strong> to keep the pipeline moving.`
+                    : `No major seasonal prep is needed. Maintain consistent staffing and intake capacity year-round.`
+                }</p>`;
+            break;
+
+        case 'residual':
+            const rAbs    = data.map(v=>Math.abs(v));
+            const rAvg    = rAbs.reduce((a,b)=>a+b,0)/rAbs.length;
+            const rMax    = Math.max(...rAbs), rMin = Math.min(...rAbs);
+            const rMaxMo  = labels[rAbs.indexOf(rMax)];
+            const rMinMo  = labels[rAbs.indexOf(rMin)];
+            let rConclusion = rMax > rAvg*2
+                ? `A notable anomaly occurred around <strong>${rMaxMo}</strong> — this likely reflects an external shock (policy change, disaster, surge event). Investigate what happened that month.`
+                : rAvg > 2
+                ? 'Residuals are moderately elevated, suggesting some unpredictable variability the model does not fully explain. Consider external factors like policy changes or data quality.'
+                : 'Residuals are small and evenly distributed — the model explains the data well. No major anomalies detected.';
+            html = `
+                <h6>🔎 Residual / Anomaly Analysis — ${yearText}</h6>
+                <p>The residual is what remains after removing both trend and seasonality from ${catText} applications. Large residuals indicate <strong>unexpected events or anomalies</strong> not explained by regular patterns.</p>
+                <p>Average residual size: ${badge(rAvg.toFixed(2))} · Largest anomaly: <strong>${rMaxMo}</strong> (${rMax.toFixed(2)}) · Smallest: <strong>${rMinMo}</strong> (${rMin.toFixed(2)}).</p>
+                <p><strong>Interpretation:</strong> ${rConclusion}</p>
+                <p>Use this view to flag months that warrant investigation — spikes often correspond to external events worth documenting for future planning.</p>`;
+            break;
+
+        default:
+            html = '<p>No summary available for this component.</p>';
+    }
+
+    document.getElementById('summary-content').innerHTML = html;
+}
+
+// Event listeners (keep original IDs to maintain backward compatibility)
+['yearSelector','caseCategorySelector'].forEach(id => {
+    document.getElementById(id).addEventListener('change', () => {
+        loadStlData(
+            document.getElementById('caseCategorySelector').value,
+            document.getElementById('chartSelector').value,
+            document.getElementById('yearSelector').value
+        );
+    });
+});
+
+// Dashboard summary cards
+async function loadDashboardSummary() {
+    try {
+        const res  = await fetch('/admin/statistics/get-statistics?type=cswd');
+        const json = await res.json();
+        const s    = json.overall?.dashboard_summary;
+        if (!s) return;
+        document.getElementById('topAssistance').textContent       = s.top_assistance || 'N/A';
+        document.getElementById('mostCommonCategory').textContent   = s.most_common_category || 'N/A';
+        document.getElementById('totalApplicants').textContent      = s.total_applicants?.toLocaleString() || '0';
+        document.getElementById('averageProcessingTime').textContent = s.average_processing_time || '0 days';
+    } catch (err) {
+        console.error('Error loading dashboard summary:', err);
+    }
+}
+
+loadDashboardSummary();
+loadStlData();
+loadWeeklyStl();
+</script>

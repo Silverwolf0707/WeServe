@@ -1,619 +1,500 @@
-<!DOCTYPE html>
-<html lang="en">
+@once
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+@endonce
 
-<head>
-  <meta charset="UTF-8">
-  <title>Budget Statistical Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
 
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f9fbfc;
-    }
+<style>
+/* ═══════════════════════════════════════════
+   Budget STL — Forest-green design system
+   Matches CSWD timeseries exactly
+   ═══════════════════════════════════════════ */
+.bstl-wrap { font-family: 'DM Sans', sans-serif; color: #052e22; }
 
-    .card {
-      border: none;
-      border-radius: 1rem;
-      transition: box-shadow 0.3s ease-in-out;
-    }
+/* ── KPI Stat Cards ── */
+.bstl-stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 20px; }
+.bstl-stat { border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(6,78,59,.08), 0 8px 24px rgba(6,78,59,.06); transition: transform .2s, box-shadow .2s; }
+.bstl-stat:hover { transform: translateY(-3px); box-shadow: 0 4px 24px rgba(6,78,59,.16); }
+.bstl-stat-inner { padding: 14px 16px 10px; display: flex; align-items: flex-start; justify-content: space-between; }
+.bstl-stat-label { font-size: .67rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: rgba(255,255,255,.72); margin-bottom: 6px; }
+.bstl-stat-value { font-size: 1.1rem; font-weight: 800; color: #fff; line-height: 1.2; letter-spacing: -.01em; word-break: break-word; }
+.bstl-stat-icon { width: 38px; height: 38px; border-radius: 9px; background: rgba(255,255,255,.15); display: flex; align-items: center; justify-content: center; font-size: .95rem; color: #fff; flex-shrink: 0; }
+.bstl-stat-foot { padding: 7px 16px; font-size: .7rem; font-weight: 600; color: rgba(255,255,255,.6); border-top: 1px solid rgba(255,255,255,.12); }
+.bstl-c-blue   { background: linear-gradient(135deg,#1d4ed8,#3b82f6); }
+.bstl-c-green  { background: linear-gradient(135deg,#064e3b,#10b981); }
+.bstl-c-amber  { background: linear-gradient(135deg,#92400e,#f59e0b); }
+.bstl-c-red    { background: linear-gradient(135deg,#991b1b,#ef4444); }
 
-    .card:hover {
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-    }
+/* ── Card base ── */
+.bstl-card { background: #fff; border-radius: 12px; border: 1px solid #d1fae5; box-shadow: 0 2px 8px rgba(6,78,59,.08), 0 8px 24px rgba(6,78,59,.06); margin-bottom: 18px; overflow: hidden; }
+.bstl-card-hdr { display: flex; align-items: center; gap: 10px; padding: 12px 18px; background: linear-gradient(135deg,#052e22 0%,#064e3b 100%); flex-wrap: wrap; }
+.bstl-card-hdr-icon { width: 28px; height: 28px; border-radius: 7px; background: rgba(116,255,112,.12); border: 1px solid rgba(116,255,112,.28); display: flex; align-items: center; justify-content: center; font-size: .72rem; color: #74ff70; flex-shrink: 0; }
+.bstl-card-hdr-title { font-size: .88rem; font-weight: 700; color: #fff; }
+.bstl-card-hdr-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+.bstl-card-body { padding: 18px; }
 
-    .stat-card .card-body {
-      min-height: 100px;
-    }
+/* ── Filter selects ── */
+.bstl-label { font-size: .7rem; font-weight: 600; color: rgba(255,255,255,.6); white-space: nowrap; }
+.bstl-select { height: 28px; border: 1px solid rgba(116,255,112,.28); border-radius: 7px; background: rgba(116,255,112,.08); color: #fff; font-size: .75rem; font-family: 'DM Sans', sans-serif; padding: 0 26px 0 9px; cursor: pointer; outline: none; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='rgba(116,255,112,.7)' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; transition: border-color .15s, background .15s; }
+.bstl-select:focus { border-color: rgba(116,255,112,.65); background-color: rgba(116,255,112,.14); }
+.bstl-select option { background: #052e22; color: #fff; }
 
-    .fs-5 {
-      font-size: 1.15rem;
-    }
+/* ── Component pills ── */
+.bstl-component-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+.bstl-cpill { padding: 3px 12px; border-radius: 20px; font-size: .72rem; font-weight: 600; border: 1px solid rgba(116,255,112,.28); background: rgba(116,255,112,.08); color: rgba(255,255,255,.75); cursor: pointer; transition: all .15s; font-family: 'DM Sans', sans-serif; }
+.bstl-cpill:hover { background: rgba(116,255,112,.18); color: #fff; }
+.bstl-cpill.active { background: #74ff70; color: #052e22; border-color: #74ff70; }
 
-    .icon-circle {
-      width: 45px;
-      height: 45px;
-      border-radius: 50%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
+/* ── Insight panel ── */
+.bstl-insight { background: linear-gradient(135deg,#f0fdf4,#ecfdf5); border: 1px solid #d1fae5; border-radius: 12px; padding: 18px 20px; }
+.bstl-insight-hdr { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #d1fae5; }
+.bstl-insight-hdr-icon { width: 26px; height: 26px; border-radius: 7px; background: rgba(116,255,112,.15); border: 1px solid rgba(116,255,112,.3); display: flex; align-items: center; justify-content: center; font-size: .65rem; color: #064e3b; flex-shrink: 0; }
+.bstl-insight-hdr-title { font-size: .84rem; font-weight: 700; color: #052e22; }
+#bstl-summary-content h6 { font-size: .82rem; font-weight: 700; color: #052e22; margin-bottom: 8px; }
+#bstl-summary-content p  { font-size: .8rem; color: #374151; line-height: 1.6; margin-bottom: 8px; }
+#bstl-summary-content strong { color: #064e3b; }
+#bstl-summary-content ul  { font-size: .8rem; color: #374151; padding-left: 16px; margin-bottom: 8px; }
+#bstl-summary-content li  { margin-bottom: 4px; line-height: 1.5; }
 
-    .bg-light-blue {
-      background-color: #e8f1ff;
-    }
+/* ── Currency badge ── */
+.bstl-badge { display: inline-flex; align-items: center; background: rgba(6,78,59,.08); border: 1px solid rgba(6,78,59,.2); border-radius: 6px; padding: 1px 8px; font-size: .75rem; font-weight: 700; color: #064e3b; }
 
-    .bg-light-green {
-      background-color: #e9f9ef;
-    }
+/* ── Y-axis peso formatting note ── */
+.bstl-chart-note { font-size: .68rem; color: #9ca3af; font-style: italic; margin-top: 6px; text-align: right; }
 
-    .bg-light-yellow {
-      background-color: #fffbe7;
-    }
+@media (max-width:1100px) { .bstl-stat-grid { grid-template-columns: repeat(2,1fr); } }
+@media (max-width:640px)  { .bstl-stat-grid { grid-template-columns: 1fr 1fr; } .bstl-card-hdr-controls { margin-left: 0; width: 100%; } }
+</style>
 
-    .bg-light-red {
-      background-color: #ffeaea;
-    }
+<div class="bstl-wrap">
 
-    .bg-blue {
-      background-color: #3b82f6;
-    }
-
-    .bg-green {
-      background-color: #10b981;
-    }
-
-    .bg-yellow {
-      background-color: #facc15;
-    }
-
-    .bg-red {
-      background-color: #ef4444;
-    }
-
-    .border-blue-500 {
-      border-left: 6px solid #3b82f6 !important;
-    }
-
-    .border-green-500 {
-      border-left: 6px solid #10b981 !important;
-    }
-
-    .border-yellow-500 {
-      border-left: 6px solid #facc15 !important;
-    }
-
-    .border-red-500 {
-      border-left: 6px solid #ef4444 !important;
-    }
-
-    .summary-equal-height {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-    }
-
-    .summary-equal-height .card-body {
-      flex-grow: 1;
-      justify-content: start;
-    }
-
-    .summary-equal-height .list-group {
-      margin-top: -0.25rem;
-    }
-
-    #combinedChart {
-      max-height: 320px;
-    }
-
-    select.form-select {
-      border-radius: 0.5rem;
-    }
-
-    .card-header {
-      border-bottom: 1px solid #eee;
-      background-color: #f0f4f8;
-    }
-
-    .list-group-item {
-      background: transparent;
-      border: none;
-      padding-left: 0;
-      font-size: 0.95rem;
-    }
-
-    .list-group-item::before {
-      content: "•";
-      color: #10b981;
-      font-weight: bold;
-      display: inline-block;
-      width: 1em;
-      margin-left: -1em;
-    }
-  </style>
-</head>
-
-<body>
-  <div class="container-fluid py-4">
-    <!-- KPI cards -->
-    <div class="row g-3 mb-4">
-      <div class="col-md-3">
-        <div class="card shadow-sm bg-light-blue border-blue-500">
-          <div class="card-body d-flex justify-content-between align-items-center">
-            <div class="flex-grow-1 me-3">
-              <div class="text-muted small">Top Allocated Category</div>
-              <div class="fw-semibold fs-5" id="topBudgetCategory">Loading...</div>
+    {{-- ── KPI STAT CARDS ── --}}
+    <div class="bstl-stat-grid">
+        <div class="bstl-stat bstl-c-blue">
+            <div class="bstl-stat-inner">
+                <div>
+                    <div class="bstl-stat-label">Top Allocated Category</div>
+                    <div class="bstl-stat-value" id="topBudgetCategory">—</div>
+                </div>
+                <div class="bstl-stat-icon"><i class="fas fa-wallet"></i></div>
             </div>
-            <div class="icon-circle bg-blue text-white">
-              <i class="fas fa-wallet fa-lg"></i>
-            </div>
-          </div>
+            <div class="bstl-stat-foot">Highest-volume case category</div>
         </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card shadow-sm bg-light-green border-green-500">
-          <div class="card-body d-flex justify-content-between align-items-center">
-            <div class="flex-grow-1 me-3">
-              <div class="text-muted small">Top Allocated Type</div>
-              <div class="fw-semibold fs-5" id="highestAllocation">Loading...</div>
+        <div class="bstl-stat bstl-c-green">
+            <div class="bstl-stat-inner">
+                <div>
+                    <div class="bstl-stat-label">Top Allocated Type</div>
+                    <div class="bstl-stat-value" id="highestAllocation">—</div>
+                </div>
+                <div class="bstl-stat-icon"><i class="fas fa-chart-pie"></i></div>
             </div>
-            <div class="icon-circle bg-green text-white">
-              <i class="fas fa-chart-pie fa-lg"></i>
-            </div>
-          </div>
+            <div class="bstl-stat-foot">Leading assistance type</div>
         </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card shadow-sm bg-light-yellow border-yellow-500">
-          <div class="card-body d-flex justify-content-between align-items-center">
-            <div class="flex-grow-1 me-3">
-              <div class="text-muted small">Total Budget Disbursed</div>
-              <div class="fw-semibold fs-5" id="totalBudget">Loading...</div>
+        <div class="bstl-stat bstl-c-amber">
+            <div class="bstl-stat-inner">
+                <div>
+                    <div class="bstl-stat-label">Total Disbursed</div>
+                    <div class="bstl-stat-value" id="totalBudget">—</div>
+                </div>
+                <div class="bstl-stat-icon"><i class="fas fa-coins"></i></div>
             </div>
-            <div class="icon-circle bg-yellow text-white">
-              <i class="fas fa-coins fa-lg"></i>
-            </div>
-          </div>
+            <div class="bstl-stat-foot">All-time budget released</div>
         </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card shadow-sm bg-light-red border-red-500">
-          <div class="card-body d-flex justify-content-between align-items-center">
-            <div class="flex-grow-1 me-3">
-              <div class="text-muted small">Monthly Average Allocation</div>
-              <div class="fw-semibold fs-5" id="unusedFunds">Loading...</div>
+        <div class="bstl-stat bstl-c-red">
+            <div class="bstl-stat-inner">
+                <div>
+                    <div class="bstl-stat-label">Monthly Average</div>
+                    <div class="bstl-stat-value" id="unusedFunds">—</div>
+                </div>
+                <div class="bstl-stat-icon"><i class="fas fa-calendar-alt"></i></div>
             </div>
-            <div class="icon-circle bg-red text-white">
-              <i class="fas fa-exclamation-circle fa-lg"></i>
-            </div>
-          </div>
+            <div class="bstl-stat-foot">Avg. monthly allocation</div>
         </div>
-      </div>
     </div>
 
-    <!-- Main Content -->
-    <div class="row">
-      <!-- Chart Section -->
-      <div class="col-12">
-        <div class="card shadow-sm mb-4">
-          <div class="card-header d-flex flex-wrap justify-content-between align-items-center">
-            <div class="d-flex flex-wrap align-items-center gap-2">
-              <h6 class="mb-0 fw-bold me-3">📈Budget Time Series</h6>
-              <span class="label">Component:</span>
-              <select id="chartSelector" class="form-select form-select-sm me-2" style="width: auto;">
-                <option value="observed">Observed</option>
-                <option value="seasonal">Seasonal</option>
-                <option value="trend">Trend</option>
-                <option value="residual">Residual</option>
-              </select>
-
-              <span class="label">Year:</span>
-
-              <select id="yearSelector" class="form-select form-select-sm me-2" style="width: auto;">
-              </select>
-
-              <span class="label">Case Category:</span>
-
-              <select id="caseCategorySelector" class="form-select form-select-sm me-2" style="width: auto;">
-              </select>
+    {{-- ── BUDGET STL CHART ── --}}
+    <div class="bstl-card">
+        <div class="bstl-card-hdr">
+            <div class="bstl-card-hdr-icon"><i class="fas fa-chart-line"></i></div>
+            <span class="bstl-card-hdr-title">Budget Time Series</span>
+            <div class="bstl-card-hdr-controls">
+                <div class="bstl-component-pills">
+                    <button class="bstl-cpill active" data-component="observed">Observed</button>
+                    <button class="bstl-cpill" data-component="trend">Trend</button>
+                    <button class="bstl-cpill" data-component="seasonal">Seasonal</button>
+                    <button class="bstl-cpill" data-component="residual">Residual</button>
+                </div>
+                <span class="bstl-label">Year:</span>
+                <select id="yearSelector" class="bstl-select" style="min-width:80px;"></select>
+                <span class="bstl-label">Category:</span>
+                <select id="caseCategorySelector" class="bstl-select" style="min-width:130px;"></select>
             </div>
-          </div>
-
-          <div class="card-body">
-            <canvas id="combinedChart" height="300" class="w-100"></canvas>
-          </div>
         </div>
-      </div>
+        <div class="bstl-card-body">
+            <canvas id="combinedChart" height="300" style="width:100%;max-height:320px;"></canvas>
+            <div class="bstl-chart-note">Values in Philippine Peso (₱)</div>
+        </div>
     </div>
 
-    <!-- Insights Summary Panel at Bottom -->
-    <div class="row">
-      <div class="col-12">
-        <div class="card shadow-sm border border-primary" style="background: #e0eafc; border-radius: 1rem;">
-
-          <!-- Header -->
-          <div class="card-header d-flex align-items-center text-white border-0"
-            style="background-color: #004080; border-radius: 1rem 1rem 0 0; padding: 1rem;">
-            <i class="fas fa-chart-line me-2 fs-5"></i>
-            <h6 class="mb-0 fw-semibold">Budget STL Decomposition Insights</h6>
-          </div>
-
-          <!-- Body -->
-          <div class="card-body" style="padding: 1.2rem;">
-            <div id="summary-content" class="text-dark fs-6">
-              <!-- Dynamic content will be injected here -->
-            </div>
-          </div>
+    {{-- ── INTERPRETATION ── --}}
+    <div class="bstl-card">
+        <div class="bstl-card-hdr">
+            <div class="bstl-card-hdr-icon"><i class="fas fa-lightbulb"></i></div>
+            <span class="bstl-card-hdr-title">Interpretation</span>
         </div>
-      </div>
+        <div class="bstl-card-body" style="padding:16px 18px;">
+            <div class="bstl-insight">
+                <div class="bstl-insight-hdr">
+                    <div class="bstl-insight-hdr-icon"><i class="fas fa-brain"></i></div>
+                    <span class="bstl-insight-hdr-title" id="bstl-insight-label">Observed Budget Analysis</span>
+                </div>
+                <div id="bstl-summary-content">
+                    <p style="color:#9ca3af;font-size:.8rem;">Select a component and category above to generate insights.</p>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script>
-      async function loadStlData(category = 'ALL', component = 'observed', year = 'ALL') {
-        const res = await fetch('/admin/timeseries/get-stl-json?type=budget');
+</div>{{-- /bstl-wrap --}}
+
+{{-- Hidden selector keeps original JS event compatibility ── --}}
+<select id="chartSelector" style="display:none;">
+    <option value="observed">Observed</option>
+    <option value="seasonal">Seasonal</option>
+    <option value="trend">Trend</option>
+    <option value="residual">Residual</option>
+</select>
+
+<script>
+/* ── Sync pill buttons → hidden select → loadStlData ── */
+document.querySelectorAll('.bstl-cpill').forEach(btn => {
+    btn.addEventListener('click', function () {
+        document.querySelectorAll('.bstl-cpill').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        const comp = this.dataset.component;
+        document.getElementById('chartSelector').value = comp;
+
+        const insightLabels = {
+            observed: 'Observed Budget Analysis',
+            trend:    'Trend Direction Analysis',
+            seasonal: 'Seasonal Budget Pattern',
+            residual: 'Residual / Anomaly Analysis'
+        };
+        document.getElementById('bstl-insight-label').textContent = insightLabels[comp] || 'Analysis';
+
+        loadStlData(
+            document.getElementById('caseCategorySelector').value,
+            comp,
+            document.getElementById('yearSelector').value
+        );
+    });
+});
+</script>
+
+<script>
+async function loadStlData(category = 'ALL', component = 'observed', year = 'ALL') {
+    const chartContainer = document.getElementById('combinedChart').parentElement;
+
+    try {
+        const res  = await fetch('/admin/timeseries/get-stl-json?type=budget');
         const json = await res.json();
 
-        // Populate case type selector
-        const caseSelector = document.getElementById('caseCategorySelector');
-        if (caseSelector.options.length === 0) {
-          caseSelector.innerHTML = '';
-          const allOpt = document.createElement('option');
-          allOpt.value = 'ALL';
-          allOpt.textContent = 'ALL';
-          caseSelector.appendChild(allOpt);
-
-          Object.keys(json).forEach(cat => {
-            const opt = document.createElement('option');
-            opt.value = cat;
-            opt.textContent = cat;
-            caseSelector.appendChild(opt);
-          });
+        if (!json || Object.keys(json).length === 0) {
+            chartContainer.innerHTML = `<div class="text-center text-muted py-5" style="font-family:'DM Sans',sans-serif;">
+                <i class="fas fa-exclamation-triangle" style="font-size:1.5rem;color:#f59e0b;margin-bottom:8px;display:block;"></i>
+                <strong>STL Chart unavailable — insufficient data.</strong><br>
+                <small>Please upload at least 1–2 years of records to generate decomposition.</small>
+            </div>`;
+            return;
         }
 
+        // Populate category selector
+        const caseSelector = document.getElementById('caseCategorySelector');
+        if (caseSelector.options.length === 0) {
+            caseSelector.innerHTML = '';
+            const allOpt = document.createElement('option');
+            allOpt.value = 'ALL'; allOpt.textContent = 'ALL';
+            caseSelector.appendChild(allOpt);
+            Object.keys(json).forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat; opt.textContent = cat;
+                caseSelector.appendChild(opt);
+            });
+        }
         if (!category) category = caseSelector.value || 'ALL';
         caseSelector.value = category;
 
         // Populate year selector
         const yearSelector = document.getElementById('yearSelector');
         if (yearSelector.options.length === 0) {
-          yearSelector.innerHTML = '';
-          const allYearOpt = document.createElement('option');
-          allYearOpt.value = 'ALL';
-          allYearOpt.textContent = 'ALL';
-          yearSelector.appendChild(allYearOpt);
-
-          // Collect unique years
-          let allDates = [];
-          if (category === 'ALL') {
-            const cats = Object.keys(json);
-            allDates = json[cats[0]].dates; // assume all categories share same dates
-          } else {
-            allDates = json[category].dates;
-          }
-          const years = [...new Set(allDates.map(d => d.split('-')[0]))].sort((a, b) => b - a);
-          years.forEach(y => {
-            const opt = document.createElement('option');
-            opt.value = y;
-            opt.textContent = y;
-            yearSelector.appendChild(opt);
-          });
+            yearSelector.innerHTML = '';
+            const allYearOpt = document.createElement('option');
+            allYearOpt.value = 'ALL'; allYearOpt.textContent = 'ALL';
+            yearSelector.appendChild(allYearOpt);
+            let allDates = category === 'ALL' ? json[Object.keys(json)[0]].dates : json[category].dates;
+            const years = [...new Set(allDates.map(d => d.split('-')[0]))].sort((a,b) => b - a);
+            years.forEach(y => {
+                const opt = document.createElement('option');
+                opt.value = y; opt.textContent = y;
+                yearSelector.appendChild(opt);
+            });
         }
-
         if (!year) year = yearSelector.value || 'ALL';
         yearSelector.value = year;
 
-        // Process data for chart
-        let labels = [];
-        let dataForYear = [];
+        // Build chart data
+        let labels = [], dataForYear = [];
         if (category === 'ALL') {
-          const cats = Object.keys(json);
-          const dates = json[cats[0]].dates;
-          const idxs = dates.map((d, i) => (year === 'ALL' || d.startsWith(year + '-')) ? i : -1).filter(i => i >=
-            0);
-          dataForYear = idxs.map(i => cats.reduce((sum, c) => sum + (json[c][component][i] || 0), 0));
-          labels = idxs.map(i => dates[i]);
+            const cats  = Object.keys(json);
+            const dates = json[cats[0]].dates;
+            const idxs  = dates.map((d,i) => (year === 'ALL' || d.startsWith(year+'-')) ? i : -1).filter(i => i >= 0);
+            dataForYear = idxs.map(i => cats.reduce((sum,c) => sum + (json[c][component][i] || 0), 0));
+            labels      = idxs.map(i => dates[i]);
         } else {
-          const ds = json[category];
-          const idxs = ds.dates.map((d, i) => (year === 'ALL' || d.startsWith(year + '-')) ? i : -1).filter(i =>
-            i >= 0);
-          dataForYear = idxs.map(i => ds[component][i]);
-          labels = idxs.map(i => ds.dates[i]);
+            const ds   = json[category];
+            const idxs = ds.dates.map((d,i) => (year === 'ALL' || d.startsWith(year+'-')) ? i : -1).filter(i => i >= 0);
+            dataForYear = idxs.map(i => ds[component][i]);
+            labels      = idxs.map(i => ds.dates[i]);
+        }
+
+        if (labels.length < 12) {
+            chartContainer.innerHTML = `<div class="text-center text-muted py-5" style="font-family:'DM Sans',sans-serif;">
+                <i class="fas fa-exclamation-triangle" style="font-size:1.5rem;color:#f59e0b;margin-bottom:8px;display:block;"></i>
+                <strong>STL Chart requires 12+ months of data.</strong><br>
+                <small>Currently showing ${labels.length} months. Please add more records.</small>
+            </div>`;
+            return;
+        }
+
+        if (!document.getElementById('combinedChart')) {
+            chartContainer.innerHTML = `<canvas id="combinedChart" height="300" style="width:100%;max-height:320px;"></canvas>`;
         }
 
         renderChart(labels, dataForYear, component);
-        updateSummaryText(component, category, year, dataForYear, labels); // pass actual dates
-      }
+        updateSummaryText(component, category, year, dataForYear, labels);
 
-      function renderChart(labels, data, component) {
-        const map = {
-          observed: {
-            color: '#3b82f6',
-            fill: 'rgba(59,130,246,0.2)'
-          },
-          trend: {
-            color: '#10b981',
-            fill: 'rgba(16,185,129,0.2)'
-          },
-          seasonal: {
-            color: '#facc15',
-            fill: 'rgba(250,204,21,0.3)'
-          },
-          residual: {
-            color: '#ef4444',
-            fill: 'rgba(239,68,68,0.2)'
-          }
-        };
-        const ctx = document.getElementById('combinedChart').getContext('2d');
-        if (window.chartInstance) window.chartInstance.destroy();
-        const displayLabels = labels.map(d => {
-          const [y, m] = d.split('-');
-          const monthName = new Date(y, parseInt(m) - 1).toLocaleString('default', {
-            month: 'short'
-          });
-          return `${monthName} ${y}`;
-        });
+    } catch (err) {
+        console.error('Error loading STL data:', err);
+        chartContainer.innerHTML = `<div class="text-center text-danger py-5" style="font-family:'DM Sans',sans-serif;">
+            <i class="fas fa-times-circle" style="font-size:1.5rem;margin-bottom:8px;display:block;"></i>
+            Failed to load STL data. Please try again.
+        </div>`;
+    }
+}
 
-        window.chartInstance = new Chart(ctx, {
-          type: 'line',
-          data: {
+function renderChart(labels, data, component) {
+    const palettes = {
+        observed: { border: '#064e3b', fill: 'rgba(6,78,59,.12)',    point: '#74ff70' },
+        trend:    { border: '#10b981', fill: 'rgba(16,185,129,.12)', point: '#34d399' },
+        seasonal: { border: '#f59e0b', fill: 'rgba(245,158,11,.12)', point: '#fcd34d' },
+        residual: { border: '#ef4444', fill: 'rgba(239,68,68,.12)',  point: '#fca5a5' }
+    };
+    const pal = palettes[component] || palettes.observed;
+    const ctx = document.getElementById('combinedChart').getContext('2d');
+    if (window.chartInstance) window.chartInstance.destroy();
+
+    const displayLabels = labels.map(d => {
+        const [y, m] = d.split('-');
+        return `${new Date(y, parseInt(m)-1).toLocaleString('default',{month:'short'})} ${y}`;
+    });
+
+    let yMin = Math.min(...data) * 0.95;
+    let yMax = Math.max(...data) * 1.05;
+    if (component === 'residual') {
+        const am = Math.max(...data.map(v => Math.abs(v)));
+        yMin = -am * 1.1; yMax = am * 1.1;
+    }
+
+    window.chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
             labels: displayLabels,
             datasets: [{
-              label: component,
-              data,
-              borderColor: map[component].color,
-              backgroundColor: map[component].fill,
-              fill: true,
-              tension: 0.4,
-              pointRadius: 4
+                label: component.charAt(0).toUpperCase() + component.slice(1),
+                data,
+                borderColor: pal.border,
+                backgroundColor: pal.fill,
+                pointBackgroundColor: pal.point,
+                pointBorderColor: pal.border,
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                fill: true,
+                tension: 0.4,
+                borderWidth: 2
             }]
-          },
-          options: {
+        },
+        options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-              legend: {
-                display: false
-              }
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#052e22',
+                    titleColor: '#74ff70',
+                    bodyColor: '#fff',
+                    borderColor: 'rgba(116,255,112,.3)',
+                    borderWidth: 1,
+                    padding: 10,
+                    titleFont: { family: 'DM Sans', size: 12 },
+                    bodyFont: { family: 'DM Sans', size: 12 },
+                    callbacks: {
+                        label: ctx => `₱${ctx.raw.toLocaleString()}`
+                    }
+                }
             },
             scales: {
-              x: {
-                title: {
-                  display: true,
-                  text: 'Month'
-                }
-              },
-              y: {
-                ticks: {
-                  callback: function (value) {
-                    return '₱' + value.toLocaleString();
-                  }
+                x: {
+                    title: { display: true, text: 'Month', font: { family: 'DM Sans', size: 11 }, color: '#6b7280' },
+                    grid: { color: 'rgba(6,78,59,.05)' },
+                    ticks: { font: { family: 'DM Sans', size: 11 }, color: '#6b7280', maxRotation: 45 }
                 },
-                min: Math.min(...data) * 0.95,
-                max: Math.max(...data) * 1.05
-              }
-            }
-          }
-        });
-      }
-
-      function updateSummaryText(component, category, year, data, labels) {
-        const total = data.reduce((a, b) => a + b, 0);
-        const startVal = data[0] || 0;
-        const endVal = data[data.length - 1] || 0;
-        const diff = endVal - startVal;
-        const diffPercent = startVal ? (diff / startVal) * 100 : 0;
-
-        let summaryHTML = '';
-
-        switch (component) {
-          case 'observed':
-            const monthlyAvg = total / data.length;
-            const highestVal = Math.max(...data);
-            const lowestVal = Math.min(...data);
-            const highMonth = labels[data.indexOf(highestVal)];
-            const lowMonth = labels[data.indexOf(lowestVal)];
-
-            summaryHTML = `
-        <h6 class="fw-bold mb-2">📊 Observed Budget Summary (${year})</h6>
-        <p>For <strong>${category}</strong>, the total observed disbursement in <strong>${year}</strong> 
-        reached <strong>₱${total.toLocaleString()}</strong>.</p>
-        <p>On average, about <strong>₱${monthlyAvg.toLocaleString()}</strong> was released monthly.</p>
-        <p>The peak allocation occurred in <strong>${highMonth}</strong> with around 
-        <strong>₱${highestVal.toLocaleString()}</strong>, while the lowest was in 
-        <strong>${lowMonth}</strong> (~₱${lowestVal.toLocaleString()}).</p>
-        <p><strong>Conclusion:</strong> This view reflects the actual budget flow without adjustments — 
-        a clear snapshot of how much funding was disbursed month by month.</p>
-      `;
-            break;
-
-          case 'trend':
-            const trendMax = Math.max(...data);
-            const trendMin = Math.min(...data);
-            const trendMaxMonth = labels[data.indexOf(trendMax)];
-            const trendMinMonth = labels[data.indexOf(trendMin)];
-
-            let trendConclusion = 'The funding level appears relatively stable across the year.';
-            if (diffPercent >= 10) trendConclusion =
-              'There is a strong upward funding trend, showing steadily higher allocations.';
-            else if (diffPercent > 3) trendConclusion =
-              'The budget shows a moderate upward trend, reflecting gradual growth in support.';
-            else if (diffPercent <= -10) trendConclusion =
-              'There is a clear downward trend, signaling reduced allocations.';
-            else if (diffPercent < -3) trendConclusion =
-              'A slight downward trend is observed, indicating mild funding cuts.';
-
-            summaryHTML = `
-        <h6 class="fw-bold mb-2">💰 Budget Trend Insights (${year})</h6>
-        <p>The trend line smooths short-term changes to highlight long-term allocation direction.</p>
-        <p>Funding started at <strong>₱${startVal.toFixed(2)}</strong> and ended at 
-        <strong>₱${endVal.toFixed(2)}</strong>, a net change of 
-        <strong>₱${diff.toFixed(2)}</strong> (${diffPercent.toFixed(1)}%).</p>
-        <p>The highest trend level was in <strong>${trendMaxMonth}</strong> (~₱${trendMax.toFixed(2)}), 
-        while the lowest was in <strong>${trendMinMonth}</strong> (~₱${trendMin.toFixed(2)}).</p>
-        <p><strong>Conclusion:</strong> ${trendConclusion}</p>
-        <p>This helps decision makers assess the sustainability of funding levels over time.</p>
-      `;
-            break;
-
-          case 'seasonal':
-            const maxVal = Math.max(...data);
-            const minVal = Math.min(...data);
-            const peakMonths = labels.filter((m, i) => data[i] === maxVal).join(', ');
-            const lowMonths = labels.filter((m, i) => data[i] === minVal).join(', ');
-            const peakDiff = maxVal - minVal;
-            const avgMonthly = total / data.length;
-            const strongSeasonality = peakDiff > (0.25 * avgMonthly);
-
-            const seasonalConclusion = strongSeasonality ?
-              `A clear seasonal pattern exists, with peak allocations in <strong>${peakMonths}</strong> and lower allocations in <strong>${lowMonths}</strong>.` :
-              `Seasonal effects are mild, with only small shifts between months.`;
-
-            summaryHTML = `
-        <h6 class="fw-bold mb-2">🌊 Seasonal Budget Summary (${year})</h6>
-        <p>Seasonal components highlight recurring patterns in allocations.</p>
-        <p>The highest disbursement was around <strong>₱${maxVal.toLocaleString()}</strong> in 
-        <strong>${peakMonths}</strong>, while the lowest was around in <strong>${lowMonths}</strong>.</p>
-        <p>The gap between high and low months is about <strong>₱${peakDiff.toLocaleString()}</strong>.</p>
-        <p><strong>Conclusion:</strong> ${seasonalConclusion}</p>
-        <p>This insight helps prepare for periods of increased or decreased funding demand.</p>
-      `;
-            break;
-
-          case 'residual':
-            const residualAbs = data.map(v => Math.abs(v));
-            const residualAvg = residualAbs.reduce((a, b) => a + b, 0) / residualAbs.length;
-            const residualMax = Math.max(...residualAbs);
-            const residualMin = Math.min(...residualAbs);
-            const residualMaxMonth = labels[residualAbs.indexOf(residualMax)];
-            const residualMinMonth = labels[residualAbs.indexOf(residualMin)];
-
-            let residualConclusion =
-              'Residuals are small and evenly distributed — most variations are well explained by trend and seasonality.';
-            if (residualMax > residualAvg * 2) {
-              residualConclusion =
-                `A significant irregularity occurred in <strong>${residualMaxMonth}</strong>, suggesting unexpected spending behavior.`;
-            } else if (residualAvg > 2) {
-              residualConclusion =
-                'Residuals show moderate unpredictability, indicating budget anomalies not captured by trend or seasonality.';
-            }
-
-            summaryHTML = `
-        <h6 class="fw-bold mb-2">🔍 Residual Budget Summary (${year})</h6>
-        <p>The residual component captures irregular, unpredictable variations after removing trend and seasonal patterns.</p>
-        <p>On average, residual variations were about <strong>₱${residualAvg.toFixed(2)}</strong>.</p>
-        <p>The largest irregularity was in <strong>${residualMaxMonth}</strong> (~₱${residualMax.toFixed(2)}), 
-        while the smallest was in <strong>${residualMinMonth}</strong> (~₱${residualMin.toFixed(2)}).</p>
-        <p><strong>Conclusion:</strong> ${residualConclusion}</p>
-        <p>Monitoring residuals helps identify shocks or anomalies in budget disbursement.</p>
-      `;
-            break;
-        }
-
-        document.getElementById('summary-content').innerHTML = summaryHTML;
-      }
-
-
-      // Event listeners
-      document.getElementById('chartSelector').addEventListener('change', () =>
-        loadStlData(document.getElementById('caseCategorySelector').value, document.getElementById('chartSelector')
-          .value, document.getElementById('yearSelector').value)
-      );
-      document.getElementById('yearSelector').addEventListener('change', () =>
-        loadStlData(document.getElementById('caseCategorySelector').value, document.getElementById('chartSelector')
-          .value, document.getElementById('yearSelector').value)
-      );
-      document.getElementById('caseCategorySelector').addEventListener('change', () =>
-        loadStlData(document.getElementById('caseCategorySelector').value, document.getElementById('chartSelector')
-          .value, document.getElementById('yearSelector').value)
-      );
-
-      // Fetch Budget Dashboard Summary
-      async function loadBudgetSummary() {
-        try {
-          const res = await fetch('/admin/statistics/get-statistics?type=budget');
-          const json = await res.json();
-
-          const summary = (json.overall && json.overall.dashboard_summary) || {};
-
-          document.getElementById('topBudgetCategory').textContent = summary.highest_allocation_category || 'N/A';
-          document.getElementById('highestAllocation').textContent = summary.highest_allocation_type || 'N/A';
-          document.getElementById('totalBudget').textContent = summary.total_budget_disbursed ?
-            `₱${Number(summary.total_budget_disbursed).toLocaleString()}` :
-            '₱0';
-          document.getElementById('unusedFunds').textContent = summary.monthly_average_budget_allocation ?
-            `₱${Number(summary.monthly_average_budget_allocation).toLocaleString()}` :
-            '₱0';
-
-        } catch (err) {
-          console.error('Error fetching budget summary:', err);
-          document.getElementById('topBudgetCategory').textContent = 'N/A';
-          document.getElementById('highestAllocation').textContent = 'N/A';
-          document.getElementById('totalBudget').textContent = '₱0';
-          document.getElementById('unusedFunds').textContent = '₱0';
-        }
-      }
-
-      document.addEventListener('DOMContentLoaded', function () {
-        fetch("{{ route('admin.statistics.deficiencies') }}")
-          .then(res => res.json())
-          .then(data => {
-            const deficiencyCtx = document.getElementById('deficiencyChart').getContext('2d');
-
-            new Chart(deficiencyCtx, {
-              type: 'bar',
-              data: {
-                labels: data.labels,
-                datasets: [{
-                  label: 'Deficiency Count',
-                  data: data.counts,
-                  backgroundColor: '#007bff',
-                  borderRadius: 6,
-                  barThickness: 18
-                }]
-              },
-              options: {
-                indexAxis: 'y',
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    display: false
-                  },
-                  tooltip: {
-                    callbacks: {
-                      label: ctx => `${ctx.label}: ${ctx.raw} cases`
-                    }
-                  }
-                },
-                scales: {
-                  x: {
-                    beginAtZero: true,
-                    title: {
-                      display: true,
-                      text: 'Number of Cases'
-                    }
-                  },
-                  y: {
+                y: {
+                    beginAtZero: false,
+                    min: yMin, max: yMax,
+                    grid: { color: 'rgba(6,78,59,.05)' },
                     ticks: {
-                      autoSkip: false,
-                      maxRotation: 0,
-                      minRotation: 0
+                        font: { family: 'DM Sans', size: 11 },
+                        color: '#6b7280',
+                        callback: value => '₱' + value.toLocaleString()
                     }
-                  }
                 }
-              }
-            });
+            }
+        }
+    });
+}
 
-            document.querySelector('#deficiencySummary').innerHTML = data.summary;
-          });
-      });
+function updateSummaryText(component, category, year, data, labels) {
+    const total    = data.reduce((a,b) => a+b, 0);
+    const catText  = category === 'ALL' ? 'all budget categories combined' : `"${category}"`;
+    const yearText = year === 'ALL' ? 'all years' : year;
+    const startVal = data[0] || 0;
+    const endVal   = data[data.length-1] || 0;
+    const diff     = endVal - startVal;
+    const diffPct  = startVal ? (diff/startVal)*100 : 0;
+    let html = '';
 
-      // Call immediately on page load
-      loadBudgetSummary();
-      loadStlData();
-    </script>
+    const peso = v => `<span class="bstl-badge">₱${Number(v).toLocaleString()}</span>`;
 
-</body>
+    switch (component) {
+        case 'observed':
+            const avg      = total / data.length;
+            const hiVal    = Math.max(...data);
+            const loVal    = Math.min(...data);
+            const hiMonth  = labels[data.indexOf(hiVal)];
+            const loMonth  = labels[data.indexOf(loVal)];
+            const trendDir = diffPct >= 5 ? '📈 increasing' : diffPct <= -5 ? '📉 declining' : '➡️ stable';
+            html = `
+                <h6>📊 Observed Budget Summary — ${yearText}</h6>
+                <p>For <strong>${catText}</strong>, total observed disbursement reached ${peso(total.toFixed(0))} across <strong>${yearText}</strong>, with a monthly average of <strong>₱${avg.toLocaleString(undefined,{maximumFractionDigits:0})}</strong>.</p>
+                <p>The <strong>peak month</strong> was <strong>${hiMonth}</strong> at <strong>₱${hiVal.toLocaleString()}</strong> — the <strong>lowest</strong> was <strong>${loMonth}</strong> at <strong>₱${loVal.toLocaleString()}</strong>. The ₱${(hiVal-loVal).toLocaleString(undefined,{maximumFractionDigits:0})} range between peak and trough reflects monthly variability in disbursement.</p>
+                <p>Overall budget flow is <strong>${trendDir}</strong> (${diffPct >= 0 ? '+' : ''}${diffPct.toFixed(1)}% from start to end of period).</p>
+                <p><strong>What to do:</strong> Use peak months to pre-authorize higher budgets. If the peak-to-trough gap is large, consider quarterly budget releases to ensure smoother cash flow.</p>`;
+            break;
 
-</html>
+        case 'trend':
+            const tMax    = Math.max(...data), tMin = Math.min(...data);
+            const tMaxMo  = labels[data.indexOf(tMax)], tMinMo = labels[data.indexOf(tMin)];
+            let tConclusion = diffPct >= 10
+                ? 'The trend shows <strong>strong growth</strong> in budget demand — future allocations should be sized proportionally.'
+                : diffPct > 3
+                ? 'A <strong>steady upward trend</strong> suggests gradually increasing funding requirements.'
+                : diffPct <= -10
+                ? 'There is a <strong>significant declining trend</strong> — investigate whether this reflects lower demand or budget constraints.'
+                : diffPct < -3
+                ? 'Budget is <strong>gradually declining</strong>. Monitor whether this reflects structural changes or temporary reductions.'
+                : 'The underlying funding level is <strong>broadly stable</strong>. Short-term swings are noise.';
+            html = `
+                <h6>💰 Budget Trend Insights — ${yearText}</h6>
+                <p>The trend component smooths seasonal noise to reveal the <strong>underlying direction</strong> of ${catText} disbursements.</p>
+                <p>Funding moved from ${peso(startVal.toFixed(2))} to ${peso(endVal.toFixed(2))} — a net change of <strong>₱${diff.toFixed(2)}</strong> (${diffPct >= 0 ? '+' : ''}${diffPct.toFixed(1)}%).</p>
+                <p>Peak trend level: <strong>${tMaxMo}</strong> (~₱${tMax.toFixed(2)}) · Lowest trend level: <strong>${tMinMo}</strong> (~₱${tMin.toFixed(2)}).</p>
+                <p><strong>Conclusion:</strong> ${tConclusion}</p>
+                <p>This view helps decision-makers assess long-term funding sustainability and plan multi-year budget projections.</p>`;
+            break;
+
+        case 'seasonal':
+            const sMax    = Math.max(...data), sMin = Math.min(...data);
+            const sPeaks  = labels.filter((_,i) => data[i] === sMax).join(', ');
+            const sTroughs = labels.filter((_,i) => data[i] === sMin).join(', ');
+            const sDiff   = sMax - sMin;
+            const avgM    = total / data.length;
+            const sStrong = sDiff > (0.25 * Math.abs(avgM));
+            html = `
+                <h6>🌊 Seasonal Budget Pattern — ${yearText}</h6>
+                <p>Seasonality isolates the <strong>recurring calendar-driven pattern</strong> in ${catText} disbursements — the same cycle repeating year after year independent of the long-term trend.</p>
+                <p>${sStrong
+                    ? `A <strong>strong seasonal signal</strong> exists (peak-to-trough gap of ₱${sDiff.toLocaleString(undefined,{maximumFractionDigits:0})}). Highest-disbursement months — <strong>${sPeaks}</strong> — consistently see elevated spending, while <strong>${sTroughs}</strong> tend to be quieter.`
+                    : `Seasonal fluctuations are <strong>mild</strong> (gap of ₱${sDiff.toLocaleString(undefined,{maximumFractionDigits:0})}). Budget demand is relatively even across the year with slight highs around <strong>${sPeaks}</strong>.`
+                }</p>
+                <p><strong>Operational implication:</strong> ${sStrong
+                    ? `Ensure adequate cash reserves before <strong>${sPeaks}</strong>. Consider pre-releasing funds to avoid disbursement delays during peak months.`
+                    : `No major seasonal preparation is needed. Maintain consistent budget release schedules year-round.`
+                }</p>`;
+            break;
+
+        case 'residual':
+            const rAbs   = data.map(v => Math.abs(v));
+            const rAvg   = rAbs.reduce((a,b) => a+b,0) / rAbs.length;
+            const rMax   = Math.max(...rAbs);
+            const rMin   = Math.min(...rAbs);
+            const rMaxMo = labels[rAbs.indexOf(rMax)];
+            const rMinMo = labels[rAbs.indexOf(rMin)];
+            let rConclusion = rMax > rAvg * 2
+                ? `A significant irregularity occurred around <strong>${rMaxMo}</strong> — this likely reflects an unexpected spending event, policy change, or emergency release. Investigate what happened that month.`
+                : rAvg > 2
+                ? 'Residuals are moderately elevated, suggesting budget anomalies not fully explained by trend or seasonality. Consider auditing irregular months.'
+                : 'Residuals are small and evenly distributed — the model explains disbursement patterns well. No major anomalies detected.';
+            html = `
+                <h6>🔎 Residual Budget Analysis — ${yearText}</h6>
+                <p>The residual captures <strong>irregular, unpredictable variations</strong> in ${catText} disbursements after removing both trend and seasonality. Large residuals indicate unexpected budget events.</p>
+                <p>Average residual size: ${peso(rAvg.toFixed(2))} · Largest anomaly: <strong>${rMaxMo}</strong> (₱${rMax.toFixed(2)}) · Smallest: <strong>${rMinMo}</strong> (₱${rMin.toFixed(2)}).</p>
+                <p><strong>Interpretation:</strong> ${rConclusion}</p>
+                <p>Use this view to flag months that warrant audit or further investigation — residual spikes often correspond to emergency disbursements, policy shifts, or data irregularities worth documenting.</p>`;
+            break;
+
+        default:
+            html = '<p>No summary available for this component.</p>';
+    }
+
+    document.getElementById('bstl-summary-content').innerHTML = html;
+}
+
+// Event listeners (preserve original IDs for backward compatibility)
+document.getElementById('yearSelector').addEventListener('change', () =>
+    loadStlData(
+        document.getElementById('caseCategorySelector').value,
+        document.getElementById('chartSelector').value,
+        document.getElementById('yearSelector').value
+    )
+);
+document.getElementById('caseCategorySelector').addEventListener('change', () =>
+    loadStlData(
+        document.getElementById('caseCategorySelector').value,
+        document.getElementById('chartSelector').value,
+        document.getElementById('yearSelector').value
+    )
+);
+
+// Budget KPI cards
+async function loadBudgetSummary() {
+    try {
+        const res  = await fetch('/admin/statistics/get-statistics?type=budget');
+        const json = await res.json();
+        const s    = (json.overall && json.overall.dashboard_summary) || {};
+
+        document.getElementById('topBudgetCategory').textContent = s.highest_allocation_category || 'N/A';
+        document.getElementById('highestAllocation').textContent = s.highest_allocation_type     || 'N/A';
+        document.getElementById('totalBudget').textContent       = s.total_budget_disbursed
+            ? `₱${Number(s.total_budget_disbursed).toLocaleString()}` : '₱0';
+        document.getElementById('unusedFunds').textContent       = s.monthly_average_budget_allocation
+            ? `₱${Number(s.monthly_average_budget_allocation).toLocaleString()}` : '₱0';
+    } catch (err) {
+        console.error('Error fetching budget summary:', err);
+        ['topBudgetCategory','highestAllocation'].forEach(id => document.getElementById(id).textContent = 'N/A');
+        ['totalBudget','unusedFunds'].forEach(id => document.getElementById(id).textContent = '₱0');
+    }
+}
+
+loadBudgetSummary();
+loadStlData();
+</script>
