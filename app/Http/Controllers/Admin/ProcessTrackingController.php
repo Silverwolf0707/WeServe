@@ -28,74 +28,96 @@ use Symfony\Component\HttpFoundation\Response;
 
 class ProcessTrackingController extends Controller
 {
-public function index(Request $request)
-{
-    abort_if(Gate::denies('process_tracking_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+ public function index(Request $request)
+    {
+        abort_if(Gate::denies('process_tracking_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-    $searchTerm = $request->get('search', '');
-    
-    $query = PatientRecord::whereHas('statusLogs')
-        ->with(['latestStatusLog'])
-        ->orderByDesc('date_processed');
+        $searchTerm   = $request->get('search', '');
+        $dateFrom     = $request->get('date_from', '');
+        $activeFilters = array_values(array_filter((array) $request->get('filters', [])));
 
-    if ($searchTerm) {
-        $query->where(function ($q) use ($searchTerm) {
-            $q->where('control_number', 'like', "%{$searchTerm}%")
-              ->orWhere('patient_name', 'like', "%{$searchTerm}%")
-              ->orWhere('claimant_name', 'like', "%{$searchTerm}%")
-              ->orWhere('case_worker', 'like', "%{$searchTerm}%")
-              ->orWhere('diagnosis', 'like', "%{$searchTerm}%")
-              ->orWhere('address', 'like', "%{$searchTerm}%")
-              ->orWhere('contact_number', 'like', "%{$searchTerm}%")
-              ->orWhere('case_type', 'like', "%{$searchTerm}%");
-        });
-    }
-    
-    // Add pagination here
-    $patients = $query->paginate(100)->withQueryString();
-
-    // Calculate priority for sorting
-    $patients->getCollection()->transform(function ($patient) {
-        $currentStatus = $patient->latestStatusLog->status ?? 'Submitted';
-        
-        $priorityMap = [
-            'CSWD Office' => [
-                'Processing' => 1,
-                'Submitted[ROLLED BACK]' => 3,
-                'Submitted' => 4,
-                'Rejected' => 2,
-            ],
-            'Budget Office' => [
-                'Approved' => 1,
-                'Budget Allocated' => 2,
-                'Approved[ROLLED BACK]' => 3,
-            ],
-            'Treasury Office' => [
-                'Ready for Disbursement' => 2,
-                'Disbursed' => 3,
-                'DV Submitted' => 1,
-            ],
-            'Mayors Office' => [
-                'Submitted' => 2,
-                'Submitted[Emergency]' => 1,
-                'Submitted[ROLLED BACK]' => 3,
-                'Approved' => 4,
-            ],
-            'Accounting Office' => [
-                'Budget Allocated' => 1,
-                'Budget Allocated[ROLLED BACK]' => 2,
-                'DV Submitted' => 3,
-            ],
+        // ── Role-based priority statuses ──
+        // Records whose latest status matches these will sort to the top (priority = 0).
+        // All other records sort below (priority = 1).
+        $rolePriorityStatuses = [
+            'CSWD Office'       => ['Processing', 'Rejected', 'Processing[ROLLED BACK]'],
+            'Mayor\'s Office'   => ['Submitted', 'Submitted[Emergency]', 'Submitted[ROLLED BACK]'],
+            'Budget Office'     => ['Approved', 'Approved[ROLLED BACK]'],
+            'Accounting Office' => ['Budget Allocated', 'Budget Allocated[ROLLED BACK]'],
+            'Treasury Office'   => ['DV Submitted', 'DV Submitted[ROLLED BACK]'],
         ];
 
-        $role = Auth::user()->roles->pluck('title')->first() ?? 'CSWD Office';
-        $patient->priority = $priorityMap[$role][$currentStatus] ?? 999;
-        
-        return $patient;
-    });
+        $userRole        = Auth::user()->roles->pluck('title')->first();
+        $priorityList    = $rolePriorityStatuses[$userRole] ?? [];
 
-    return view('admin.processTracking.index', compact('patients', 'searchTerm'));
-}
+        // Build the latest-status subquery so we can sort on it
+        // patient_status_logs latest status per patient
+        $latestStatusSub = DB::table('patient_status_logs as psl')
+            ->select('psl.patient_id', 'psl.status')
+            ->whereRaw('psl.id = (
+                SELECT MAX(psl2.id)
+                FROM patient_status_logs psl2
+                WHERE psl2.patient_id = psl.patient_id
+            )');
+
+        $query = PatientRecord::whereHas('statusLogs')
+            ->with(['latestStatusLog'])
+            ->orderByDesc('date_processed');
+
+        // ── Priority sort: role-relevant statuses float to top ──
+        if (!empty($priorityList)) {
+            $placeholders = implode(',', array_fill(0, count($priorityList), '?'));
+
+            $query->orderByRaw(
+                "CASE
+                    WHEN (
+                        SELECT psl.status
+                        FROM patient_status_logs psl
+                        WHERE psl.patient_id = patient_records.id
+                        ORDER BY psl.id DESC
+                        LIMIT 1
+                    ) IN ({$placeholders}) THEN 0
+                    ELSE 1
+                END ASC",
+                $priorityList
+            )->orderByDesc('date_processed');
+        }
+
+        // Text search
+        if ($searchTerm) {
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('control_number', 'like', "%{$searchTerm}%")
+                  ->orWhere('patient_name',   'like', "%{$searchTerm}%")
+                  ->orWhere('claimant_name',  'like', "%{$searchTerm}%")
+                  ->orWhere('case_worker',    'like', "%{$searchTerm}%")
+                  ->orWhere('diagnosis',      'like', "%{$searchTerm}%")
+                  ->orWhere('address',        'like', "%{$searchTerm}%")
+                  ->orWhere('contact_number', 'like', "%{$searchTerm}%")
+                  ->orWhere('case_type',      'like', "%{$searchTerm}%");
+            });
+        }
+
+        // Date processed filter (server-side, from adv-bar)
+        if ($dateFrom) {
+            $query->whereDate('date_processed', $dateFrom);
+        }
+
+        // Multi-status filter — each selected status also matches its [ROLLED BACK] variant
+        if (!empty($activeFilters)) {
+            $query->whereHas('latestStatusLog', function ($q) use ($activeFilters) {
+                $q->where(function ($inner) use ($activeFilters) {
+                    foreach ($activeFilters as $status) {
+                        $inner->orWhere('status', $status)
+                              ->orWhere('status', $status . '[ROLLED BACK]');
+                    }
+                });
+            });
+        }
+
+        $patients = $query->paginate(100)->withQueryString();
+
+        return view('admin.processTracking.index', compact('patients', 'searchTerm', 'activeFilters', 'dateFrom'));
+    }
 
 
     public function show($id)
@@ -525,6 +547,8 @@ public function index(Request $request)
                     'status_date' => $request->status_date,
                 ]);
 
+                // Ensure $patient is a PatientRecord model instance
+                $patient = PatientRecord::findOrFail($patient->id);
                 $patient->load('latestStatusLog');
                 broadcast(new PatientStatusChanged($patient, 'dv_submitted'))->toOthers();
 
@@ -773,6 +797,9 @@ public function index(Request $request)
                     'status_date' => $statusDate,
                 ]);
 
+                // Ensure $patient is a PatientRecord model instance
+                $patient = PatientRecord::findOrFail($patient->id);
+                $patient->load(['latestStatusLog', 'budgetAllocation', 'latestStatusLog.user.roles']);
                 broadcast(new PatientStatusChanged($patient, 'budget_allocated'));
 
                 $allocated[] = $patient->control_number;
@@ -999,9 +1026,11 @@ public function index(Request $request)
         }
 
         // Update budget status to "Ready for Disbursement"
-        $patient->budgetAllocation()->update([
-            'budget_status' => 'Ready for Disbursement',
-        ]);
+        if ($patient->budgetAllocation) {
+            $patient->budgetAllocation->update([
+                'budget_status' => 'Ready for Disbursement',
+            ]);
+        }
 
         // Create status log
         $statusLog = PatientStatusLog::create([
@@ -1015,7 +1044,7 @@ public function index(Request $request)
         NotificationService::createStatusLogNotifications($statusLog);
 
         // Reload patient and broadcast
-        $patient->load(['latestStatusLog', 'budgetAllocation', 'disbursementVoucher', 'latestStatusLog.user.roles']);
+        $patient = PatientRecord::with(['latestStatusLog', 'budgetAllocation', 'disbursementVoucher', 'latestStatusLog.user.roles'])->findOrFail($patient->id);
         broadcast(new PatientStatusChanged($patient, 'ready_for_disbursement'))->toOthers();
 
         return redirect()->route('admin.process-tracking.show', $id)
@@ -1056,9 +1085,11 @@ public function index(Request $request)
             'sent_at' => now(),
         ]);
 
-        $patient->budgetAllocation()->update([
-            'budget_status' => 'Confirmation of Disbursement',
-        ]);
+        if ($patient->budgetAllocation) {
+            $patient->budgetAllocation->update([
+                'budget_status' => 'Confirmation of Disbursement',
+            ]);
+        }
 
         PatientStatusLog::create([
             'patient_id' => $patient->id,
@@ -1255,9 +1286,11 @@ public function index(Request $request)
                 }
 
                 // Update budget status to "Ready for Disbursement"
-                $patient->budgetAllocation()->update([
-                    'budget_status' => 'Ready for Disbursement',
-                ]);
+                if ($patient->budgetAllocation) {
+                    $patient->budgetAllocation->update([
+                        'budget_status' => 'Ready for Disbursement',
+                    ]);
+                }
 
                 // Create status log
                 $statusLog = PatientStatusLog::create([
@@ -1271,6 +1304,7 @@ public function index(Request $request)
                 NotificationService::createStatusLogNotifications($statusLog);
 
                 // Reload patient and broadcast
+                $patient = PatientRecord::findOrFail($patient->id);
                 $patient->load(['latestStatusLog', 'budgetAllocation', 'disbursementVoucher', 'latestStatusLog.user.roles']);
                 broadcast(new PatientStatusChanged($patient, 'ready_for_disbursement'))->toOthers();
 

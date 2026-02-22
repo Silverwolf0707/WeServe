@@ -20,25 +20,29 @@ class DocumentManagementController extends Controller
         abort_if(Gate::denies('documents_management'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         $searchTerm = $request->get('search', '');
-        
-        // Start with base query
+        $dateFrom   = $request->get('date_from', '');
+
         $query = PatientRecord::query();
-        
-        // Apply search if term exists
+
+        // Text search
         if ($searchTerm) {
             $query->where(function ($q) use ($searchTerm) {
                 $q->where('control_number', 'like', "%{$searchTerm}%")
-                  ->orWhere('patient_name', 'like', "%{$searchTerm}%")
+                  ->orWhere('patient_name',  'like', "%{$searchTerm}%")
                   ->orWhere('claimant_name', 'like', "%{$searchTerm}%")
-                  ->orWhere('diagnosis', 'like', "%{$searchTerm}%")
-                  ->orWhere('address', 'like', "%{$searchTerm}%");
+                  ->orWhere('diagnosis',     'like', "%{$searchTerm}%")
+                  ->orWhere('address',       'like', "%{$searchTerm}%");
             });
         }
-        
-        // Get paginated results with search applied
-        $patients = $query->latest()->paginate(100)->withQueryString();
 
-        return view('admin.documentManagement.index', compact('patients', 'searchTerm'));
+        // Date filter — exact match on date_processed date
+        if ($dateFrom) {
+            $query->whereDate('date_processed', $dateFrom);
+        }
+
+        $patients = $query->latest('date_processed')->paginate(100)->withQueryString();
+
+        return view('admin.documentManagement.index', compact('patients', 'searchTerm', 'dateFrom'));
     }
 
     public function store(Request $request)
@@ -54,27 +58,25 @@ class DocumentManagementController extends Controller
 
         if ($request->hasFile('files')) {
             foreach ($request->file('files') as $file) {
-                // Generate unique filename for security
                 $originalName = $file->getClientOriginalName();
                 $extension = $file->getClientOriginalExtension();
                 $filename = Str::random(40) . '_' . time() . '.' . $extension;
-                
-                // Store in private storage (not accessible via URL)
+
                 $path = $file->storeAs(
                     'documents/' . $request->patient_id,
                     $filename,
-                    'private' // This ensures it's stored in private disk
+                    'private'
                 );
 
                 Document::create([
-                    'patient_id' => $request->patient_id,
-                    'file_name' => $originalName,
-                    'file_path' => $path,
-                    'file_size' => $file->getSize(),
+                    'patient_id'     => $request->patient_id,
+                    'file_name'      => $originalName,
+                    'file_path'      => $path,
+                    'file_size'      => $file->getSize(),
                     'file_extension' => $extension,
-                    'document_type' => $request->document_type,
-                    'description' => $request->description,
-                    'uploaded_by' => auth('web')->user()->id,
+                    'document_type'  => $request->document_type,
+                    'description'    => $request->description,
+                    'uploaded_by'    => auth('web')->user()->id,
                 ]);
             }
         }
@@ -92,34 +94,26 @@ class DocumentManagementController extends Controller
         return view('admin.documentManagement.show', compact('patient'));
     }
 
-    /**
-     * Download/View a document with permission check
-     */
     public function view($id)
     {
         $document = Document::findOrFail($id);
-        
-        // Check if user has permission to view documents
+
         abort_if(Gate::denies('documents_management'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        // Check if file exists in private storage
         if (!Storage::disk('private')->exists($document->file_path)) {
             abort(404, 'File not found.');
         }
 
-        // Get file path and mime type
-        $path = Storage::disk('private')->path($document->file_path);
+        $path     = Storage::disk('private')->path($document->file_path);
         $mimeType = mime_content_type($path) ?: 'application/octet-stream';
 
-        // For images and PDFs, display inline if possible
         if (Str::startsWith($mimeType, 'image/') || $mimeType === 'application/pdf') {
             return response()->file($path, [
-                'Content-Type' => $mimeType,
-                'Content-Disposition' => 'inline; filename="' . $document->file_name . '"'
+                'Content-Type'        => $mimeType,
+                'Content-Disposition' => 'inline; filename="' . $document->file_name . '"',
             ]);
         }
 
-        // For other files, force download
         return response()->download($path, $document->file_name);
     }
 
@@ -128,8 +122,6 @@ class DocumentManagementController extends Controller
         abort_if(Gate::denies('documents_management'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
         $doc = Document::findOrFail($id);
-        
-        // Delete from private storage
         Storage::disk('private')->delete($doc->file_path);
         $doc->delete();
 
