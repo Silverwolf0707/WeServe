@@ -1399,4 +1399,195 @@ class ProcessTrackingController extends Controller
             'time' => now()->diffForHumans(),
         ]);
     }
+
+    public function pollUpdates(Request $request)
+{
+    abort_if(Gate::denies('process_tracking_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+
+    $since = $request->get('since'); // last log ID the client has seen
+
+    // ── First poll (no cursor yet): just return the current max log ID ──
+    if ($since === null) {
+        $maxId = PatientStatusLog::max('id') ?? 0;
+        return response()->json([
+            'updates'     => [],
+            'last_log_id' => $maxId,
+        ]);
+    }
+
+    // ── Subsequent polls: return all logs newer than the cursor ──
+    // Grab every log created after the cursor, newest first
+    $newLogs = PatientStatusLog::with([
+            'patient:id,control_number,date_processed,claimant_name,case_worker'
+        ])
+        ->where('id', '>', (int) $since)
+        ->orderBy('id', 'asc') // oldest-first so client applies them in order
+        ->get();
+
+    if ($newLogs->isEmpty()) {
+        return response()->json([
+            'updates'     => [],
+            'last_log_id' => (int) $since,
+        ]);
+    }
+
+    // ── Deduplicate: for each patient keep only the LATEST log ──
+    // (multiple status changes could happen between polls)
+    $latestPerPatient = $newLogs
+        ->groupBy('patient_id')
+        ->map(fn($logs) => $logs->last()) // last = highest id = most recent
+        ->filter(fn($log) => $log->patient !== null) // skip orphaned logs
+        ->values();
+
+    $updates = $latestPerPatient->map(fn($log) => [
+        'id'     => $log->patient_id,
+        'status' => $log->status,
+    ]);
+
+    return response()->json([
+        'updates'     => $updates,
+        'last_log_id' => $newLogs->last()->id,
+    ]);
 }
+
+
+public function pollPatientStatus(Request $request, $id)
+{
+    abort_if(Gate::denies('process_tracking_access'), Response::HTTP_FORBIDDEN);
+
+    try {
+        $since = $request->get('since'); // last PatientStatusLog.id the client has seen
+
+        \Log::info('pollPatientStatus called', ['patient_id' => $id, 'since' => $since]);
+
+        // ── First poll: just return current max log ID as the cursor ──────────────
+        if ($since === null) {
+            $maxId = PatientStatusLog::where('patient_id', $id)->max('id') ?? 0;
+
+            \Log::info('pollPatientStatus first poll', ['maxId' => $maxId]);
+
+            return response()->json([
+                'updates'     => [],
+                'last_log_id' => $maxId,
+            ]);
+        }
+
+        // ── Subsequent polls: return all new logs since last cursor ───────────────
+        $newLogs = PatientStatusLog::with([
+                'user:id,name',
+                'user.roles:id,title',
+                'rejectionReasons:id,patient_status_log_id,reason',
+            ])
+            ->where('patient_id', $id)
+            ->where('id', '>', (int) $since)
+            ->orderBy('id', 'asc')
+            ->get();
+
+        \Log::info('pollPatientStatus found logs', ['count' => $newLogs->count()]);
+
+        if ($newLogs->isEmpty()) {
+            return response()->json([
+                'updates'     => [],
+                'last_log_id' => (int) $since,
+            ]);
+        }
+
+        // Load supplemental patient data (budget + DV) once
+        $patient = PatientRecord::with([
+            'budgetAllocation',
+            'disbursementVoucher',
+        ])->find($id);
+
+        \Log::info('pollPatientStatus patient loaded', ['patient_exists' => !is_null($patient)]);
+
+        $updates = $newLogs->map(function ($log) use ($patient) {
+            try {
+                // Handle status_date safely
+                $statusDate = null;
+                if ($log->status_date) {
+                    try {
+                        $statusDate = \Carbon\Carbon::parse($log->status_date)->toIso8601String();
+                    } catch (\Exception $e) {
+                        \Log::warning('Failed to parse status_date', ['log_id' => $log->id, 'error' => $e->getMessage()]);
+                    }
+                }
+
+                // Handle created_at safely
+                $createdAt = null;
+                if ($log->created_at) {
+                    try {
+                        $createdAt = $log->created_at->toIso8601String();
+                    } catch (\Exception $e) {
+                        \Log::warning('Failed to parse created_at', ['log_id' => $log->id, 'error' => $e->getMessage()]);
+                    }
+                }
+
+                // Handle dv_date safely
+                $dvDate = null;
+                if ($patient && $patient->disbursementVoucher && $patient->disbursementVoucher->dv_date) {
+                    try {
+                        $dvDate = \Carbon\Carbon::parse($patient->disbursementVoucher->dv_date)->toIso8601String();
+                    } catch (\Exception $e) {
+                        \Log::warning('Failed to parse dv_date', ['patient_id' => $patient->id, 'error' => $e->getMessage()]);
+                    }
+                }
+
+                return [
+                    'log_id'            => $log->id,
+                    'status'            => $log->status ?? '',
+                    'remarks'           => $log->remarks ?? '',
+                    'status_date'       => $statusDate,
+                    'created_at'        => $createdAt,
+                    'user_name'         => $log->user->name ?? 'System',
+                    'user_role'         => $log->user?->roles?->pluck('title')->first() ?? 'System',
+                    'rejection_reasons' => $log->rejectionReasons ? $log->rejectionReasons->pluck('reason')->values()->toArray() : [],
+                    'budget_amount'     => $patient?->budgetAllocation?->amount,
+                    'dv_code'           => $patient?->disbursementVoucher?->dv_code,
+                    'dv_date'           => $dvDate,
+                ];
+            } catch (\Exception $e) {
+                \Log::error('Error mapping log entry', [
+                    'log_id' => $log->id,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                
+                // Return a safe fallback entry
+                return [
+                    'log_id'            => $log->id,
+                    'status'            => $log->status ?? 'Unknown',
+                    'remarks'           => $log->remarks ?? '',
+                    'status_date'       => null,
+                    'created_at'        => null,
+                    'user_name'         => 'System',
+                    'user_role'         => 'System',
+                    'rejection_reasons' => [],
+                    'budget_amount'     => null,
+                    'dv_code'           => null,
+                    'dv_date'           => null,
+                ];
+            }
+        });
+
+        return response()->json([
+            'updates'     => $updates,
+            'last_log_id' => $newLogs->last()->id,
+        ]);
+
+    } catch (\Exception $e) {
+        \Log::error('pollPatientStatus error', [
+            'patient_id' => $id,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return response()->json([
+            'error' => 'Internal server error',
+            'message' => $e->getMessage()
+        ], 500);
+    }
+}
+
+}
+
+

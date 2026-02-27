@@ -229,11 +229,7 @@
                                 default                  => 'fa-question-circle',
                             };
                         @endphp
-                        <span class="pt-status {{ $heroClass }}" id="hero-status-badge">
-                            <i class="fas {{ $heroIcon }}"></i>
-                            {{ $heroBase === 'Submitted[Emergency]' ? 'Emergency' : $heroBase }}
-                            @if($heroIsRb)<span class="pt-s-rollback-tag">ROLLED BACK</span>@endif
-                        </span>
+                       
                     </div>
                 </div>
             </div>
@@ -642,26 +638,15 @@
                 @endif
             </form>
 
-            @php $latestLog = $patient->statusLogs->last(); @endphp
-            @if($latestLog && str_contains(strtolower($latestLog->status), 'rolled back'))
-                <div class="return-to-rollbacker-container" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--pr-border);">
-                    <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form">
-                        @csrf
-                        <button type="submit" class="pr-btn pr-btn-warning" style="width:100%;justify-content:center;">
-                            <i class="fas fa-share"></i> Return to Rollbacker
-                        </button>
-                    </form>
-                </div>
-            @else
-                <div class="return-to-rollbacker-container" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--pr-border);">
-                    <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form" style="display:none;">
-                        @csrf
-                        <button type="submit" class="pr-btn pr-btn-warning" style="width:100%;justify-content:center;">
-                            <i class="fas fa-share"></i> Return to Rollbacker
-                        </button>
-                    </form>
-                </div>
-            @endif
+            {{-- Return to Rollbacker - Always render but hidden by default --}}
+            <div class="return-to-rollbacker-container" style="display:none; margin-top:12px; padding-top:12px; border-top:1px solid var(--pr-border);">
+                <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form" style="display:none;">
+                    @csrf
+                    <button type="submit" class="pr-btn pr-btn-warning" style="width:100%;justify-content:center;">
+                        <i class="fas fa-share"></i> Return to Rollbacker
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -685,18 +670,12 @@
                 <button type="button" class="pr-btn pr-btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">
                     <i class="fas fa-times-circle"></i> Reject
                 </button>
-                @php $latestLog = $patient->statusLogs->last(); @endphp
-                @if($latestLog && str_contains(strtolower($latestLog->status), 'rolled back'))
-                    <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form d-inline-block">
-                        @csrf
-                        <button type="submit" class="pr-btn pr-btn-warning"><i class="fas fa-share"></i> Return to Rollbacker</button>
-                    </form>
-                @else
-                    <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form" style="display:none;">
-                        @csrf
-                        <button type="submit" class="pr-btn pr-btn-warning"><i class="fas fa-share"></i> Return to Rollbacker</button>
-                    </form>
-                @endif
+                
+                {{-- Return to Rollbacker - Always render but hidden by default --}}
+                <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form" style="display:none;">
+                    @csrf
+                    <button type="submit" class="pr-btn pr-btn-warning"><i class="fas fa-share"></i> Return to Rollbacker</button>
+                </form>
             </div>
         </div>
     </div>
@@ -722,18 +701,12 @@
                 <button type="button" class="pr-btn pr-btn-danger" data-bs-toggle="modal" data-bs-target="#rollbackModal">
                     <i class="fas fa-undo-alt"></i> Rollback
                 </button>
-                @php $latestLog = $patient->statusLogs->last(); @endphp
-                @if($latestLog && str_contains(strtolower($latestLog->status), 'rolled back'))
-                    <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form d-inline-block">
-                        @csrf
-                        <button type="submit" class="pr-btn pr-btn-warning"><i class="fas fa-share"></i> Return to Rollbacker</button>
-                    </form>
-                @else
-                    <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form" style="display:none;">
-                        @csrf
-                        <button type="submit" class="pr-btn pr-btn-warning"><i class="fas fa-share"></i> Return to Rollbacker</button>
-                    </form>
-                @endif
+                
+                {{-- Return to Rollbacker - Always render but hidden by default --}}
+                <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form" style="display:none;">
+                    @csrf
+                    <button type="submit" class="pr-btn pr-btn-warning"><i class="fas fa-share"></i> Return to Rollbacker</button>
+                </form>
             </div>
         </div>
     </div>
@@ -758,18 +731,12 @@
                 <button type="button" class="pr-btn pr-btn-danger" data-bs-toggle="modal" data-bs-target="#rollbackModal">
                     <i class="fas fa-undo-alt"></i> Rollback
                 </button>
-                @php $latestLog = $patient->statusLogs->last(); @endphp
-                @if($latestLog && str_contains(strtolower($latestLog->status), 'rolled back'))
-                    <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form d-inline-block">
-                        @csrf
-                        <button type="submit" class="pr-btn pr-btn-warning"><i class="fas fa-share"></i> Return to Rollbacker</button>
-                    </form>
-                @else
-                    <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form" style="display:none;">
-                        @csrf
-                        <button type="submit" class="pr-btn pr-btn-warning"><i class="fas fa-share"></i> Return to Rollbacker</button>
-                    </form>
-                @endif
+                
+                {{-- Return to Rollbacker - Always render but hidden by default --}}
+                <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form" style="display:none;">
+                    @csrf
+                    <button type="submit" class="pr-btn pr-btn-warning"><i class="fas fa-share"></i> Return to Rollbacker</button>
+                </form>
             </div>
         </div>
     </div>
@@ -792,18 +759,12 @@
                     <button type="button" class="pr-btn pr-btn-danger" data-bs-toggle="modal" data-bs-target="#rollbackModal">
                         <i class="fas fa-undo-alt"></i> Rollback
                     </button>
-                    @php $latestLog = $patient->statusLogs->last(); @endphp
-                    @if($latestLog && str_contains(strtolower($latestLog->status), 'rolled back'))
-                        <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form d-inline-block">
-                            @csrf
-                            <button type="submit" class="pr-btn pr-btn-warning"><i class="fas fa-share"></i> Return to Rollbacker</button>
-                        </form>
-                    @else
-                        <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form" style="display:none;">
-                            @csrf
-                            <button type="submit" class="pr-btn pr-btn-warning"><i class="fas fa-share"></i> Return to Rollbacker</button>
-                        </form>
-                    @endif
+                    
+                    {{-- Return to Rollbacker - Always render but hidden by default --}}
+                    <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form" style="display:none;">
+                        @csrf
+                        <button type="submit" class="pr-btn pr-btn-warning"><i class="fas fa-share"></i> Return to Rollbacker</button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -818,20 +779,13 @@
                     <button type="button" class="pr-btn pr-btn-success" data-bs-toggle="modal" data-bs-target="#quickDisburseModal">
                         <i class="fas fa-check-circle"></i> Mark as Disbursed
                     </button>
-                    <button type="button" class="pr-btn pr-btn-danger" data-bs-toggle="modal" data-bs-target="#rollbackModal">
-                        <i class="fas fa-undo-alt"></i> Rollback
-                    </button>
-                    @if(isset($latestLog) && $latestLog && str_contains(strtolower($latestLog->status), 'rolled back'))
-                        <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form d-inline-block">
-                            @csrf
-                            <button type="submit" class="pr-btn pr-btn-warning"><i class="fas fa-share"></i> Return to Rollbacker</button>
-                        </form>
-                    @else
-                        <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form" style="display:none;">
-                            @csrf
-                            <button type="submit" class="pr-btn pr-btn-warning"><i class="fas fa-share"></i> Return to Rollbacker</button>
-                        </form>
-                    @endif
+                    
+                    
+                    {{-- Return to Rollbacker - Always render but hidden by default --}}
+                    <form action="{{ route('admin.process-tracking.returnToRollbacker', $patient->id) }}" method="POST" class="return-to-rollbacker-form" style="display:none;">
+                        @csrf
+                        <button type="submit" class="pr-btn pr-btn-warning"><i class="fas fa-share"></i> Return to Rollbacker</button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -926,7 +880,6 @@
                             <label>Other Reason <span style="font-weight:400;color:var(--pr-sub);">(optional)</span></label>
                             <input type="text" id="other_reason_input" placeholder="Specify other reason…"
                                    style="border:1.5px solid var(--pr-border-dark);border-radius:8px;padding:8px 12px;font-size:.82rem;font-family:'DM Sans',sans-serif;color:var(--pr-text);width:100%;transition:border-color .2s;">
-                            {{-- hidden input gets populated by JS before submit --}}
                             <input type="hidden" name="other_reason" id="other_reason_hidden">
                         </div>
                         <div class="pr-field">
@@ -940,7 +893,6 @@
                                       style="border:1.5px solid var(--pr-border-dark);border-radius:8px;padding:8px 12px;font-size:.82rem;font-family:'DM Sans',sans-serif;color:var(--pr-text);width:100%;resize:vertical;"></textarea>
                         </div>
 
-                        {{-- live preview of selected reasons --}}
                         <div id="reject-reasons-preview" style="display:none;margin-top:2px;padding:8px 12px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;font-size:.76rem;color:#991b1b;">
                             <strong style="font-weight:700;">Will be recorded:</strong>
                             <span id="reject-reasons-list"></span>
@@ -1187,331 +1139,527 @@
 @endsection
 
 @section('scripts')
-    <script>
-    const userPermissions = @json($userPermissions);
+<script>
+'use strict';
 
-    function initializeRealTimeUpdates() {
-        if (window.Echo && window.Echo.connector && window.Echo.connector.pusher) {
-            window.Echo.connector.pusher.connection.bind('connected', ()=>console.log('✅ Pusher connected'));
-            window.Echo.connector.pusher.connection.bind('disconnected', ()=>console.log('❌ Pusher disconnected'));
-            window.Echo.connector.pusher.connection.bind('error', err=>console.error('Pusher error:', err));
-        }
-        if (window.Echo) {
-            window.Echo.channel('process-tracking').listen('.patient.status.changed', e => {
-                updateProcessStatus(e);
-                updateProcessSummary(e);
-                updateActionButtons(e);
-                updateProcessTracker(e);
-                updateFormLockState(e);
-                updateReturnToRollbackerButton(e);
+/* ═══════════════════════════════════════════════════════════════════════════
+   CONFIG — injected from blade
+═══════════════════════════════════════════════════════════════════════════ */
+const PATIENT_ID     = {{ $patient->id }};
+const POLL_URL       = "{{ route('admin.process-tracking.pollStatus', $patient->id) }}";
+const CSRF_TOKEN     = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+const userPermissions = @json($userPermissions->values());
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GLOBAL STATE
+═══════════════════════════════════════════════════════════════════════════ */
+let _lastLogId = null;
+let _pollTimer = null;
+let _polling   = false;
+let _currentStatus = '{{ $latestStatus->status ?? "Processing" }}'; // Track current status
+const POLL_MS  = 5000;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   POLLING ENGINE
+═══════════════════════════════════════════════════════════════════════════ */
+function fetchJSON(url) {
+    return fetch(url, {
+        headers: {
+            'X-Requested-With' : 'XMLHttpRequest',
+            'X-CSRF-TOKEN'     : CSRF_TOKEN,
+            'Accept'           : 'application/json',
+        },
+        credentials: 'same-origin',
+    }).then(r => r.ok ? r.json() : Promise.reject(r.status));
+}
+
+function doPoll() {
+    if (_polling || _lastLogId === null) return;
+    _polling = true;
+    fetchJSON(`${POLL_URL}?since=${_lastLogId}`)
+        .then(data => {
+            if (data.last_log_id > _lastLogId) _lastLogId = data.last_log_id;
+            // Apply each log entry in chronological order (oldest → newest)
+            (data.updates || []).forEach(update => {
+                // Update current status with the latest log (last one in the array will be newest)
+                _currentStatus = update.status;
+                applyUpdate(update);
             });
-        }
-    }
+            // After processing all updates, ensure return-to-rollbacker button reflects current status
+            updateReturnToRollbackerFromCurrentStatus();
+        })
+        .catch(err => console.warn('[show-poll] error:', err))
+        .finally(() => { _polling = false; });
+}
 
-    function getStatusCssClass(status) {
-        const clean = status.replace('[ROLLED BACK]','').trim();
-        const map = {
-            'Processing':'pt-s-processing','Submitted':'pt-s-submitted',
-            'Submitted[Emergency]':'pt-s-emergency','Approved':'pt-s-approved',
-            'Rejected':'pt-s-rejected','Budget Allocated':'pt-s-budget',
-            'DV Submitted':'pt-s-dv','Ready for Disbursement':'pt-s-ready',
-            'Disbursed':'pt-s-disbursed'
-        };
-        return map[clean] || 'pt-s-processing';
-    }
+function startPolling() {
+    if (_pollTimer) return;
+    _pollTimer = setInterval(doPoll, POLL_MS);
+}
 
-    function getStatusIcon(status) {
-        const clean = status.replace('[ROLLED BACK]','').trim();
-        const map = {
-            'Processing':'fa-spinner','Submitted':'fa-paper-plane',
-            'Submitted[Emergency]':'fa-exclamation-triangle','Approved':'fa-thumbs-up',
-            'Rejected':'fa-ban','Budget Allocated':'fa-money-bill-wave',
-            'DV Submitted':'fa-file','Ready for Disbursement':'fa-check-circle',
-            'Disbursed':'fa-coins'
-        };
-        return map[clean] || 'fa-question-circle';
-    }
+function stopPolling() {
+    clearInterval(_pollTimer);
+    _pollTimer = null;
+}
 
-    function buildStatusBadgeHtml(status) {
-        const isRb   = status.includes('[ROLLED BACK]');
-        const base   = status.replace('[ROLLED BACK]','').trim();
-        const label  = base === 'Submitted[Emergency]' ? 'Emergency' : base;
-        const cls    = getStatusCssClass(status);
-        const icon   = getStatusIcon(status);
-        const rb     = isRb ? `<span class="pt-s-rollback-tag">ROLLED BACK</span>` : '';
-        return `<i class="fas ${icon}"></i> ${label}${rb}`;
-    }
+function initPolling() {
+    fetchJSON(POLL_URL)
+        .then(data => {
+            _lastLogId = data.last_log_id;
+            console.log(`[show-poll] initialized — cursor: ${_lastLogId}`);
+            startPolling();
+        })
+        .catch(err => {
+            console.warn('[show-poll] init failed, retrying in 10s:', err);
+            setTimeout(initPolling, 10000);
+        });
+}
 
-    function updateProcessStatus(e) {
-        const heroBadge = document.getElementById('hero-status-badge');
-        if (heroBadge) {
-            heroBadge.className = `pt-status ${getStatusCssClass(e.status)}`;
-            heroBadge.innerHTML = buildStatusBadgeHtml(e.status);
-        }
-        const cardBadge = document.getElementById('current-status-badge');
-        if (cardBadge) {
-            cardBadge.className = `pt-status ${getStatusCssClass(e.status)}`;
-            cardBadge.innerHTML = buildStatusBadgeHtml(e.status);
-        }
-        const remarksRow = document.getElementById('remarks-row');
-        const currentRemarks = document.getElementById('current-remarks');
-        if (remarksRow && currentRemarks) {
-            if (e.remarks && e.remarks.trim()) { currentRemarks.textContent = e.remarks; remarksRow.style.display = ''; }
-            else { remarksRow.style.display = 'none'; }
-        }
-        const budgetRow = document.getElementById('budget-allocation-row');
-        const budgetAmt = document.getElementById('budget-amount-display');
-        if (budgetRow && budgetAmt) {
-            if (e.budget_amount != null) {
-                budgetAmt.textContent = '₱' + parseFloat(e.budget_amount).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
-                budgetRow.style.display = '';
-            } else { budgetRow.style.display = 'none'; }
-        }
-        const dvInfoRow = document.getElementById('dv-info-row');
-        const dvDateRow = document.getElementById('dv-date-row');
-        const dvCode    = document.getElementById('dv-code-display');
-        const dvDate    = document.getElementById('dv-date-display');
-        if (dvInfoRow && dvCode) {
-            if (e.dv_code) { dvCode.textContent = e.dv_code; dvInfoRow.style.display = ''; }
-            else { dvInfoRow.style.display = 'none'; }
-        }
-        if (dvDateRow && dvDate) {
-            if (e.dv_date) { dvDate.textContent = new Date(e.dv_date).toLocaleString('en-US',{year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true}); dvDateRow.style.display = ''; }
-            else { dvDateRow.style.display = 'none'; }
-        }
-        const updatedAt = document.getElementById('status-updated-at');
-        if (updatedAt) updatedAt.textContent = new Date().toLocaleString('en-US',{year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true});
-    }
+// Pause when tab is hidden, immediate poll + resume when visible
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { stopPolling(); }
+    else { doPoll(); startPolling(); }
+});
 
-    function updateProcessSummary(e) {
-        const list = document.getElementById('processSummaryList');
-        if (!list) return;
-        const li = document.createElement('div');
-        li.className = `pr-log-item ${getLogClass(e.status)}`;
-        const isRb = e.status.includes('[ROLLED BACK]');
-        const icon = isRb ? 'fa-undo' : (e.action==='rejected'?'fa-times-circle':e.status==='Approved'?'fa-check-circle':e.status==='Disbursed'?'fa-coins':'fa-circle');
-        const rb   = isRb ? `<span class="pt-s-rollback-tag">ROLLED BACK</span>` : '';
-        const fromTo = formatProcessSummaryText(e);
-        let content = `
-            <div class="pr-log-item-header">
-                <div style="display:flex;align-items:center;gap:7px;">
-                    <i class="fas ${icon}" style="font-size:.72rem;opacity:.7;"></i>
-                    <strong style="font-size:.82rem;">${e.status}</strong>${rb}
-                </div>
-                <span class="pr-log-date">${formatDateTime(e.status_date)}</span>
-            </div>
-            <div class="pr-log-flow">${e.user_name || 'System'}${fromTo ? ' &nbsp;·&nbsp; ' + fromTo : ''}</div>`;
-        if (e.action === 'rejected' && e.rejection_reasons?.length) {
-            content += `<div style="margin-top:5px;font-size:.76rem;color:var(--pr-sub);"><em style="font-style:normal;font-weight:600;">Rejection Reasons:</em><ul style="margin:3px 0 0 16px;">`;
-            e.rejection_reasons.forEach(r => content += `<li>${r}</li>`);
-            content += `</ul></div>`;
-        }
-        if (e.status === 'Budget Allocated' && e.budget_amount) {
-            content += `<div class="pr-log-remarks"><em>Budget:</em> ₱${parseFloat(e.budget_amount).toLocaleString(undefined,{minimumFractionDigits:2})}</div>`;
-        }
-        if (e.remarks) content += `<div class="pr-log-remarks"><em>Remarks:</em> ${e.remarks}</div>`;
-        li.innerHTML = content;
-        list.insertBefore(li, list.firstChild);
-    }
 
-    function getLogClass(status) {
-        if (status.includes('[ROLLED BACK]')) return 'pr-log-rollback';
-        const clean = status.replace(/\[.*?\]/g,'').trim();
-        const map = {
-            'Processing':'pr-log-processing','Submitted':'pr-log-submitted',
-            'Submitted[Emergency]':'pr-log-emergency','Approved':'pr-log-approved',
-            'Rejected':'pr-log-rejected','Budget Allocated':'pr-log-budget',
-            'DV Submitted':'pr-log-dv','Ready for Disbursement':'pr-log-ready',
-            'Disbursed':'pr-log-disbursed'
-        };
-        return map[clean] || 'pr-log-processing';
-    }
+function applyUpdate(e) {
+    updateStatusBadges(e);     
+    updateInfoCard(e);          
+    updateStepper(e);          
+    appendLogEntry(e);           
+    updateActionSections(e);    
+    updateFormLockState(e);      
+    updateRollbackDropdown(e); 
 
-    function formatDateTime(dateString) {
-        return new Date(dateString).toLocaleString('en-US',{year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true});
-    }
+}
 
-    function formatProcessSummaryText(e) {
-        const processSteps = {
-            'Processing':null,'Draft':null,'Rejected':'CSWD Office',
-            'Submitted':"Mayor's Office",'Submitted[Emergency]':"Mayor's Office",
-            'Approved':'Budget Office','Budget Allocated':'Accounting Office',
-            'DV Submitted':'Treasury Office','Disbursed':null,'Ready for Disbursement':null
-        };
-        if (e.status === 'Processing' || e.status === 'Draft') return '';
-        let text = `From: <strong>${e.user_role || e.user_name || 'System'}</strong>`;
-        const toOffice = processSteps[e.status];
-        if (toOffice) text += ` &nbsp;→&nbsp; <strong>${toOffice}</strong>`;
-        return text;
-    }
+function updateReturnToRollbackerFromCurrentStatus() {
+    const isRolledBack = _currentStatus.includes('[ROLLED BACK]');
+    
+    // Show/hide the forms
+    document.querySelectorAll('.return-to-rollbacker-form').forEach(f => {
+        f.style.display = isRolledBack ? 'inline-block' : 'none';
+    });
+    
+    document.querySelectorAll('.return-to-rollbacker-container').forEach(c => {
+        c.style.display = isRolledBack ? 'block' : 'none';
+    });
+}
 
-    function updateActionButtons(e) {
-        const base = e.status.replace('[ROLLED BACK]','').trim();
-        hideAllActionSections();
-        let section = null;
-        switch(base) {
-            case 'Processing[ROLLED BACK]': case 'Rejected': case 'Processing': case 'Draft':
-                if (userPermissions.includes('submit_patient_application')) section = 'submit-patient-application'; break;
-            case 'Submitted': case 'Submitted[Emergency]': case 'Submitted[ROLLED BACK]':
-                if (userPermissions.includes('approve_patient')) section = 'approve-patient'; break;
-            case 'Approved': case 'Approved[ROLLED BACK]':
-                if (userPermissions.includes('budget_allocate')) section = 'budget-allocate'; break;
-            case 'Budget Allocated': case 'Budget Allocated[ROLLED BACK]':
-                if (userPermissions.includes('accounting_dv_input')) section = 'accounting-dv-input'; break;
-            case 'DV Submitted': case 'DV Submitted[ROLLED BACK]': case 'Ready for Disbursement':
-                if (userPermissions.includes('treasury_disburse')) {
-                    section = 'treasury-disburse';
-                    document.getElementById('treasury-disburse').style.display = 'block';
-                    updateTreasurySectionContent(e);
-                } break;
-        }
-        if (section && section !== 'treasury-disburse') showActionSection(section);
-        updateRollbackDropdown(e);
-        updateReturnToRollbackerButton(e);
-    }
 
-    function updateTreasurySectionContent(e) {
-        const base = e.status.replace('[ROLLED BACK]','').trim();
-        const ts = document.getElementById('treasury-disburse');
-        if (!ts) return;
-        const dvContent    = ts.querySelector('.dv-submitted-content');
-        const readyContent = ts.querySelector('.ready-for-disbursement-content');
-        if (dvContent)    dvContent.style.display    = (base === 'DV Submitted') ? 'block' : 'none';
-        if (readyContent) readyContent.style.display = (base === 'Ready for Disbursement') ? 'block' : 'none';
-    }
+function getBase(status) {
+    return status.replace('[ROLLED BACK]', '').trim();
+}
 
-    function hideAllActionSections() {
-        ['submit-patient-application','approve-patient','budget-allocate','accounting-dv-input','treasury-disburse']
-            .forEach(id => { const el = document.getElementById(id); if(el) el.style.display='none'; });
-    }
+function getStatusCssClass(status) {
+    const b = getBase(status);
+    return {
+        'Processing'             : 'pt-s-processing',
+        'Submitted'              : 'pt-s-submitted',
+        'Submitted[Emergency]'   : 'pt-s-emergency',
+        'Approved'               : 'pt-s-approved',
+        'Rejected'               : 'pt-s-rejected',
+        'Budget Allocated'       : 'pt-s-budget',
+        'DV Submitted'           : 'pt-s-dv',
+        'Ready for Disbursement' : 'pt-s-ready',
+        'Disbursed'              : 'pt-s-disbursed',
+    }[b] || 'pt-s-processing';
+}
 
-    function showActionSection(id) {
+function getStatusIcon(status) {
+    const b = getBase(status);
+    return {
+        'Processing'             : 'fa-spinner',
+        'Submitted'              : 'fa-paper-plane',
+        'Submitted[Emergency]'   : 'fa-exclamation-triangle',
+        'Approved'               : 'fa-thumbs-up',
+        'Rejected'               : 'fa-ban',
+        'Budget Allocated'       : 'fa-money-bill-wave',
+        'DV Submitted'           : 'fa-file',
+        'Ready for Disbursement' : 'fa-check-circle',
+        'Disbursed'              : 'fa-coins',
+    }[b] || 'fa-question-circle';
+}
+
+function buildBadgeInner(status) {
+    const isRb  = status.includes('[ROLLED BACK]');
+    const b     = getBase(status);
+    const label = b === 'Submitted[Emergency]' ? 'Emergency' : b;
+    const rb    = isRb ? `<span class="pt-s-rollback-tag">ROLLED BACK</span>` : '';
+    return `<i class="fas ${getStatusIcon(status)}"></i> ${label}${rb}`;
+}
+
+function formatDateTime(raw) {
+    if (!raw) return '—';
+    return new Date(raw).toLocaleString('en-US', {
+        year:'numeric', month:'short', day:'numeric',
+        hour:'numeric', minute:'2-digit', hour12:true,
+    });
+}
+
+function updateStatusBadges(e) {
+    ['current-status-badge'].forEach(id => {
         const el = document.getElementById(id);
-        if(el) el.style.display='block';
+        if (!el) return;
+        el.className = `pt-status ${getStatusCssClass(e.status)}`;
+        el.innerHTML = buildBadgeInner(e.status);
+    });
+}
+
+function updateInfoCard(e) {
+    // Remarks
+    const remarksRow = document.getElementById('remarks-row');
+    const remarksEl  = document.getElementById('current-remarks');
+    if (remarksRow && remarksEl) {
+        if (e.remarks && e.remarks.trim()) {
+            remarksEl.textContent    = e.remarks;
+            remarksRow.style.display = '';
+        } else {
+            remarksRow.style.display = 'none';
+        }
     }
 
-    function updateProcessTracker(e) {
-        const steps = ['Submitted','Approved','Budget Allocated','DV Submitted','Ready for Disbursement','Disbursed'];
-        const base  = e.status.replace('[ROLLED BACK]','').trim();
-        const idx   = steps.indexOf(base);
-        document.querySelectorAll('.pr-stepper-step').forEach((step, i) => {
-            step.classList.remove('completed','current','next');
-            if (i <= idx) step.classList.add('completed');
-            if (i === idx) step.classList.add('current');
-            if (i === idx + 1) step.classList.add('next');
-            const circle = step.querySelector('.pr-stepper-circle');
-            if (circle) circle.innerHTML = (i <= idx) ? '<i class="fas fa-check" style="font-size:.7rem;"></i>' : (i+1).toString();
+    // Budget amount
+    const budgetRow = document.getElementById('budget-allocation-row');
+    const budgetAmt = document.getElementById('budget-amount-display');
+    if (budgetRow && budgetAmt) {
+        if (e.budget_amount != null) {
+            budgetAmt.textContent   = '₱' + parseFloat(e.budget_amount).toLocaleString('en-PH', { minimumFractionDigits:2, maximumFractionDigits:2 });
+            budgetRow.style.display = '';
+        } else {
+            budgetRow.style.display = 'none';
+        }
+    }
+
+    // DV code
+    const dvInfoRow = document.getElementById('dv-info-row');
+    const dvCodeEl  = document.getElementById('dv-code-display');
+    if (dvInfoRow && dvCodeEl) {
+        if (e.dv_code) {
+            dvCodeEl.textContent     = e.dv_code;
+            dvInfoRow.style.display  = '';
+        } else {
+            dvInfoRow.style.display  = 'none';
+        }
+    }
+
+    // DV date
+    const dvDateRow = document.getElementById('dv-date-row');
+    const dvDateEl  = document.getElementById('dv-date-display');
+    if (dvDateRow && dvDateEl) {
+        if (e.dv_date) {
+            dvDateEl.textContent    = formatDateTime(e.dv_date);
+            dvDateRow.style.display = '';
+        } else {
+            dvDateRow.style.display = 'none';
+        }
+    }
+
+    // Last updated timestamp
+    const updatedAt = document.getElementById('status-updated-at');
+    if (updatedAt) updatedAt.textContent = formatDateTime(e.status_date || e.created_at);
+}
+
+function updateStepper(e) {
+    const steps = ['Submitted','Approved','Budget Allocated','DV Submitted','Ready for Disbursement','Disbursed'];
+    const b     = getBase(e.status);
+    const idx   = steps.indexOf(b);
+
+    document.querySelectorAll('.pr-stepper-step').forEach((step, i) => {
+        step.classList.remove('completed', 'current', 'next');
+        if (i <= idx)      step.classList.add('completed');
+        if (i === idx)     step.classList.add('current');
+        if (i === idx + 1) step.classList.add('next');
+
+        const circle = step.querySelector('.pr-stepper-circle');
+        if (!circle) return;
+        circle.innerHTML = (i <= idx)
+            ? `<i class="fas fa-check" style="font-size:.7rem;"></i>`
+            : String(i + 1);
+    });
+}
+
+const PROCESS_TO_OFFICES = {
+    'Processing'             : null,
+    'Draft'                  : null,
+    'Rejected'               : 'CSWD Office',
+    'Submitted'              : "Mayor's Office",
+    'Submitted[Emergency]'   : "Mayor's Office",
+    'Approved'               : 'Budget Office',
+    'Budget Allocated'       : 'Accounting Office',
+    'DV Submitted'           : 'Treasury Office',
+    'Ready for Disbursement' : null,
+    'Disbursed'              : null,
+};
+
+function getLogClass(status) {
+    if (status.includes('[ROLLED BACK]')) return 'pr-log-rollback';
+    const b = getBase(status).replace(/\[.*?\]/g, '').trim();
+    return {
+        'Processing'             : 'pr-log-processing',
+        'Submitted'              : 'pr-log-submitted',
+        'Submitted[Emergency]'   : 'pr-log-emergency',
+        'Approved'               : 'pr-log-approved',
+        'Rejected'               : 'pr-log-rejected',
+        'Budget Allocated'       : 'pr-log-budget',
+        'DV Submitted'           : 'pr-log-dv',
+        'Ready for Disbursement' : 'pr-log-ready',
+        'Disbursed'              : 'pr-log-disbursed',
+    }[b] || 'pr-log-processing';
+}
+
+function buildLogFlowHtml(e) {
+    if (!e.user_name || e.user_name === 'System') return '';
+    const b        = getBase(e.status);
+    const toOffice = PROCESS_TO_OFFICES[b] ?? null;
+    let html = `${e.user_name}`;
+    if (e.user_role) html += ` &nbsp;·&nbsp; From: <strong>${e.user_role}</strong>`;
+    if (toOffice)    html += ` &nbsp;→&nbsp; <strong>${toOffice}</strong>`;
+    return html;
+}
+
+function buildLogRejectionHtml(e) {
+    if (!getBase(e.status).includes('Rejected')) return '';
+    const reasons = e.rejection_reasons ?? [];
+    if (!reasons.length) return '';
+    return `<div style="margin-top:5px;font-size:.76rem;color:var(--pr-sub);">
+        <em style="font-style:normal;font-weight:600;">Rejection Reasons:</em>
+        <ul style="margin:3px 0 0 16px;padding:0;">
+            ${reasons.map(r => `<li>${r}</li>`).join('')}
+        </ul>
+    </div>`;
+}
+
+function appendLogEntry(e) {
+    const list = document.getElementById('processSummaryList');
+    if (!list) return;
+
+    const isRb   = e.status.includes('[ROLLED BACK]');
+    const b      = getBase(e.status);
+    const rb     = isRb ? `<span class="pt-s-rollback-tag">ROLLED BACK</span>` : '';
+    const icon   = isRb            ? 'fa-undo'
+        : b === 'Rejected'         ? 'fa-times-circle'
+        : b === 'Approved'         ? 'fa-check-circle'
+        : b === 'Disbursed'        ? 'fa-coins'
+        : b === 'Submitted[Emergency]' ? 'fa-exclamation-triangle'
+        : 'fa-circle';
+
+    const flowHtml      = buildLogFlowHtml(e);
+    const rejectionHtml = buildLogRejectionHtml(e);
+
+    const budgetHtml = (b === 'Budget Allocated' && e.budget_amount)
+        ? `<div class="pr-log-remarks"><em>Budget:</em> ₱${parseFloat(e.budget_amount).toLocaleString('en-PH', { minimumFractionDigits:2 })}</div>`
+        : '';
+
+    const remarksHtml = (e.remarks && e.remarks.trim())
+        ? `<div class="pr-log-remarks"><em>Remarks:</em> ${e.remarks}</div>`
+        : '';
+
+    const div = document.createElement('div');
+    div.className = `pr-log-item ${getLogClass(e.status)}`;
+    div.innerHTML = `
+        <div class="pr-log-item-header">
+            <div style="display:flex;align-items:center;gap:7px;">
+                <i class="fas ${icon}" style="font-size:.72rem;opacity:.7;"></i>
+                <strong style="font-size:.82rem;">${e.status.replace('[ROLLED BACK]','').trim()}</strong>${rb}
+            </div>
+            <span class="pr-log-date">${formatDateTime(e.status_date)}</span>
+        </div>
+        ${flowHtml      ? `<div class="pr-log-flow">${flowHtml}</div>`      : ''}
+        ${rejectionHtml}
+        ${budgetHtml}
+        ${remarksHtml}
+    `;
+
+    // Append to bottom for chronological order (oldest at top, newest at bottom)
+    list.appendChild(div);
+
+    // Update entry count badge
+    const badge = list.closest('.pr-card')?.querySelector('.pr-badge');
+    if (badge) {
+        const n = parseInt(badge.textContent) || 0;
+        badge.textContent = `${n + 1} entries`;
+    }
+}
+
+const ALL_ACTION_IDS = [
+    'submit-patient-application',
+    'approve-patient',
+    'budget-allocate',
+    'accounting-dv-input',
+    'treasury-disburse',
+];
+
+// Maps base status → { permission needed, section id }
+const STATUS_TO_SECTION = {
+    'Processing'             : { perm: 'submit_patient_application', id: 'submit-patient-application' },
+    'Draft'                  : { perm: 'submit_patient_application', id: 'submit-patient-application' },
+    'Rejected'               : { perm: 'submit_patient_application', id: 'submit-patient-application' },
+    'Submitted'              : { perm: 'approve_patient',            id: 'approve-patient'            },
+    'Submitted[Emergency]'   : { perm: 'approve_patient',            id: 'approve-patient'            },
+    'Approved'               : { perm: 'budget_allocate',            id: 'budget-allocate'            },
+    'Budget Allocated'       : { perm: 'accounting_dv_input',        id: 'accounting-dv-input'        },
+    'DV Submitted'           : { perm: 'treasury_disburse',          id: 'treasury-disburse'          },
+    'Ready for Disbursement' : { perm: 'treasury_disburse',          id: 'treasury-disburse'          },
+};
+
+function updateActionSections(e) {
+    const b   = getBase(e.status);
+    const map = STATUS_TO_SECTION[b];
+
+    // Hide everything first
+    ALL_ACTION_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+
+    if (!map || !userPermissions.includes(map.perm)) return;
+
+    const el = document.getElementById(map.id);
+    if (!el) return;
+    el.style.display = 'block';
+
+    // Treasury card has two sub-views: DV Submitted vs Ready for Disbursement
+    if (map.id === 'treasury-disburse') {
+        const dvContent    = el.querySelector('.dv-submitted-content');
+        const readyContent = el.querySelector('.ready-for-disbursement-content');
+        if (dvContent)    dvContent.style.display    = (b === 'DV Submitted')             ? '' : 'none';
+        if (readyContent) readyContent.style.display = (b === 'Ready for Disbursement')   ? '' : 'none';
+    }
+}
+
+const LOCKED_STATUSES = new Set([
+    'Submitted','Submitted[Emergency]','Approved',
+    'Budget Allocated','DV Submitted','Ready for Disbursement','Disbursed',
+]);
+
+function updateFormLockState(e) {
+    const lock = LOCKED_STATUSES.has(getBase(e.status));
+    const dateEl = document.getElementById('submitted_date');
+    if (dateEl) dateEl.disabled = lock;
+    document.querySelectorAll('#submit-patient-application .submit-btn')
+        .forEach(b => b.disabled = lock);
+}
+
+const ROLLBACK_FLOW = {
+    'Processing'      : 'CSWD Office',
+    'Submitted'       : "Mayor's Office",
+    'Approved'        : 'Budget Office',
+    'Budget Allocated': 'Accounting Office',
+    'DV Submitted'    : 'Treasury Office',
+};
+const ROLLBACK_STEPS = Object.keys(ROLLBACK_FLOW);
+
+function updateRollbackDropdown(e) {
+    const sel = document.getElementById('rollback_to');
+    if (!sel) return;
+
+    const b   = getBase(e.status);
+    const pos = ROLLBACK_STEPS.indexOf(b);
+
+    // Clear existing options except placeholder
+    while (sel.options.length > 1) sel.remove(1);
+
+    if (pos > 0) {
+        for (let i = pos - 1; i >= 0; i--) {
+            const opt       = document.createElement('option');
+            opt.value       = ROLLBACK_STEPS[i];
+            opt.textContent = ROLLBACK_FLOW[ROLLBACK_STEPS[i]];
+            sel.appendChild(opt);
+        }
+    }
+
+    // Enable/disable confirm button
+    const confirmBtn = document.querySelector('#rollbackModal button.pr-btn-warning');
+    if (confirmBtn) confirmBtn.disabled = sel.options.length <= 1;
+}
+
+function submitApplication(url, btn, type) {
+    const form = btn.closest('form');
+    form.action = url;
+    document.querySelectorAll('.submit-btn').forEach(b => {
+        b.disabled  = true;
+        b.innerHTML = (b === btn)
+            ? '<i class="fas fa-spinner fa-spin"></i> Processing...'
+            : '<i class="fas fa-clock"></i> Please wait...';
+    });
+    form.submit();
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    /* ── Toast ── */
+    const toastEl = document.getElementById('liveToast');
+    const timerEl = document.getElementById('toast-timer');
+    if (toastEl) {
+        new bootstrap.Toast(toastEl, { autohide:true, delay:5000 }).show();
+        let rem = 5;
+        const iv = setInterval(() => {
+            rem--;
+            if (timerEl) timerEl.textContent = `Closing in ${rem}s`;
+            if (rem <= 0) clearInterval(iv);
+        }, 1000);
+    }
+
+    /* ── Reject modal: live reason preview ── */
+    const rejectCbs   = document.querySelectorAll('.reject-reason-cb');
+    const otherInput  = document.getElementById('other_reason_input');
+    const otherHidden = document.getElementById('other_reason_hidden');
+    const preview     = document.getElementById('reject-reasons-preview');
+    const previewList = document.getElementById('reject-reasons-list');
+    const confirmBtn  = document.getElementById('confirmRejectBtn');
+
+    function refreshRejectPreview() {
+        const checked = [...rejectCbs].filter(cb => cb.checked).map(cb => cb.value);
+        const other   = otherInput?.value.trim() ?? '';
+        if (otherHidden) otherHidden.value = other;
+        const all = other ? [...checked, other] : checked;
+        if (preview && previewList) {
+            previewList.textContent = all.length ? ' ' + all.join(', ') : '';
+            preview.style.display   = all.length ? 'block' : 'none';
+        }
+    }
+
+    rejectCbs.forEach(cb  => cb.addEventListener('change', refreshRejectPreview));
+    if (otherInput) otherInput.addEventListener('input', refreshRejectPreview);
+
+    document.getElementById('rejectModal')?.addEventListener('hidden.bs.modal', () => {
+        rejectCbs.forEach(cb => cb.checked = false);
+        if (otherInput)  otherInput.value  = '';
+        if (otherHidden) otherHidden.value = '';
+        if (preview)     preview.style.display = 'none';
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = '<i class="fas fa-times-circle"></i> Confirm Reject';
+        }
+    });
+
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', function () {
+            if (otherHidden && otherInput) otherHidden.value = otherInput.value.trim();
+            const form = document.getElementById('rejectForm');
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            form.submit();
         });
     }
 
-    function updateFormLockState(e) {
-        const lockedStatuses = ['Submitted','Submitted[Emergency]','Approved','Budget Allocated','DV Submitted','Disbursed','Ready for Disbursement'];
-        const shouldLock = lockedStatuses.includes(e.status.replace('[ROLLED BACK]','').trim());
-        const el = document.getElementById('submitted_date');
-        if (el) el.disabled = shouldLock;
-        document.querySelectorAll('#submit-patient-application button[type="button"]').forEach(b => b.disabled = shouldLock);
-    }
-
-    function updateReturnToRollbackerButton(e) {
-        const isRolledBack = e.status && e.status.includes('[ROLLED BACK]');
-        document.querySelectorAll('.return-to-rollbacker-form').forEach(f => f.style.display = isRolledBack ? 'inline-block' : 'none');
-        document.querySelectorAll('.return-to-rollbacker-container').forEach(c => c.style.display = isRolledBack ? 'block' : 'none');
-    }
-
-    function submitApplication(url, btn, type) {
-        const form = btn.closest('form');
-        form.action = url;
-        document.querySelectorAll('.submit-btn').forEach(b => {
-            b.disabled = true;
-            b.innerHTML = b === btn ? '<i class="fas fa-spinner fa-spin"></i> Processing...' : '<i class="fas fa-clock"></i> Please wait...';
-        });
-        form.submit();
-    }
-
-    function updateRollbackDropdown(e) {
-        const base = e.status.replace('[ROLLED BACK]','').trim();
-        const rollbackSelect = document.getElementById('rollback_to');
-        if (!rollbackSelect) return;
-        const processFlow = {'Processing':'CSWD Office','Submitted':"Mayor's Office",'Approved':'Budget Office','Budget Allocated':'Accounting Office','DV Submitted':'Treasury Office'};
-        const steps = Object.keys(processFlow);
-        const pos = steps.indexOf(base);
-        let rollbacks = [];
-        if (pos > 0) for (let i=pos-1;i>=0;i--) rollbacks.push({status:steps[i],office:processFlow[steps[i]]});
-        while (rollbackSelect.options.length > 1) rollbackSelect.remove(1);
-        rollbacks.forEach(r => { const o = document.createElement('option'); o.value=r.status; o.textContent=r.office; rollbackSelect.appendChild(o); });
-        const btn = document.querySelector('#rollbackModal button.pr-btn-warning');
-        if (btn) btn.disabled = rollbacks.length === 0;
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const statusBadge = document.getElementById('current-status-badge');
-        if (statusBadge) updateReturnToRollbackerButton({ status: statusBadge.textContent.replace('ROLLED BACK','[ROLLED BACK]').trim() });
-        initializeRealTimeUpdates();
-
-        const toastEl = document.getElementById('liveToast');
-        const timerEl = document.getElementById('toast-timer');
-        if (toastEl) {
-            new bootstrap.Toast(toastEl, { autohide:true, delay:5000 }).show();
-            let rem = 5;
-            const iv = setInterval(()=>{ rem--; if(timerEl) timerEl.textContent=`Closing in ${rem}s`; if(rem<=0)clearInterval(iv); }, 1000);
-        }
-
-        // ── Reject modal ──
-        const rejectCbs     = document.querySelectorAll('.reject-reason-cb');
-        const otherInput    = document.getElementById('other_reason_input');
-        const otherHidden   = document.getElementById('other_reason_hidden');
-        const preview       = document.getElementById('reject-reasons-preview');
-        const previewList   = document.getElementById('reject-reasons-list');
-        const confirmReject = document.getElementById('confirmRejectBtn');
-
-        function updateRejectPreview() {
-            const checked = [...rejectCbs].filter(cb => cb.checked).map(cb => cb.value);
-            const other   = otherInput ? otherInput.value.trim() : '';
-            if (otherHidden) otherHidden.value = other;
-            const all = other ? [...checked, other] : checked;
-            if (preview && previewList) {
-                if (all.length) {
-                    previewList.textContent = ' ' + all.join(', ');
-                    preview.style.display = 'block';
-                } else {
-                    preview.style.display = 'none';
-                }
-            }
-        }
-
-        rejectCbs.forEach(cb => cb.addEventListener('change', updateRejectPreview));
-        if (otherInput) otherInput.addEventListener('input', updateRejectPreview);
-
-        document.getElementById('rejectModal')?.addEventListener('hidden.bs.modal', function () {
-            rejectCbs.forEach(cb => cb.checked = false);
-            if (otherInput)  otherInput.value  = '';
-            if (otherHidden) otherHidden.value = '';
-            if (preview)     preview.style.display = 'none';
-            if (confirmReject) {
-                confirmReject.disabled = false;
-                confirmReject.innerHTML = '<i class="fas fa-times-circle"></i> Confirm Reject';
-            }
-        });
-
-        if (confirmReject) {
-            confirmReject.addEventListener('click', function () {
-                if (otherHidden && otherInput) otherHidden.value = otherInput.value.trim();
-                const form = document.getElementById('rejectForm');
-                this.disabled = true;
-                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-                form.submit();
-            });
-        }
-
-        // ── Amount chips ──
-        const amountInput = document.getElementById('amount');
-        document.querySelectorAll('.pr-amount-chip').forEach(btn => {
-            btn.addEventListener('click', function() {
-                if (amountInput) amountInput.value = this.dataset.value;
-                document.querySelectorAll('.pr-amount-chip').forEach(b => b.classList.remove('selected'));
-                this.classList.add('selected');
-            });
+    /* ── Amount chips ── */
+    const amountInput = document.getElementById('amount');
+    document.querySelectorAll('.pr-amount-chip').forEach(btn => {
+        btn.addEventListener('click', function () {
+            if (amountInput) amountInput.value = this.dataset.value;
+            document.querySelectorAll('.pr-amount-chip').forEach(b => b.classList.remove('selected'));
+            this.classList.add('selected');
         });
     });
-    </script>
+
+    /* ── Set initial current status and update return-to-rollbacker button ── */
+    _currentStatus = '{{ $latestStatus->status ?? "Processing" }}';
+    updateReturnToRollbackerFromCurrentStatus();
+
+    /* ── Start polling ── */
+    initPolling();
+});
+</script>
 @endsection

@@ -137,6 +137,14 @@
         .pr-export-menu .dropdown-item { border-radius:7px; font-size:.8rem; font-weight:500; padding:8px 12px; display:flex; align-items:center; gap:8px; color:var(--pr-text); transition:background .15s; }
         .pr-export-menu .dropdown-item:hover { background:var(--pr-muted); color:var(--pr-forest); }
         @media (max-width:768px) { .pr-hero-inner { flex-direction:column; align-items:flex-start; } .pr-hero { padding:16px 18px; } .pr-dt-toolbar { flex-direction:column; align-items:flex-start; } .pr-dt-toolbar-right { width:100%; } .pr-toolbar-search-input { width:100%; } }
+        @keyframes pr-rt-flash-kf {
+    0%   { background: rgba(116, 255, 112, .35) !important; }
+    60%  { background: rgba(116, 255, 112, .12) !important; }
+    100% { background: transparent !important; }
+}
+.pr-rt-flash {
+    animation: pr-rt-flash-kf 2.5s ease-out forwards !important;
+}
     </style>
 
     <div class="pr-page">
@@ -646,7 +654,7 @@
     <script>
     'use strict';
 
-    /* ── Auto-activate My Queue on first visit (no filters[], no _visited) ── */
+    /* ── Auto-activate My Queue on first visit ── */
     (function () {
         const url        = new URL(window.location.href);
         const hasFilters = url.searchParams.has('filters[]') || url.searchParams.getAll('filters%5B%5D').length > 0;
@@ -672,94 +680,199 @@
         }
     })();
 
-    /* ── Pusher ── */
-    function initializeRealTimeUpdates() {
-        if (window.Echo && window.Echo.connector && window.Echo.connector.pusher) {
-            window.Echo.connector.pusher.connection.bind('connected', () => console.log('✅ Pusher connected'));
-            window.Echo.connector.pusher.connection.bind('disconnected', () => console.log('❌ Pusher disconnected'));
-            window.Echo.connector.pusher.connection.bind('error', err => console.error('Pusher error:', err));
-        }
-        if (window.Echo) {
-            window.Echo.channel('process-tracking').listen('.patient.status.changed', e => updatePatientTable(e));
-        }
-    }
-
-    function updatePatientTable(e) {
-        const table = jQuery('.datatable-ProcessTracking').DataTable();
-        const badge = generateBadge(e.status);
-        const dept  = getDepartmentBadge(e.status);
-        const row   = jQuery(`tr[data-entry-id="${e.id}"]`);
-        if (e.action === 'submitted' && row.length === 0) {
-            const newRow = table.row.add(['', e.control_number, formatDate(e.date_processed), e.claimant_name, e.case_worker, badge, dept, generateActionLink(e.id)]).draw(false).node();
-            jQuery(newRow).attr('data-entry-id', e.id).addClass('table-success');
-            setTimeout(() => jQuery(newRow).removeClass('table-success'), 3000);
-        } else if (row.length > 0) {
-            row.find('td').eq(5).html(badge);
-            row.find('td').eq(6).html(dept);
-        }
-    }
-
-    function getDepartmentLabel(status) {
-        const clean = status.replace('[ROLLED BACK]','').trim();
-        const map = {'Processing':'CSWD Office','Submitted':"Mayor's Office",'Submitted[Emergency]':"Mayor's Office",'Approved':'Budget Office','Rejected':'CSWD Office','Budget Allocated':'Accounting Office','DV Submitted':'Treasury Office','Disbursed':'Completed','Ready for Disbursement':'Treasury Office'};
-        return map[clean] || 'N/A';
-    }
-
-    function getDepartmentBadge(status) {
-        const dept = getDepartmentLabel(status);
-        const completed = dept === 'Completed';
-        return `<span class="pr-dept-badge ${completed?'completed':''}"><i class="fas ${completed?'fa-check':'fa-building'}" style="font-size:.65rem;"></i>${dept}</span>`;
-    }
-
-    function formatDate(input) {
-        return new Date(input).toLocaleString('en-PH',{year:'numeric',month:'long',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true});
-    }
-
-    function generateActionLink(id) {
-        return `<div class="pr-action-wrap" style="justify-content:center;"><a href="/admin/process-tracking/${id}" title="View"><i class="fas fa-eye"></i></a></div>`;
-    }
-
-    function generateBadge(status) {
-        const icons = {'Processing':'fa-spinner','Submitted':'fa-paper-plane','Submitted[Emergency]':'fa-exclamation-triangle','Approved':'fa-thumbs-up','Rejected':'fa-ban','Budget Allocated':'fa-money-bill-wave','DV Submitted':'fa-file','Disbursed':'fa-coins','Ready for Disbursement':'fa-check-circle'};
-        const cls   = {'Processing':'pt-s-processing','Submitted':'pt-s-submitted','Submitted[Emergency]':'pt-s-emergency','Approved':'pt-s-approved','Rejected':'pt-s-rejected','Budget Allocated':'pt-s-budget','DV Submitted':'pt-s-dv','Disbursed':'pt-s-disbursed','Ready for Disbursement':'pt-s-ready'};
-        const isRB  = status.includes('[ROLLED BACK]');
-        const base  = status.replace('[ROLLED BACK]','').trim();
-        const label = base === 'Submitted[Emergency]' ? 'Emergency' : base;
-        const rb    = isRB ? ' <span class="pt-s-rollback">ROLLED BACK</span>' : '';
-        return `<span class="pt-status ${cls[base]||'pt-s-processing'}"><i class="fas ${icons[base]||'fa-question-circle'}"></i>${label}${rb}</span>`;
-    }
-
+    /* ── Toast ── */
     document.addEventListener('DOMContentLoaded', function () {
-        initializeRealTimeUpdates();
         const toastEl = document.getElementById('liveToast');
         const timerEl = document.getElementById('toast-timer');
         if (toastEl) {
-            new bootstrap.Toast(toastEl, { autohide:true, delay:5000 }).show();
+            new bootstrap.Toast(toastEl, { autohide: true, delay: 5000 }).show();
             let rem = 5;
-            const iv = setInterval(() => { rem--; if (timerEl) timerEl.textContent=`Closing in ${rem}s`; if(rem<=0)clearInterval(iv); }, 1000);
+            const iv = setInterval(() => {
+                rem--;
+                if (timerEl) timerEl.textContent = `Closing in ${rem}s`;
+                if (rem <= 0) clearInterval(iv);
+            }, 1000);
+        }
+    });
+
+    /* ── Badge helpers ── */
+    function generateBadge(status) {
+        const icons = {
+            'Processing'             : 'fa-spinner',
+            'Submitted'              : 'fa-paper-plane',
+            'Submitted[Emergency]'   : 'fa-exclamation-triangle',
+            'Approved'               : 'fa-thumbs-up',
+            'Rejected'               : 'fa-ban',
+            'Budget Allocated'       : 'fa-money-bill-wave',
+            'DV Submitted'           : 'fa-file',
+            'Disbursed'              : 'fa-coins',
+            'Ready for Disbursement' : 'fa-check-circle',
+        };
+        const cls = {
+            'Processing'             : 'pt-s-processing',
+            'Submitted'              : 'pt-s-submitted',
+            'Submitted[Emergency]'   : 'pt-s-emergency',
+            'Approved'               : 'pt-s-approved',
+            'Rejected'               : 'pt-s-rejected',
+            'Budget Allocated'       : 'pt-s-budget',
+            'DV Submitted'           : 'pt-s-dv',
+            'Ready for Disbursement' : 'pt-s-ready',
+            'Disbursed'              : 'pt-s-disbursed',
+        };
+        const isRB  = status.includes('[ROLLED BACK]');
+        const base  = status.replace('[ROLLED BACK]', '').trim();
+        const label = base === 'Submitted[Emergency]' ? 'Emergency' : base;
+        const rb    = isRB ? ' <span class="pt-s-rollback">ROLLED BACK</span>' : '';
+        return `<span class="pt-status ${cls[base] || 'pt-s-processing'}">` +
+               `<i class="fas ${icons[base] || 'fa-question-circle'}"></i>${label}${rb}</span>`;
+    }
+
+    function getDepartmentBadge(status) {
+        const clean = status.replace('[ROLLED BACK]', '').trim();
+        const map = {
+            'Processing'             : 'CSWD Office',
+            'Draft'                  : 'CSWD Office',
+            'Rejected'               : 'CSWD Office',
+            'Submitted'              : "Mayor's Office",
+            'Submitted[Emergency]'   : "Mayor's Office",
+            'Approved'               : 'Budget Office',
+            'Budget Allocated'       : 'Accounting Office',
+            'DV Submitted'           : 'Treasury Office',
+            'Ready for Disbursement' : 'Treasury Office',
+            'Disbursed'              : 'Completed',
+        };
+        const dept = map[clean] || 'N/A';
+        const done = dept === 'Completed';
+        return `<span class="pr-dept-badge ${done ? 'completed' : ''}">` +
+               `<i class="fas ${done ? 'fa-check' : 'fa-building'}" style="font-size:.65rem;"></i>` +
+               `${dept}</span>`;
+    }
+
+    /* ── DOM patcher ── */
+    function applyUpdate(item) {
+        // item = { id, status }
+        const $row = jQuery(`tr[data-entry-id="${item.id}"]`);
+        if ($row.length === 0) return; // not on this page — skip silently
+
+        const $tds = $row.find('td');
+        // td layout: [0]checkbox [1]control# [2]date [3]claimant [4]caseworker
+        //            [5]STATUS   [6]DEPT     [7]actions [8]sortpriority(hidden)
+        $tds.eq(5).html(generateBadge(item.status));
+        $tds.eq(6).html(getDepartmentBadge(item.status));
+
+        // Lime-green flash so the watching user notices the change
+        $tds.addClass('pr-rt-flash');
+        setTimeout(() => $tds.removeClass('pr-rt-flash'), 2500);
+    }
+
+    /* ── Polling engine ── */
+    let _lastLogId   = null;   // cursor: last PatientStatusLog.id we've seen
+    let _pollTimer   = null;
+    let _polling     = false;  // guard against overlapping requests
+    const POLL_MS    = 5000;   // poll every 5 seconds
+    const POLL_URL   = "{{ route('admin.process-tracking.pollUpdates') }}";
+    const CSRF_TOKEN = jQuery('meta[name="csrf-token"]').attr('content');
+
+    function doPoll() {
+        if (_polling) return;          // previous request still in flight — skip
+        if (_lastLogId === null) return; // not initialized yet
+
+        _polling = true;
+
+        fetch(`${POLL_URL}?since=${_lastLogId}`, {
+            headers: {
+                'X-Requested-With' : 'XMLHttpRequest',
+                'X-CSRF-TOKEN'     : CSRF_TOKEN,
+                'Accept'           : 'application/json',
+            },
+            credentials: 'same-origin',
+        })
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(data => {
+            // Advance the cursor so we never re-process the same logs
+            if (data.last_log_id > _lastLogId) {
+                _lastLogId = data.last_log_id;
+            }
+            // Apply each update to the DOM
+            (data.updates || []).forEach(item => applyUpdate(item));
+        })
+        .catch(err => {
+            // Network blip or server error — just log quietly, will retry
+            console.warn('[poll] error:', err);
+        })
+        .finally(() => {
+            _polling = false;
+        });
+    }
+
+    function startPolling() {
+        if (_pollTimer) return; // already running
+        _pollTimer = setInterval(doPoll, POLL_MS);
+    }
+
+    function stopPolling() {
+        clearInterval(_pollTimer);
+        _pollTimer = null;
+    }
+
+    function initPolling() {
+        // Step 1 — get the current cursor (max log id right now) without returning updates
+        fetch(POLL_URL, {
+            headers: {
+                'X-Requested-With' : 'XMLHttpRequest',
+                'X-CSRF-TOKEN'     : CSRF_TOKEN,
+                'Accept'           : 'application/json',
+            },
+            credentials: 'same-origin',
+        })
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(data => {
+            _lastLogId = data.last_log_id;
+            console.log(`[poll] initialized — cursor: ${_lastLogId}`);
+            startPolling();
+        })
+        .catch(err => {
+            console.warn('[poll] init failed:', err);
+            // Retry init after 10s if something went wrong
+            setTimeout(initPolling, 10000);
+        });
+    }
+
+    // Pause polling when the tab is hidden, resume when visible again
+    // (saves server load and browser resources)
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            stopPolling();
+        } else {
+            // Immediately poll on return so the user sees fresh data at once
+            doPoll();
+            startPolling();
         }
     });
 
     jQuery(function () {
-        const total   = {{ $patients->total() }};
         let _token    = jQuery('meta[name="csrf-token"]').attr('content');
         let dtButtons = jQuery.extend(true, [], jQuery.fn.dataTable.defaults.buttons);
 
+        /* ── DataTable init ── */
         const table = jQuery('.datatable-ProcessTracking:not(.ajaxTable)').DataTable({
-            buttons: dtButtons,
-            order: [[8,'asc'],[2,'desc']],  // col8=priority (0=my queue first), then date desc
+            buttons     : dtButtons,
+            order       : [[8, 'asc'], [2, 'desc']],
             orderCellsTop: true,
-            searching: true, paging: false, info: false, processing: true, serverSide: false,
-            columnDefs: [
-                { targets:0, orderable:false, searchable:false, className:'select-checkbox' },
-                { targets:7, orderable:false, searchable:false },
-                { targets:8, visible:false, searchable:false },
+            searching   : true,
+            paging      : false,
+            info        : false,
+            processing  : true,
+            serverSide  : false,
+            columnDefs  : [
+                { targets: 0, orderable: false, searchable: false, className: 'select-checkbox' },
+                { targets: 7, orderable: false, searchable: false },
+                { targets: 8, visible: false,   searchable: false },
             ],
             initComplete: function () {
                 const dtWrapper  = jQuery('.pr-table-card .dataTables_wrapper');
                 const dtBtnGroup = dtWrapper.find('.dt-buttons');
 
-                // ── Page indicator (Page X of Y) ──
                 const currentPage = {{ $patients->currentPage() }};
                 const lastPage    = {{ $patients->lastPage() }};
 
@@ -779,161 +892,195 @@
                 toolbar.append(leftWrap).append(rightWrap);
                 jQuery('.pr-table-card .table-responsive').before(toolbar);
 
-                // Selection indicator update
                 table.on('select deselect', function () {
                     const sel = table.rows({ selected: true }).count();
                     if (sel > 0) {
-                        jQuery('#pr-pt-indicator').css({background:'rgba(6,78,59,.10)',borderColor:'rgba(6,78,59,.35)'});
-                        jQuery('#pr-pt-indicator .ri-dot').css('background','var(--pr-forest)');
+                        jQuery('#pr-pt-indicator').css({ background: 'rgba(6,78,59,.10)', borderColor: 'rgba(6,78,59,.35)' });
+                        jQuery('#pr-pt-indicator .ri-dot').css('background', 'var(--pr-forest)');
                         jQuery('#pr-pt-indicator span:last').text(`of ${lastPage} · ${sel} selected`);
                     } else {
-                        jQuery('#pr-pt-indicator').css({background:'',borderColor:''});
-                        jQuery('#pr-pt-indicator .ri-dot').css('background','');
+                        jQuery('#pr-pt-indicator').css({ background: '', borderColor: '' });
+                        jQuery('#pr-pt-indicator .ri-dot').css('background', '');
                         jQuery('#pr-pt-indicator span:last').text(`of ${lastPage}`);
                     }
                 });
 
                 jQuery('#pr-pt-jump-btn').on('click', function () {
-                    const val=parseInt(jQuery('#pr-pt-jump-input').val()), max=parseInt(jQuery('#pr-pt-jump-input').attr('max')||1);
-                    if (!val||val<1||val>max) { jQuery('#pr-pt-jump-input').focus(); return; }
-                    const url=new URL(window.location.href); url.searchParams.set('page',val); window.location.href=url.toString();
+                    const val = parseInt(jQuery('#pr-pt-jump-input').val());
+                    const max = parseInt(jQuery('#pr-pt-jump-input').attr('max') || 1);
+                    if (!val || val < 1 || val > max) { jQuery('#pr-pt-jump-input').focus(); return; }
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('page', val);
+                    window.location.href = url.toString();
                 });
-                jQuery('#pr-pt-jump-input').on('keydown', e => { if(e.key==='Enter') jQuery('#pr-pt-jump-btn').trigger('click'); });
+                jQuery('#pr-pt-jump-input').on('keydown', e => {
+                    if (e.key === 'Enter') jQuery('#pr-pt-jump-btn').trigger('click');
+                });
+
+                // ── Start polling AFTER DataTable is fully ready ──
+                initPolling();
             }
         });
 
-        jQuery('a[data-toggle="tab"]').on('shown.bs.tab click', () => jQuery(jQuery.fn.dataTable.tables(true)).DataTable().columns.adjust());
+        jQuery('a[data-toggle="tab"]').on('shown.bs.tab click', () =>
+            jQuery(jQuery.fn.dataTable.tables(true)).DataTable().columns.adjust()
+        );
 
         /* ── Mass buttons ── */
 
         @can('approve_patient')
         let selectedIds = [];
-        dtButtons.push({ text:'Approve Selected', className:'btn-success', action: function(e,dt) {
-            selectedIds=jQuery.map(dt.rows({selected:true}).nodes(),el=>jQuery(el).data('entry-id'));
+        dtButtons.push({ text: 'Approve Selected', className: 'btn-success', action: function (e, dt) {
+            selectedIds = jQuery.map(dt.rows({ selected: true }).nodes(), el => jQuery(el).data('entry-id'));
             if (!selectedIds.length) { alert('No records selected'); return; }
-            jQuery('#massDecisionAction').val('approve'); jQuery('#massDecisionRemarks').val(''); jQuery('#massDecisionModal').modal('show');
+            jQuery('#massDecisionAction').val('approve');
+            jQuery('#massDecisionRemarks').val('');
+            jQuery('#massDecisionModal').modal('show');
         }});
-        dtButtons.push({ text:'Reject Selected', className:'btn-danger', action: function(e,dt) {
-            selectedIds=jQuery.map(dt.rows({selected:true}).nodes(),el=>jQuery(el).data('entry-id'));
+        dtButtons.push({ text: 'Reject Selected', className: 'btn-danger', action: function (e, dt) {
+            selectedIds = jQuery.map(dt.rows({ selected: true }).nodes(), el => jQuery(el).data('entry-id'));
             if (!selectedIds.length) { alert('No records selected'); return; }
-            jQuery('#massDecisionAction').val('reject'); jQuery('#massDecisionRemarks').val(''); jQuery('#massDecisionModal').modal('show');
+            jQuery('#massDecisionAction').val('reject');
+            jQuery('#massDecisionRemarks').val('');
+            jQuery('#massDecisionModal').modal('show');
         }});
-        jQuery('#massDecisionForm').on('submit', function(e) {
+        jQuery('#massDecisionForm').on('submit', function (e) {
             e.preventDefault();
-            const confirmBtn=jQuery('#massDecisionConfirmBtn'), action=jQuery('#massDecisionAction').val();
-            confirmBtn.prop('disabled',true).html('<i class="fas fa-spinner fa-spin me-1"></i> Processing...');
-            jQuery('#massDecisionModal').find('button[data-bs-dismiss="modal"]').prop('disabled',true);
-            const form=jQuery('<form>',{method:'POST',action:"{{ route('admin.process-tracking.massDecision') }}"})
-                .append(jQuery('<input>',{type:'hidden',name:'_token',value:_token}))
-                .append(jQuery('<input>',{type:'hidden',name:'action',value:action}))
-                .append(jQuery('<input>',{type:'hidden',name:'remarks',value:jQuery('#massDecisionRemarks').val()}))
-                .append(jQuery('<input>',{type:'hidden',name:'status_date',value:jQuery('#massDecisionStatusDate').val()}));
-            selectedIds.forEach(id=>form.append(jQuery('<input>',{type:'hidden',name:'ids[]',value:id})));
-            if (action==='reject') {
-                let reasons=[];
-                jQuery('input[name="reasons[]"]:checked').each(function(){reasons.push(jQuery(this).val());});
-                const other=jQuery('#massDecisionOtherReason').val().trim(); if(other)reasons.push(other);
-                reasons.forEach(r=>form.append(jQuery('<input>',{type:'hidden',name:'reasons[]',value:r})));
+            const confirmBtn = jQuery('#massDecisionConfirmBtn'), action = jQuery('#massDecisionAction').val();
+            confirmBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Processing...');
+            jQuery('#massDecisionModal').find('button[data-bs-dismiss="modal"]').prop('disabled', true);
+            const form = jQuery('<form>', { method: 'POST', action: "{{ route('admin.process-tracking.massDecision') }}" })
+                .append(jQuery('<input>', { type: 'hidden', name: '_token',      value: _token }))
+                .append(jQuery('<input>', { type: 'hidden', name: 'action',      value: action }))
+                .append(jQuery('<input>', { type: 'hidden', name: 'remarks',     value: jQuery('#massDecisionRemarks').val() }))
+                .append(jQuery('<input>', { type: 'hidden', name: 'status_date', value: jQuery('#massDecisionStatusDate').val() }));
+            selectedIds.forEach(id => form.append(jQuery('<input>', { type: 'hidden', name: 'ids[]', value: id })));
+            if (action === 'reject') {
+                let reasons = [];
+                jQuery('input[name="reasons[]"]:checked').each(function () { reasons.push(jQuery(this).val()); });
+                const other = jQuery('#massDecisionOtherReason').val().trim();
+                if (other) reasons.push(other);
+                reasons.forEach(r => form.append(jQuery('<input>', { type: 'hidden', name: 'reasons[]', value: r })));
             }
             form.appendTo('body').submit();
         });
-        jQuery('#massDecisionModal').on('hidden.bs.modal', function() {
-            const action=jQuery('#massDecisionAction').val();
-            jQuery('#massDecisionConfirmBtn').prop('disabled',false).html(action==='approve'?'Confirm Approve':'Confirm Reject');
-            jQuery(this).find('button[data-bs-dismiss="modal"]').prop('disabled',false);
+        jQuery('#massDecisionModal').on('hidden.bs.modal', function () {
+            const action = jQuery('#massDecisionAction').val();
+            jQuery('#massDecisionConfirmBtn').prop('disabled', false)
+                .html(action === 'approve' ? 'Confirm Approve' : 'Confirm Reject');
+            jQuery(this).find('button[data-bs-dismiss="modal"]').prop('disabled', false);
         });
-        jQuery('#massDecisionModal').on('show.bs.modal', function() {
-            const action=jQuery('#massDecisionAction').val(), header=jQuery('#massDecisionHeader'), confirmBtn=jQuery('#massDecisionConfirmBtn');
-            if (action==='approve') {
-                header.attr('style','background:linear-gradient(135deg,#052e22 0%,#064e3b 100%);border-bottom:none;'); header.find('.modal-title').css('color','#fff');
+        jQuery('#massDecisionModal').on('show.bs.modal', function () {
+            const action = jQuery('#massDecisionAction').val();
+            const header = jQuery('#massDecisionHeader');
+            const confirmBtn = jQuery('#massDecisionConfirmBtn');
+            if (action === 'approve') {
+                header.attr('style', 'background:linear-gradient(135deg,#052e22 0%,#064e3b 100%);border-bottom:none;');
+                header.find('.modal-title').css('color', '#fff');
                 jQuery('#massDecisionModalLabel').text('Approve Selected Applications');
-                confirmBtn.removeClass('btn-danger').addClass('btn-success').text('Confirm Approve').css({background:'var(--pr-lime)',color:'var(--pr-forest)',border:'none'});
+                confirmBtn.removeClass('btn-danger').addClass('btn-success').text('Confirm Approve')
+                    .css({ background: 'var(--pr-lime)', color: 'var(--pr-forest)', border: 'none' });
                 jQuery('#massDecisionRejectFields').hide();
             } else {
-                header.attr('style','background:linear-gradient(135deg,#991b1b 0%,#ef4444 100%);border-bottom:none;'); header.find('.modal-title').css('color','#fff');
+                header.attr('style', 'background:linear-gradient(135deg,#991b1b 0%,#ef4444 100%);border-bottom:none;');
+                header.find('.modal-title').css('color', '#fff');
                 jQuery('#massDecisionModalLabel').text('Reject Selected Applications');
-                confirmBtn.removeClass('btn-success').addClass('btn-danger').text('Confirm Reject').css({background:'var(--pr-danger)',color:'#fff',border:'none'});
+                confirmBtn.removeClass('btn-success').addClass('btn-danger').text('Confirm Reject')
+                    .css({ background: 'var(--pr-danger)', color: '#fff', border: 'none' });
                 jQuery('#massDecisionRejectFields').show();
             }
         });
         @endcan
 
         @can('accounting_dv_input')
-        let selectedDvIds=[];
-        dtButtons.push({ text:'Mass DV Input', className:'btn-primary', action: function(e,dt) {
-            selectedDvIds=jQuery.map(dt.rows({selected:true}).nodes(),el=>jQuery(el).data('entry-id'));
-            if(!selectedDvIds.length){alert('No records selected');return;} jQuery('#massDvDate').val(''); jQuery('#massDVModal').modal('show');
+        let selectedDvIds = [];
+        dtButtons.push({ text: 'Mass DV Input', className: 'btn-primary', action: function (e, dt) {
+            selectedDvIds = jQuery.map(dt.rows({ selected: true }).nodes(), el => jQuery(el).data('entry-id'));
+            if (!selectedDvIds.length) { alert('No records selected'); return; }
+            jQuery('#massDvDate').val('');
+            jQuery('#massDVModal').modal('show');
         }});
-        jQuery('#massDVForm').on('submit', function(e) {
+        jQuery('#massDVForm').on('submit', function (e) {
             e.preventDefault();
-            const form=jQuery('<form>',{method:'POST',action:"{{ route('admin.process-tracking.massDVInput') }}"})
-                .append(jQuery('<input>',{type:'hidden',name:'_token',value:_token}))
-                .append(jQuery('<input>',{type:'hidden',name:'dv_date',value:jQuery('#massDvDate').val()}))
-                .append(jQuery('<input>',{type:'hidden',name:'status_date',value:jQuery('#massDvStatusDate').val()}));
-            selectedDvIds.forEach(id=>form.append(jQuery('<input>',{type:'hidden',name:'ids[]',value:id})));
+            const form = jQuery('<form>', { method: 'POST', action: "{{ route('admin.process-tracking.massDVInput') }}" })
+                .append(jQuery('<input>', { type: 'hidden', name: '_token',      value: _token }))
+                .append(jQuery('<input>', { type: 'hidden', name: 'dv_date',     value: jQuery('#massDvDate').val() }))
+                .append(jQuery('<input>', { type: 'hidden', name: 'status_date', value: jQuery('#massDvStatusDate').val() }));
+            selectedDvIds.forEach(id => form.append(jQuery('<input>', { type: 'hidden', name: 'ids[]', value: id })));
             form.appendTo('body').submit();
         });
         @endcan
 
         @can('budget_allocate')
-        let selectedBudgetIds=[];
-        dtButtons.push({ text:'Allocate Budget', className:'btn-success', action: function(e,dt) {
-            selectedBudgetIds=jQuery.map(dt.rows({selected:true}).nodes(),el=>jQuery(el).data('entry-id'));
-            if(!selectedBudgetIds.length){alert('No records selected');return;} jQuery('#massBudgetAmount').val(''); jQuery('#massBudgetRemarks').val(''); jQuery('#massBudgetModal').modal('show');
+        let selectedBudgetIds = [];
+        dtButtons.push({ text: 'Allocate Budget', className: 'btn-success', action: function (e, dt) {
+            selectedBudgetIds = jQuery.map(dt.rows({ selected: true }).nodes(), el => jQuery(el).data('entry-id'));
+            if (!selectedBudgetIds.length) { alert('No records selected'); return; }
+            jQuery('#massBudgetAmount').val('');
+            jQuery('#massBudgetRemarks').val('');
+            jQuery('#massBudgetModal').modal('show');
         }});
-        jQuery('#massBudgetForm').on('submit', function(e) {
+        jQuery('#massBudgetForm').on('submit', function (e) {
             e.preventDefault();
-            const form=jQuery('<form>',{method:'POST',action:"{{ route('admin.process-tracking.massBudgetAllocate') }}"})
-                .append(jQuery('<input>',{type:'hidden',name:'_token',value:_token}))
-                .append(jQuery('<input>',{type:'hidden',name:'amount',value:jQuery('#massBudgetAmount').val()}))
-                .append(jQuery('<input>',{type:'hidden',name:'remarks',value:jQuery('#massBudgetRemarks').val()}))
-                .append(jQuery('<input>',{type:'hidden',name:'status_date',value:jQuery('#massBudgetStatusDate').val()}));
-            selectedBudgetIds.forEach(id=>form.append(jQuery('<input>',{type:'hidden',name:'ids[]',value:id})));
+            const form = jQuery('<form>', { method: 'POST', action: "{{ route('admin.process-tracking.massBudgetAllocate') }}" })
+                .append(jQuery('<input>', { type: 'hidden', name: '_token',      value: _token }))
+                .append(jQuery('<input>', { type: 'hidden', name: 'amount',      value: jQuery('#massBudgetAmount').val() }))
+                .append(jQuery('<input>', { type: 'hidden', name: 'remarks',     value: jQuery('#massBudgetRemarks').val() }))
+                .append(jQuery('<input>', { type: 'hidden', name: 'status_date', value: jQuery('#massBudgetStatusDate').val() }));
+            selectedBudgetIds.forEach(id => form.append(jQuery('<input>', { type: 'hidden', name: 'ids[]', value: id })));
             form.appendTo('body').submit();
         });
-        jQuery(document).on('click', '.suggested-amount', function() {
+        jQuery(document).on('click', '.suggested-amount', function () {
             jQuery('#massBudgetAmount').val(jQuery(this).data('value'));
-            jQuery('.suggested-amount').css({borderColor:'',background:'',color:''});
-            jQuery(this).css({borderColor:'var(--pr-forest)',background:'var(--pr-lime-ghost)',color:'var(--pr-forest)'});
+            jQuery('.suggested-amount').css({ borderColor: '', background: '', color: '' });
+            jQuery(this).css({ borderColor: 'var(--pr-forest)', background: 'var(--pr-lime-ghost)', color: 'var(--pr-forest)' });
         });
         @endcan
 
         @can('treasury_disburse')
-        let selectedReadyIds=[], selectedDisburseIds=[];
+        let selectedReadyIds = [], selectedDisburseIds = [];
         function getManilaDateTime() {
-            const now=new Date(), manila=new Date(now.getTime()+8*3600000), pad=n=>String(n).padStart(2,'0');
-            return `${manila.getUTCFullYear()}-${pad(manila.getUTCMonth()+1)}-${pad(manila.getUTCDate())}T${pad(manila.getUTCHours())}:${pad(manila.getUTCMinutes())}`;
+            const now = new Date(), manila = new Date(now.getTime() + 8 * 3600000);
+            const pad = n => String(n).padStart(2, '0');
+            return `${manila.getUTCFullYear()}-${pad(manila.getUTCMonth() + 1)}-${pad(manila.getUTCDate())}` +
+                   `T${pad(manila.getUTCHours())}:${pad(manila.getUTCMinutes())}`;
         }
-        dtButtons.push({ text:'Ready for Disbursement', className:'btn-warning', action: function(e,dt) {
-            selectedReadyIds=jQuery.map(dt.rows({selected:true}).nodes(),el=>jQuery(el).data('entry-id'));
-            if(!selectedReadyIds.length){alert('No records selected');return;} jQuery('#massReadyStatusDate').val(getManilaDateTime()); jQuery('#massReadyRemarks').val(''); jQuery('#massReadyForDisbursementModal').modal('show');
+        dtButtons.push({ text: 'Ready for Disbursement', className: 'btn-warning', action: function (e, dt) {
+            selectedReadyIds = jQuery.map(dt.rows({ selected: true }).nodes(), el => jQuery(el).data('entry-id'));
+            if (!selectedReadyIds.length) { alert('No records selected'); return; }
+            jQuery('#massReadyStatusDate').val(getManilaDateTime());
+            jQuery('#massReadyRemarks').val('');
+            jQuery('#massReadyForDisbursementModal').modal('show');
         }});
-        dtButtons.push({ text:'Disburse', className:'btn-danger', action: function(e,dt) {
-            selectedDisburseIds=jQuery.map(dt.rows({selected:true}).nodes(),el=>jQuery(el).data('entry-id'));
-            if(!selectedDisburseIds.length){alert('No records selected');return;} jQuery('#massDisburseDate').val(getManilaDateTime()); jQuery('#massDisburseRemarks').val(''); jQuery('#massDisburseModal').modal('show');
+        dtButtons.push({ text: 'Disburse', className: 'btn-danger', action: function (e, dt) {
+            selectedDisburseIds = jQuery.map(dt.rows({ selected: true }).nodes(), el => jQuery(el).data('entry-id'));
+            if (!selectedDisburseIds.length) { alert('No records selected'); return; }
+            jQuery('#massDisburseDate').val(getManilaDateTime());
+            jQuery('#massDisburseRemarks').val('');
+            jQuery('#massDisburseModal').modal('show');
         }});
-        jQuery('#massReadyForDisbursementForm').on('submit', function(e) {
+        jQuery('#massReadyForDisbursementForm').on('submit', function (e) {
             e.preventDefault();
-            const btn=jQuery(this).find('button[type="submit"]');
-            btn.prop('disabled',true).html('<i class="fas fa-spinner fa-spin me-1"></i> Processing...');
-            jQuery('#massReadyForDisbursementModal').find('button[data-bs-dismiss="modal"]').prop('disabled',true);
-            const form=jQuery('<form>',{method:'POST',action:"{{ route('admin.process-tracking.massReadyForDisbursement') }}"})
-                .append(jQuery('<input>',{type:'hidden',name:'_token',value:_token}))
-                .append(jQuery('<input>',{type:'hidden',name:'status_date',value:jQuery('#massReadyStatusDate').val()}))
-                .append(jQuery('<input>',{type:'hidden',name:'remarks',value:jQuery('#massReadyRemarks').val()}));
-            selectedReadyIds.forEach(id=>form.append(jQuery('<input>',{type:'hidden',name:'ids[]',value:id})));
+            const btn = jQuery(this).find('button[type="submit"]');
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Processing...');
+            jQuery('#massReadyForDisbursementModal').find('button[data-bs-dismiss="modal"]').prop('disabled', true);
+            const form = jQuery('<form>', { method: 'POST', action: "{{ route('admin.process-tracking.massReadyForDisbursement') }}" })
+                .append(jQuery('<input>', { type: 'hidden', name: '_token',      value: _token }))
+                .append(jQuery('<input>', { type: 'hidden', name: 'status_date', value: jQuery('#massReadyStatusDate').val() }))
+                .append(jQuery('<input>', { type: 'hidden', name: 'remarks',     value: jQuery('#massReadyRemarks').val() }));
+            selectedReadyIds.forEach(id => form.append(jQuery('<input>', { type: 'hidden', name: 'ids[]', value: id })));
             form.appendTo('body').submit();
         });
-        jQuery('#massDisburseForm').on('submit', function(e) {
+        jQuery('#massDisburseForm').on('submit', function (e) {
             e.preventDefault();
-            const btn=jQuery(this).find('button[type="submit"]');
-            btn.prop('disabled',true).html('<i class="fas fa-spinner fa-spin me-1"></i> Processing...');
-            jQuery('#massDisburseModal').find('button[data-bs-dismiss="modal"]').prop('disabled',true);
-            const form=jQuery('<form>',{method:'POST',action:"{{ route('admin.process-tracking.massQuickDisburse') }}"})
-                .append(jQuery('<input>',{type:'hidden',name:'_token',value:_token}))
-                .append(jQuery('<input>',{type:'hidden',name:'status_date',value:jQuery('#massDisburseDate').val()}))
-                .append(jQuery('<input>',{type:'hidden',name:'remarks',value:jQuery('#massDisburseRemarks').val()}));
-            selectedDisburseIds.forEach(id=>form.append(jQuery('<input>',{type:'hidden',name:'ids[]',value:id})));
+            const btn = jQuery(this).find('button[type="submit"]');
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Processing...');
+            jQuery('#massDisburseModal').find('button[data-bs-dismiss="modal"]').prop('disabled', true);
+            const form = jQuery('<form>', { method: 'POST', action: "{{ route('admin.process-tracking.massQuickDisburse') }}" })
+                .append(jQuery('<input>', { type: 'hidden', name: '_token',      value: _token }))
+                .append(jQuery('<input>', { type: 'hidden', name: 'status_date', value: jQuery('#massDisburseDate').val() }))
+                .append(jQuery('<input>', { type: 'hidden', name: 'remarks',     value: jQuery('#massDisburseRemarks').val() }));
+            selectedDisburseIds.forEach(id => form.append(jQuery('<input>', { type: 'hidden', name: 'ids[]', value: id })));
             form.appendTo('body').submit();
         });
         @endcan
