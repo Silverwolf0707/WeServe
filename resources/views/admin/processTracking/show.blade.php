@@ -1221,23 +1221,18 @@ document.addEventListener('visibilitychange', () => {
     else { doPoll(); startPolling(); }
 });
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   MASTER APPLY — called once per PatientStatusLog entry received
-═══════════════════════════════════════════════════════════════════════════ */
+
 function applyUpdate(e) {
-    updateStatusBadges(e);      // hero badge + card badge
-    updateInfoCard(e);           // remarks, budget, DV, last-updated
-    updateStepper(e);            // process flow circles
-    appendLogEntry(e);           // process log list (changed from prepend to append)
-    updateActionSections(e);     // show / hide + configure action cards
-    updateFormLockState(e);      // disable submit inputs when in-flight
-    updateRollbackDropdown(e);   // rebuild rollback <select> options
-    // Note: updateReturnToRollbacker is now called separately after all updates
+    updateStatusBadges(e);     
+    updateInfoCard(e);          
+    updateStepper(e);          
+    appendLogEntry(e);           
+    updateActionSections(e);    
+    updateFormLockState(e);      
+    updateRollbackDropdown(e); 
+
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   RETURN TO ROLLBACKER - Based on current status, not individual logs
-═══════════════════════════════════════════════════════════════════════════ */
 function updateReturnToRollbackerFromCurrentStatus() {
     const isRolledBack = _currentStatus.includes('[ROLLED BACK]');
     
@@ -1251,9 +1246,7 @@ function updateReturnToRollbackerFromCurrentStatus() {
     });
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   HELPERS — status class / icon / label
-═══════════════════════════════════════════════════════════════════════════ */
+
 function getBase(status) {
     return status.replace('[ROLLED BACK]', '').trim();
 }
@@ -1304,9 +1297,6 @@ function formatDateTime(raw) {
     });
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   1. STATUS BADGES  (hero + process status card)
-═══════════════════════════════════════════════════════════════════════════ */
 function updateStatusBadges(e) {
     ['current-status-badge'].forEach(id => {
         const el = document.getElementById(id);
@@ -1316,9 +1306,6 @@ function updateStatusBadges(e) {
     });
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   2. INFO CARD  (remarks, budget amount, DV code/date, last updated)
-═══════════════════════════════════════════════════════════════════════════ */
 function updateInfoCard(e) {
     // Remarks
     const remarksRow = document.getElementById('remarks-row');
@@ -1373,9 +1360,6 @@ function updateInfoCard(e) {
     if (updatedAt) updatedAt.textContent = formatDateTime(e.status_date || e.created_at);
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   3. PROCESS FLOW STEPPER
-═══════════════════════════════════════════════════════════════════════════ */
 function updateStepper(e) {
     const steps = ['Submitted','Approved','Budget Allocated','DV Submitted','Ready for Disbursement','Disbursed'];
     const b     = getBase(e.status);
@@ -1395,9 +1379,6 @@ function updateStepper(e) {
     });
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   4. PROCESS LOG  (append new entry with full details - chronological order)
-═══════════════════════════════════════════════════════════════════════════ */
 const PROCESS_TO_OFFICES = {
     'Processing'             : null,
     'Draft'                  : null,
@@ -1501,9 +1482,6 @@ function appendLogEntry(e) {
     }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   5. ACTION SECTIONS  (show/hide the correct card, configure sub-views)
-═══════════════════════════════════════════════════════════════════════════ */
 const ALL_ACTION_IDS = [
     'submit-patient-application',
     'approve-patient',
@@ -1550,9 +1528,6 @@ function updateActionSections(e) {
     }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   6. FORM LOCK STATE
-═══════════════════════════════════════════════════════════════════════════ */
 const LOCKED_STATUSES = new Set([
     'Submitted','Submitted[Emergency]','Approved',
     'Budget Allocated','DV Submitted','Ready for Disbursement','Disbursed',
@@ -1566,9 +1541,6 @@ function updateFormLockState(e) {
         .forEach(b => b.disabled = lock);
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   7. ROLLBACK DROPDOWN  (rebuild options based on new status position)
-═══════════════════════════════════════════════════════════════════════════ */
 const ROLLBACK_FLOW = {
     'Processing'      : 'CSWD Office',
     'Submitted'       : "Mayor's Office",
@@ -1602,9 +1574,6 @@ function updateRollbackDropdown(e) {
     if (confirmBtn) confirmBtn.disabled = sel.options.length <= 1;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   PAGE INIT
-═══════════════════════════════════════════════════════════════════════════ */
 function submitApplication(url, btn, type) {
     const form = btn.closest('form');
     form.action = url;
