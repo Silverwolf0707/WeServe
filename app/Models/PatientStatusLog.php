@@ -50,6 +50,10 @@ class PatientStatusLog extends Model
     {
         return $this->belongsTo(User::class);
     }
+    public function rejectionReasons()
+{
+    return $this->hasMany(RejectionReason::class, 'patient_status_log_id');
+}
 
     public function getBaseStatusAttribute(): string
     {

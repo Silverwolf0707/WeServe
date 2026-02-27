@@ -87,6 +87,10 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
 
     Route::get('process-tracking/export/{format?}', [ProcessTrackingController::class, 'export'])
      ->name('process-tracking.export');
+     Route::get('process-tracking/poll-updates', [ProcessTrackingController::class, 'pollUpdates'])
+    ->name('process-tracking.pollUpdates');
+    Route::get('process-tracking/{id}/poll-status', [ProcessTrackingController::class, 'pollPatientStatus'])
+    ->name('process-tracking.pollStatus');
     Route::resource('process-tracking', ProcessTrackingController::class)->only(['index', 'show']);
     Route::post('process-tracking/{id}/submit', [ProcessTrackingController::class, 'submit'])->name('process-tracking.submit');
     Route::post('process-tracking/{id}/decision', [ProcessTrackingController::class, 'decision'])->name('process-tracking.decision');
