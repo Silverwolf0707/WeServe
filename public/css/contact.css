@@ -27,12 +27,19 @@ section.contact {
     width: 100%;
 }
 .contact-content h2 {
-    font-size: 2.5rem;
-    font-weight: 800;
-    color: #064e3b;
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.8rem;
+    font-weight: 400;
+    margin-bottom: 1.5rem;
+    color: #0d1a14;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
 }
 
-
+.contact-content h2 em {
+    font-style: italic;
+    color: #064e3b;
+}
 
 /* Minimal Contact Modal Styling */
 #contactModal .modal-header {
