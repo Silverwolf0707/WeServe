@@ -193,43 +193,9 @@
             box-shadow: 0 0 10px rgba(231, 76, 60, 0.4);
         }
 
-        .toggle-password {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            cursor: pointer;
-            color: rgba(255, 255, 255, 0.7);
-            transition: all 0.3s ease;
-            font-size: 15px;
-            background: none;
-            border: none;
-            padding: 0;
-        }
-
         .toggle-password:hover {
             color: #2ecc71;
             transform: translateY(-50%) scale(1.1);
-        }
-
-        /* Fix for duplicate password toggle icons */
-        .toggle-password {
-            background: none;
-            border: none;
-            padding: 0;
-            margin: 0;
-            outline: none;
-        }
-
-        .toggle-password i {
-            display: block;
-            /* Ensure only one icon shows */
-        }
-
-        /* Remove any duplicate styling */
-        .input-wrapper .fa-eye:not(.toggle-password i),
-        .input-wrapper .fa-eye-slash:not(.toggle-password i) {
-            display: none;
         }
 
         .remember-me {
