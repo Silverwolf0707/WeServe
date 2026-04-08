@@ -1,4 +1,18 @@
+![WeServe](public/weservelogo.png)
 # WeServe: Web-based Integrated System for Managing and Tracking Financial Application
+![Laravel](https://img.shields.io/badge/Laravel-12.x-FF2D20?logo=laravel)
+![PHP](https://img.shields.io/badge/PHP-8.2%2B-777BB4?logo=php)
+![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python)
+![HTML5](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-ES6-F7DF1E?logo=javascript&logoColor=yellow)
+![CSS](https://img.shields.io/badge/CSS-1572B6?logo=css)
+![Node.js](https://img.shields.io/badge/Node.js-22.x-339933?logo=nodedotjs)
+[![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql&logoColor=white)](https://mysql.com)
+[![Hostinger](https://img.shields.io/badge/Hostinger-Deployed-673DE6?logo=hostinger&logoColor=white)](https://hostinger.com)
+[![CloudPanel](https://img.shields.io/badge/Control%20Panel-CloudPanel-1E3A8A.svg)](https://cloudpanel.io)
+[![Ubuntu](https://img.shields.io/badge/Ubuntu-22.04-E95420?logo=ubuntu&logoColor=white)](https://ubuntu.com)
+[![Cloudflare](https://img.shields.io/badge/Cloudflare-DNS-F38020?logo=cloudflare&logoColor=white)](https://cloudflare.com)
+
 link: https://github.com/Silverwolf0707/WeServe.git
 
 ## Overview
