@@ -1,10 +1,6 @@
 <style>
-    /* ═══════════════════════════════════════════
-       Statistics — Forest-green design system
-       ═══════════════════════════════════════════ */
     .stat-wrap { font-family: 'DM Sans', sans-serif; color: #052e22; margin-top: 0; }
 
-    /* ── Card base (reuse stl-card vars) ── */
     .stat-card { background: #fff; border-radius: 12px; border: 1px solid #d1fae5; box-shadow: 0 2px 8px rgba(6,78,59,.08), 0 8px 24px rgba(6,78,59,.06); margin-bottom: 18px; overflow: hidden; }
     .stat-card-hdr { display: flex; align-items: center; gap: 10px; padding: 12px 18px; background: linear-gradient(135deg,#052e22 0%,#064e3b 100%); flex-wrap: wrap; }
     .stat-card-hdr-icon { width: 28px; height: 28px; border-radius: 7px; background: rgba(116,255,112,.12); border: 1px solid rgba(116,255,112,.28); display: flex; align-items: center; justify-content: center; font-size: .72rem; color: #74ff70; flex-shrink: 0; }
@@ -12,17 +8,14 @@
     .stat-card-hdr-badge { background: rgba(116,255,112,.15); border: 1px solid rgba(116,255,112,.3); border-radius: 20px; padding: 1px 9px; font-size: .67rem; font-weight: 700; color: #74ff70; margin-left: auto; }
     .stat-card-body { padding: 18px; }
 
-    /* ── Filter bar ── */
     .stat-filter-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-left: auto; }
     .stat-label { font-size: .7rem; font-weight: 600; color: rgba(255,255,255,.6); white-space: nowrap; }
     .stat-select { height: 28px; border: 1px solid rgba(116,255,112,.28); border-radius: 7px; background: rgba(116,255,112,.08); color: #fff; font-size: .75rem; font-family: 'DM Sans', sans-serif; padding: 0 26px 0 9px; cursor: pointer; outline: none; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='rgba(116,255,112,.7)' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; transition: all .15s; min-width: 100px; }
     .stat-select:focus { border-color: rgba(116,255,112,.65); background-color: rgba(116,255,112,.14); }
     .stat-select option { background: #052e22; color: #fff; }
 
-    /* ── View title inside card ── */
     #statViewTitle { font-size: .75rem; font-weight: 600; color: rgba(255,255,255,.5); }
 
-    /* ── Summary panel ── */
     .stat-summary-panel { background: linear-gradient(135deg,#f0fdf4,#ecfdf5); border: 1px solid #d1fae5; border-radius: 12px; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
     .stat-summary-hdr { padding: 12px 16px; background: linear-gradient(135deg,#052e22,#064e3b); display: flex; align-items: center; gap: 8px; }
     .stat-summary-hdr-icon { width: 26px; height: 26px; border-radius: 7px; background: rgba(116,255,112,.12); border: 1px solid rgba(116,255,112,.28); display: flex; align-items: center; justify-content: center; font-size: .65rem; color: #74ff70; flex-shrink: 0; }
@@ -31,7 +24,6 @@
     .stat-summary-select { width: 100%; height: 30px; border: 1.5px solid #d1fae5; border-radius: 8px; background: #fff; color: #052e22; font-size: .75rem; font-family: 'DM Sans', sans-serif; padding: 0 10px; outline: none; margin-bottom: 14px; cursor: pointer; }
     .stat-summary-select:focus { border-color: #064e3b; }
 
-    /* Metric rows */
     .stat-metric { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-bottom: 1px solid #d1fae5; }
     .stat-metric:last-of-type { border-bottom: none; }
     .stat-metric-icon { width: 28px; height: 28px; border-radius: 8px; background: rgba(116,255,112,.12); border: 1px solid rgba(116,255,112,.28); display: flex; align-items: center; justify-content: center; font-size: .65rem; color: #064e3b; flex-shrink: 0; margin-top: 1px; }
@@ -41,14 +33,12 @@
     .stat-legend-note { font-size: .7rem; color: #6b7280; line-height: 1.5; margin-top: 10px; padding-top: 10px; border-top: 1px solid #d1fae5; }
     .stat-legend-note strong { color: #064e3b; }
 
-    /* ── Pie / donut panel ── */
     .stat-pie-panel { background: #fff; border: 1px solid #d1fae5; border-radius: 12px; height: 100%; padding: 14px; display: flex; flex-direction: column; align-items: center; }
     .stat-pie-select { width: 100%; max-width: 220px; height: 28px; border: 1.5px solid #d1fae5; border-radius: 8px; background: #fff; color: #052e22; font-size: .74rem; font-family: 'DM Sans', sans-serif; padding: 0 8px; outline: none; margin-bottom: 10px; cursor: pointer; }
     .stat-pie-select:focus { border-color: #064e3b; }
     #pieSummary { font-size: .71rem; color: #6b7280; text-align: center; margin-top: 6px; }
     #customLegend li { font-size: .72rem; display: flex; align-items: center; gap: 5px; }
 
-    /* ── Deficiency panel ── */
     .stat-def-panel { background: #fffbeb; border: 1px solid rgba(245,158,11,.3); border-radius: 12px; height: 100%; overflow: hidden; }
     .stat-def-hdr { padding: 12px 16px; background: linear-gradient(135deg,#78350f,#d97706); display: flex; align-items: center; gap: 8px; }
     .stat-def-hdr-icon { width: 26px; height: 26px; border-radius: 7px; background: rgba(255,255,255,.15); display: flex; align-items: center; justify-content: center; font-size: .65rem; color: #fff; flex-shrink: 0; }
@@ -91,7 +81,6 @@
 
         <div class="stat-card-body">
 
-            {{-- Row 1: Central tendency + dispersion ── --}}
             <div class="row g-3 mb-3">
                 <div class="col-md-6">
                     <div style="background:#f8fffe;border:1px solid #d1fae5;border-radius:10px;padding:12px;">
@@ -105,10 +94,8 @@
                 </div>
             </div>
 
-            {{-- Row 2: Summary + Pie + Deficiency ── --}}
             <div class="row g-3">
 
-                {{-- Statistical Summary ── --}}
                 <div class="col-lg-4">
                     <div class="stat-summary-panel" style="min-height:360px;">
                         <div class="stat-summary-hdr">
@@ -166,7 +153,6 @@
                     </div>
                 </div>
 
-                {{-- Pie / Donut chart ── --}}
                 <div class="col-lg-4">
                     <div class="stat-pie-panel">
                         <select id="pieChartTypeSelector" class="stat-pie-select">
@@ -181,7 +167,6 @@
                     </div>
                 </div>
 
-                {{-- Document Deficiency ── --}}
                 <div class="col-lg-4">
                     <div class="stat-def-panel" style="min-height:360px;">
                         <div class="stat-def-hdr">
@@ -195,11 +180,11 @@
                     </div>
                 </div>
 
-            </div>{{-- /row 2 --}}
+            </div>
         </div>
     </div>
 
-</div>{{-- /stat-wrap --}}
+</div>
 
 <script>
     let meanMedianModeChart = null;
@@ -257,7 +242,6 @@
 
             if (!statsData) { clearChartsAndSummary(); return; }
 
-            // Update the small view title in the header
             document.getElementById('statViewTitle').textContent = `· ${viewLabel}`;
 
             let statsKey = '';
@@ -461,7 +445,6 @@
         document.getElementById('pieSummary').textContent = '';
     }
 
-    // Event listeners (all original IDs preserved)
     document.getElementById('statDropdown').addEventListener('change', fetchStats);
     document.getElementById('typeDropdown').addEventListener('change', fetchStats);
     document.getElementById('pieChartTypeSelector').addEventListener('change', function () { renderPieChart(this.value); });
@@ -504,7 +487,7 @@
                 });
                 document.getElementById('deficiencySummary').innerHTML = data.summary;
             });
-    } // end runStatCharts
+    }
 
     document.addEventListener('DOMContentLoaded', runStatCharts);
 </script>
