@@ -47,11 +47,9 @@ class StatisticsController extends Controller
             abort(403, 'You do not have permission to view this statistics.');
         }
 
-        // Always run Python script when statistics page is accessed
         if (isset($config['python_script'])) {
             Log::info("Running statistics for type: {$type}", ['script' => $config['python_script']]);
-            
-            // Ensure CSV is updated
+     
             app(TimeSeriesController::class)->exportToCsvFile();
             
             $runnerMethod = $config['runner'];
@@ -70,13 +68,11 @@ class StatisticsController extends Controller
 
     private function findPythonPath()
     {
-        // Try Linux venv paths first (for production)
         $paths = [
             base_path('venv/bin/python'),
             base_path('venv/bin/python3'),
             '/usr/bin/python3',
             '/usr/bin/python',
-            // Windows fallback (for local development)
             base_path('venv/Scripts/python.exe'),
             base_path('venv/Scripts/python3.exe'),
         ];
@@ -85,7 +81,6 @@ class StatisticsController extends Controller
             if (file_exists($path) && is_executable($path)) {
                 Log::info("Statistics Controller - Found Python at: {$path}");
                 
-                // Test if pandas is available
                 $testCmd = escapeshellarg($path) . " -c \"import pandas; print('OK')\" 2>&1";
                 exec($testCmd, $testOutput, $testReturn);
                 
@@ -122,7 +117,6 @@ class StatisticsController extends Controller
             return false;
         }
         
-        // Build command with proper escaping
         $pythonPath = escapeshellarg($pythonPath);
         $scriptPath = escapeshellarg($scriptPath);
         $csvPath = escapeshellarg($csvPath);
@@ -153,7 +147,6 @@ class StatisticsController extends Controller
             return false;
         }
         
-        // Check output
         $outputJsonPath = storage_path("app/private/analytics/{$outputJsonName}");
         if (file_exists($outputJsonPath)) {
             $size = filesize($outputJsonPath);
@@ -183,8 +176,6 @@ class StatisticsController extends Controller
     protected function getPythonJsonOutput($jsonPath)
     {
         Log::info("Reading JSON output", ['path' => $jsonPath]);
-        
-        // Check if file exists in private storage
         if (!Storage::disk('private')->exists($jsonPath)) {
             Log::error("Statistics JSON file not found", [
                 'path' => $jsonPath,
@@ -198,7 +189,6 @@ class StatisticsController extends Controller
         }
 
         try {
-            // Read JSON from private storage
             $json = Storage::disk('private')->get($jsonPath);
             $data = json_decode($json, true);
             

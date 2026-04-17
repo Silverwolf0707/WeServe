@@ -103,9 +103,13 @@
     display: flex; flex-direction: column; align-items: center;
     background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12);
     border-radius: 10px; padding: 10px 18px; min-width: 80px; text-align: center;
-    transition: background .2s, border-color .2s;
+    transition: background .2s, border-color .2s, transform .2s;
+    text-decoration: none;
 }
-.db-stat-pill:hover { background: rgba(116,255,112,.10); border-color: var(--pr-lime-border); }
+.db-stat-pill:hover {
+    background: rgba(116,255,112,.10); border-color: var(--pr-lime-border);
+    transform: translateY(-2px); cursor: pointer;
+}
 .db-stat-pill .sp-val { font-size: 1.3rem; font-weight: 800; color: var(--pr-lime); line-height: 1; }
 .db-stat-pill .sp-label { font-size: .66rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: rgba(255,255,255,.45); margin-top: 3px; }
 
@@ -117,14 +121,19 @@
     box-shadow: var(--pr-shadow);
     overflow: hidden;
     transition: transform .2s, box-shadow .2s, border-color .2s;
-    cursor: default;
+    cursor: pointer;
     position: relative;
+    text-decoration: none;
+    display: block;
 }
 .db-dept-card:hover {
-    transform: translateY(-3px);
+    transform: translateY(-4px);
     box-shadow: var(--pr-shadow-lg);
     border-color: var(--pr-border-dark);
+    text-decoration: none;
 }
+.db-dept-card:hover .db-dept-arrow { opacity: 1; transform: translateX(0); }
+
 .db-dept-card-top {
     padding: 18px 18px 14px;
     position: relative;
@@ -154,6 +163,16 @@
     background: rgba(255,255,255,.05);
     pointer-events: none;
 }
+/* Arrow indicator on hover */
+.db-dept-arrow {
+    position: absolute; top: 12px; right: 12px;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: rgba(255,255,255,.15);
+    display: flex; align-items: center; justify-content: center;
+    font-size: .6rem; color: #fff;
+    opacity: 0; transform: translateX(-4px);
+    transition: opacity .2s, transform .2s;
+}
 
 .db-dept-stats {
     display: grid; grid-template-columns: 1fr 1fr;
@@ -164,7 +183,7 @@
     transition: background .18s;
 }
 .db-dept-stat:first-child { border-right: 1px solid var(--pr-border); }
-.db-dept-stat:hover { background: var(--pr-surface2); }
+.db-dept-card:hover .db-dept-stat { background: var(--pr-surface2); }
 .db-dept-stat-val {
     font-size: 1.25rem; font-weight: 800; color: var(--pr-forest);
     letter-spacing: -.02em; line-height: 1;
@@ -199,6 +218,31 @@
     border-radius: 20px; padding: 1px 8px; color: var(--pr-forest);
 }
 
+/* ══ QUICK NAV PILLS ══ */
+.db-quick-nav {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-bottom: 20px;
+}
+.db-nav-pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 7px 14px; border-radius: 20px;
+    font-size: .76rem; font-weight: 600;
+    background: var(--pr-surface); border: 1px solid var(--pr-border);
+    color: var(--pr-forest); text-decoration: none;
+    box-shadow: var(--pr-shadow);
+    transition: all .2s;
+}
+.db-nav-pill i { font-size: .7rem; color: var(--pr-sub); transition: color .2s; }
+.db-nav-pill:hover {
+    background: var(--pr-forest);
+    border-color: var(--pr-forest);
+    color: var(--pr-lime);
+    text-decoration: none;
+    transform: translateY(-1px);
+    box-shadow: var(--pr-shadow-lg);
+}
+.db-nav-pill:hover i { color: var(--pr-lime); }
+
 /* ══ ACTIVITY TABLE ══ */
 .db-activity-card {
     background: var(--pr-surface);
@@ -226,6 +270,17 @@
     display: flex; align-items: center; justify-content: center;
     font-size: .72rem; color: var(--pr-forest);
 }
+.db-view-all {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: .73rem; font-weight: 600; color: var(--pr-forest-mid);
+    text-decoration: none; padding: 4px 10px;
+    border-radius: 6px; border: 1px solid var(--pr-border-dark);
+    background: var(--pr-surface); transition: all .2s;
+}
+.db-view-all:hover {
+    background: var(--pr-forest); color: var(--pr-lime);
+    border-color: var(--pr-forest); text-decoration: none;
+}
 
 .db-table { width: 100%; border-collapse: collapse; }
 .db-table thead tr {
@@ -240,16 +295,29 @@
 }
 .db-table tbody tr {
     border-bottom: 1px solid var(--pr-border);
-    transition: background .15s;
+    transition: background .15s, transform .15s;
+    cursor: pointer;
 }
 .db-table tbody tr:last-child { border-bottom: none; }
 .db-table tbody tr:hover { background: var(--pr-surface2); }
+.db-table tbody tr.clickable-row:hover td:first-child { color: var(--pr-forest); }
 .db-table td {
     padding: 11px 16px;
     font-size: .81rem; font-weight: 500; color: var(--pr-text);
     vertical-align: middle;
 }
 .db-table td.muted { color: var(--pr-sub); font-size: .78rem; }
+
+/* Row hover arrow */
+.db-row-arrow {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--pr-lime-ghost); border: 1px solid var(--pr-lime-border);
+    font-size: .55rem; color: var(--pr-forest-mid);
+    opacity: 0; transition: opacity .15s;
+    vertical-align: middle; margin-left: 6px;
+}
+.db-table tbody tr:hover .db-row-arrow { opacity: 1; }
 
 /* Date cell */
 .db-date-cell { white-space: nowrap; color: var(--pr-sub); font-size: .78rem; }
@@ -260,7 +328,10 @@
     border-radius: 6px; padding: 3px 10px;
     font-size: .73rem; font-weight: 700; letter-spacing: .02em;
     border: 1px solid transparent;
+    text-decoration: none;
+    transition: filter .15s;
 }
+.db-dept-pill:hover { filter: brightness(.92); }
 .db-dept-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 
 /* Action badge */
@@ -285,6 +356,7 @@
     .db-hero-inner { flex-direction: column; align-items: flex-start; }
     .db-hero-right { width: 100%; justify-content: flex-start; }
     .db-stat-pill { flex: 1; }
+    .db-quick-nav { gap: 6px; }
 }
 </style>
 
@@ -292,10 +364,7 @@
 
 {{-- ══ HERO ══ --}}
 <div class="db-hero">
-
-    {{-- Floating particles --}}
     <div class="db-particles" id="dbParticles"></div>
-
     <div class="db-hero-inner">
         <div class="db-hero-left">
             <div class="db-avatar">
@@ -319,21 +388,25 @@
                 $activeUsers = collect($departments)->sum('active_users');
                 $totalDepts  = count($departments);
             @endphp
-            <div class="db-stat-pill">
+            {{-- Stat pills link to relevant sections --}}
+            <a href="{{ route('admin.roles.index') }}" class="db-stat-pill" title="Manage departments">
                 <span class="sp-val">{{ $totalDepts }}</span>
                 <span class="sp-label">Departments</span>
-            </div>
-            <div class="db-stat-pill">
+            </a>
+            <a href="{{ route('admin.users.index') }}" class="db-stat-pill" title="All users">
                 <span class="sp-val">{{ $totalUsers }}</span>
                 <span class="sp-label">Total Users</span>
-            </div>
-            <div class="db-stat-pill">
+            </a>
+            <a href="{{ route('admin.users.index') }}" class="db-stat-pill" title="Active users">
                 <span class="sp-val">{{ $activeUsers }}</span>
                 <span class="sp-label">Active Now</span>
-            </div>
+            </a>
         </div>
     </div>
 </div>
+
+
+
 
 
 {{-- ══ DEPARTMENTS SECTION ══ --}}
@@ -347,13 +420,36 @@
 <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-5 g-3 mb-4">
     @foreach ($departments as $dept)
         <div class="col">
-            <div class="db-dept-card" style="--dept-color: {{ $dept['color'] }}; --dept-dark: {{ $dept['color-dark'] }}">
+            {{--
+                Map each department name to a relevant route.
+                Adjust the slug/key matching to whatever your $dept['name'] values actually are.
+            --}}
+            @php
+                $deptName  = strtolower($dept['name'] ?? '');
+                $deptRoute = match(true) {
+                    str_contains($deptName, 'patient') || str_contains($deptName, 'record')
+                        => route('admin.patient-records.index'),
+                    str_contains($deptName, 'process') || str_contains($deptName, 'track')
+                        => route('admin.process-tracking.index'),
+                    str_contains($deptName, 'application') || str_contains($deptName, 'online')
+                        => route('admin.online-applications.index'),
+                    str_contains($deptName, 'budget') || str_contains($deptName, 'finance')
+                        => route('admin.budget-records.index'),
+                    str_contains($deptName, 'document')
+                        => route('admin.document-management.index'),
+                    str_contains($deptName, 'user') || str_contains($deptName, 'admin')
+                        => route('admin.users.index'),
+                    default => route('admin.home'),
+                };
+            @endphp
+            <a href="{{ $deptRoute }}" class="db-dept-card" style="--dept-color: {{ $dept['color'] }}; --dept-dark: {{ $dept['color-dark'] }}">
                 <div class="db-dept-card-top">
                     <div class="db-dept-icon-wrap">
                         <i class="fas {{ $dept['icon'] }}"></i>
                     </div>
                     <div class="db-dept-name">{{ $dept['name'] }}</div>
                     <div class="db-dept-glow"></div>
+                    <div class="db-dept-arrow"><i class="fas fa-arrow-right"></i></div>
                 </div>
                 <div class="db-dept-stats">
                     <div class="db-dept-stat">
@@ -365,7 +461,7 @@
                         <div class="db-dept-stat-label"><span class="dot"></span>Active</div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
     @endforeach
 </div>
@@ -378,7 +474,12 @@
             <div class="db-activity-icon"><i class="fas fa-history"></i></div>
             Recent Department Activities
         </div>
-        <span class="db-section-badge">{{ count($recentActivities) }} entries</span>
+        <div style="display:flex;align-items:center;gap:10px;">
+            <span class="db-section-badge">{{ count($recentActivities) }} entries</span>
+            <a href="{{ route('admin.audit-logs.index') }}" class="db-view-all">
+                View All <i class="fas fa-arrow-right" style="font-size:.6rem;"></i>
+            </a>
+        </div>
     </div>
 
     <div class="table-responsive">
@@ -391,20 +492,34 @@
                     <th>Action</th>
                     <th>Username</th>
                     <th>Host</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
                 @forelse ($recentActivities as $activity)
-                    <tr>
+                    @php
+                        
+                        $subjectType = strtolower($activity['subject_type'] ?? '');
+                        $rowRoute = match(true) {
+                            str_contains($subjectType, 'patient')     => route('admin.patient-records.index'),
+                            str_contains($subjectType, 'process')
+                                || str_contains($subjectType, 'track') => route('admin.process-tracking.index'),
+                            str_contains($subjectType, 'application') => route('admin.online-applications.index'),
+                            str_contains($subjectType, 'budget')      => route('admin.budget-records.index'),
+                            str_contains($subjectType, 'document')    => route('admin.document-management.index'),
+                            str_contains($subjectType, 'user')
+                                || str_contains($subjectType, 'role')
+                                || str_contains($subjectType, 'permission') => route('admin.audit-logs.index'),
+                            default => route('admin.audit-logs.index'),
+                        };
+                    @endphp
+                    <tr class="clickable-row" onclick="window.location='{{ $rowRoute }}'" title="Go to {{ $activity['subject_type'] ?? 'records' }}">
                         <td class="db-date-cell">
                             <i class="fas fa-clock" style="font-size:.65rem;margin-right:4px;color:var(--pr-border-dark);"></i>
                             {{ $activity['date'] }}
                         </td>
                         <td>
-                            @php
-                                $deptColor = $activity['color'] ?? '#064e3b';
-                                // Lighten for bg
-                            @endphp
+                            @php $deptColor = $activity['color'] ?? '#064e3b'; @endphp
                             <span class="db-dept-pill" style="background:{{ $deptColor }}18;border-color:{{ $deptColor }}44;color:{{ $deptColor }};">
                                 <span class="db-dept-dot" style="background:{{ $deptColor }};"></span>
                                 {{ $activity['department'] }}
@@ -436,10 +551,13 @@
                         </td>
                         <td style="font-weight:600;">{{ $activity['username'] ?? 'System' }}</td>
                         <td class="muted">{{ $activity['host'] ?? 'N/A' }}</td>
+                        <td>
+                            <span class="db-row-arrow"><i class="fas fa-arrow-right"></i></span>
+                        </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6">
+                        <td colspan="7">
                             <div class="db-empty">
                                 <i class="fas fa-inbox"></i>
                                 <span>No recent activities found.</span>

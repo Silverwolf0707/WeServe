@@ -4,41 +4,32 @@ import os
 import sys
 from datetime import datetime
 
-# Get CSV path from command line argument
 if len(sys.argv) > 1:
     csv_path = sys.argv[1]
 else:
-    # Fallback path if no argument provided
     base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     csv_path = os.path.join(base_path, 'storage', 'app', 'private', 'analytics', 'full_patient_data.csv')
 
-# Output JSON path in private storage
 base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 json_path = os.path.join(base_path, 'storage', 'app', 'private', 'analytics', 'age_stats_output.json')
 
-# Ensure the analytics directory exists
 os.makedirs(os.path.dirname(json_path), exist_ok=True)
 
-# Load CSV
 try:
     df = pd.read_csv(csv_path, parse_dates=['month', 'date_processed'])
 except Exception as e:
     print(f"Error loading CSV: {e}")
     sys.exit(1)
 
-# Add Year and Month columns for grouping
 df['year'] = df['month'].dt.year
 df['month_num'] = df['month'].dt.month
 df['month_name'] = df['month'].dt.strftime('%B')
 
-# Compute processing_days as difference between disbursed month and processed date
 df['disbursed_month'] = df['month']
 df['processing_days'] = (df['date_processed'] - df['disbursed_month']).dt.days
 
-# Compute average processing time
 average_processing_time = int(round(df['processing_days'].mean())) if not df['processing_days'].dropna().empty else 0
 
-# Dashboard summary (overall)
 top_assistance = df['case_type'].mode().iloc[0] if not df['case_type'].mode().empty else 'N/A'
 most_common_category = df['case_category'].mode().iloc[0] if not df['case_category'].mode().empty else 'N/A'
 total_applicants = len(df)
@@ -50,7 +41,6 @@ dashboard_summary = {
     'average_processing_time': f"{average_processing_time} days"
 }
 
-# Helper function to summarize spread
 def summarize_spread(values):
     if not values:
         return []
@@ -59,7 +49,6 @@ def summarize_spread(values):
     sample_spread = sorted_vals[:3] + [median_val] + sorted_vals[-3:]
     return sorted(set(sample_spread), key=lambda x: values.index(x) if x in values else x)
 
-# Compute stats
 def compute_stats_summary(df, value_col):
     category_stats = {}
     type_stats = {}
@@ -87,12 +76,10 @@ def compute_stats_summary(df, value_col):
         }
     return category_stats, type_stats
 
-# Compute per-year stats
 yearly_stats = {}
 monthly_stats = {}
 
 for year, year_df in df.groupby('year'):
-    # Yearly stats
     age_stats_by_category, age_stats_by_type = compute_stats_summary(year_df, 'age')
     
     application_counts = year_df.groupby(['case_category', 'case_type']).size().reset_index(name='application_count')
@@ -111,8 +98,7 @@ for year, year_df in df.groupby('year'):
         'total_applications_by_category': total_applications_by_category,
         'total_applications_by_type': total_applications_by_type,
     }
-    
-    # 🔹 Compute per-month stats for this year
+
     monthly_stats[year] = {}
     for month, month_df in year_df.groupby('month_num'):
         month_name = month_df['month_name'].iloc[0]
@@ -137,11 +123,9 @@ for year, year_df in df.groupby('year'):
             'total_applications_by_type': month_total_applications_by_type,
         }
 
-# Get current year and month for default selection
 current_year = datetime.now().year
 current_month = datetime.now().month
 
-# Final JSON output
 output = {
     'overall': {
         'dashboard_summary': dashboard_summary,
@@ -154,6 +138,5 @@ output = {
     }
 }
 
-# Save JSON to private storage
 with open(json_path, 'w') as f:
     json.dump(output, f, indent=2)

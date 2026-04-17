@@ -15,10 +15,8 @@ class TimeSeriesController extends Controller
     {
         $type = request('type');
 
-        // Always export CSV first (to private storage)
         $csvPath = $this->exportToCsvFile();
 
-        // Always run Python script when analytics page is accessed
         if ($type === 'budget') {
             Log::info("Running budget Python script");
             $this->runBudgetPython();
@@ -93,13 +91,13 @@ class TimeSeriesController extends Controller
 
     private function findPythonPath()
     {
-        // Try Linux venv paths first (production)
+        
         $paths = [
             base_path('venv/bin/python'),
             base_path('venv/bin/python3'),
             '/usr/bin/python3',
             '/usr/bin/python',
-            // Windows fallback (local development)
+           
             base_path('venv/Scripts/python.exe'),
             base_path('venv/Scripts/python3.exe'),
         ];
@@ -108,7 +106,6 @@ class TimeSeriesController extends Controller
             if (file_exists($path) && is_executable($path)) {
                 Log::info("Found Python at: {$path}");
 
-                // Test if pandas is available
                 $testCmd = escapeshellarg($path) . " -c \"import pandas; print('OK')\" 2>&1";
                 exec($testCmd, $testOutput, $testReturn);
 
@@ -145,7 +142,6 @@ class TimeSeriesController extends Controller
             return false;
         }
 
-        // Build command with proper escaping
         $pythonPath = escapeshellarg($pythonPath);
         $scriptPath = escapeshellarg($scriptPath);
         $csvPath = escapeshellarg($csvPath);
@@ -176,7 +172,6 @@ class TimeSeriesController extends Controller
             return false;
         }
 
-        // Check if output was created
         $outputJsonPath = storage_path("app/private/analytics/{$outputJsonName}");
         if (file_exists($outputJsonPath)) {
             $size = filesize($outputJsonPath);
@@ -239,7 +234,6 @@ class TimeSeriesController extends Controller
             'exists' => Storage::disk('private')->exists($file)
         ]);
 
-        // Check if file exists in private storage
         if (!Storage::disk('private')->exists($file)) {
             Log::warning("JSON file not found, attempting to generate it");
 
@@ -288,7 +282,6 @@ class TimeSeriesController extends Controller
     }
     public function getWeeklyStlJson()
     {
-        // Check permission
         if (!Gate::allows('CSWD-ANALYTICS')) {
             abort(403, 'You do not have permission to view this analytics.');
         }
@@ -296,7 +289,6 @@ class TimeSeriesController extends Controller
         $file = 'analytics/weekly_stl_output.json';
 
         if (!Storage::disk('private')->exists($file)) {
-            // Try regenerating if missing
             $success = $this->runWeeklyStl();
             if (!$success || !Storage::disk('private')->exists($file)) {
                 Log::error("Weekly STL JSON not found and failed to generate", ['file' => $file]);

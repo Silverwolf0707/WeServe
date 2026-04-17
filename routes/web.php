@@ -21,44 +21,24 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\Auth\ChangePasswordController;
 
-
-/*
-|--------------------------------------------------------------------------
-| Public / Online-Application Routes
-|--------------------------------------------------------------------------
-| Rate-limited to protect against abuse:
-|   - store  : 5 submissions per 10 minutes per IP
-|   - track  : 20 look-ups per minute per IP
-|   - faq    : no limit (static page)
-*/
-
 Route::get('/online-application', [OnlineApplicationController::class, 'index'])
     ->name('online-application.index');
 
 Route::post('/applications/store', [OnlineApplicationController::class, 'store'])
     ->name('applications.store')
-    ->middleware('throttle:5,10');   // 5 attempts / 10 min per IP
+    ->middleware('throttle:5,10');   
 
 Route::get('/track', [OnlineApplicationController::class, 'track'])
     ->name('track.application')
-    ->middleware('throttle:20,1');  // 20 look-ups / 1 min per IP
+    ->middleware('throttle:20,1');  
 
 Route::get('/', function () {
     return redirect()->route('online-application.index');
 });
 
-/*
-|--------------------------------------------------------------------------
-| Auth Routes (registration disabled)
-|--------------------------------------------------------------------------
-*/
+
 Auth::routes(['register' => false]);
 
-/*
-|--------------------------------------------------------------------------
-| Admin Routes (authenticated)
-|--------------------------------------------------------------------------
-*/
 Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
     Route::redirect('/login', '/login');
@@ -174,11 +154,6 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
         ->middleware('auth');
 });
 
-/*
-|--------------------------------------------------------------------------
-| Profile Routes
-|--------------------------------------------------------------------------
-*/
 Route::group(['prefix' => 'profile', 'as' => 'profile.', 'middleware' => ['auth']], function () {
     Route::get('password', [ChangePasswordController::class, 'edit'])->name('password.edit');
     Route::post('password', [ChangePasswordController::class, 'update'])->name('password.update');
@@ -188,11 +163,6 @@ Route::group(['prefix' => 'profile', 'as' => 'profile.', 'middleware' => ['auth'
 
 Broadcast::routes();
 
-/*
-|--------------------------------------------------------------------------
-| Static / Informational Pages
-|--------------------------------------------------------------------------
-*/
 Route::get('/terms-and-conditions', function () {
     return view('terms-and-conditions');
 })->name('terms-and-conditions');

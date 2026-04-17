@@ -377,19 +377,13 @@
                         </div>
 
                         <div class="social-section text-center mt-4 pt-4 border-top">
-                            <h6 class="text-primary mb-3"><i class="fas fa-share-alt me-2"></i>Follow Us on Social Media</h6>
+                            <h6 class="text-primary mb-3"><i class="fas fa-share-alt me-2"></i>Follow Us</h6>
                             <div class="social-icons">
-                                <a href="https://facebook.com" target="_blank" class="social-icon facebook" aria-label="Facebook">
+                                <a href="https://www.facebook.com/SanPedroCityGov" target="_blank" class="social-icon facebook" aria-label="Facebook">
                                     <i class="fab fa-facebook-f"></i>
                                 </a>
-                                <a href="https://twitter.com" target="_blank" class="social-icon twitter" aria-label="Twitter">
-                                    <i class="fab fa-twitter"></i>
-                                </a>
-                                <a href="https://instagram.com" target="_blank" class="social-icon instagram" aria-label="Instagram">
-                                    <i class="fab fa-instagram"></i>
-                                </a>
-                                <a href="mailto:cswdosanpedro@gmail.com" class="social-icon email" aria-label="Email">
-                                    <i class="fas fa-envelope"></i>
+                                <a href="https://cityofsanpedrolaguna.gov.ph/" target="_blank" class="social-icon twitter" aria-label="Website">
+                                    <i class="fa-solid fa-globe"></i>
                                 </a>
                             </div>
                         </div>
@@ -436,21 +430,13 @@
                 <div class="footer-socials" aria-label="Social media">
                     <h3>Follow Us</h3>
                     <div class="footer-socials-icons">
-                        <a href="#" class="footer-social-link" aria-label="Facebook">
+                        <a href="https://www.facebook.com/SanPedroCityGov" class="footer-social-link" aria-label="Facebook">
                             <span class="footer-social-icon"><i class="fab fa-facebook-f"></i></span>
                             Facebook
                         </a>
-                        <a href="#" class="footer-social-link" aria-label="Twitter">
-                            <span class="footer-social-icon"><i class="fab fa-twitter"></i></span>
-                            Twitter
-                        </a>
-                        <a href="#" class="footer-social-link" aria-label="Instagram">
-                            <span class="footer-social-icon"><i class="fab fa-instagram"></i></span>
-                            Instagram
-                        </a>
-                        <a href="#" class="footer-social-link" aria-label="LinkedIn">
-                            <span class="footer-social-icon"><i class="fab fa-linkedin-in"></i></span>
-                            LinkedIn
+                        <a href="https://cityofsanpedrolaguna.gov.ph/" class="footer-social-link" aria-label="Website">
+                            <span class="footer-social-icon"><i class="fa-solid fa-globe"></i></span>
+                            City of San Pedro Website
                         </a>
                     </div>
                 </div>
@@ -463,8 +449,7 @@
                 </div>
                 <div class="footer-right">
                     <a href="{{ route('terms-and-conditions') }}">Terms and Conditions</a>
-                    <span>|</span>
-                    <a href="{{ route('privacy-policy') }}">Privacy Policy</a>
+                    
                 </div>
             </div>
         </footer>
